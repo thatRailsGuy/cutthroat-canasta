@@ -31,11 +31,10 @@ export const clientMessageSchema = z.discriminatedUnion('type', [
 
 export type ClientMessage = z.infer<typeof clientMessageSchema>
 
-/** Fails to compile if a validated action is not an engine Action. */
+/** Fails to compile if the schema and the engine's Action type drift apart in either direction. */
 type Assert<T extends true> = T
-export type ActionSchemaMatchesEngine = Assert<
-  z.infer<typeof actionSchema> extends Action ? true : false
->
+type SameType<A, B> = [A] extends [B] ? ([B] extends [A] ? true : false) : false
+export type ActionSchemaMatchesEngine = Assert<SameType<z.infer<typeof actionSchema>, Action>>
 
 export type ProtocolErrorCode = 'BAD_MESSAGE' | 'NOT_JOINED' | 'NOT_HOST' | 'ALREADY_JOINED'
 export type ServerErrorCode = RuleErrorCode | ProtocolErrorCode
