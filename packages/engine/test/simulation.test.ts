@@ -131,6 +131,8 @@ describe('random games', () => {
         }
         if (game.status === 'roundOver') game = unwrap(startNextRound(game))
       }
+      // The server stores the whole game in a single 2 MB Durable Object value.
+      expect(JSON.stringify(game).length).toBeLessThan(1_000_000)
     },
   )
 })

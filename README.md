@@ -21,7 +21,7 @@ See [docs/superpowers/specs/2026-09-27-cutthroat-canasta-design.md](docs/superpo
 
 ```text
 packages/engine    TypeScript rules engine (in progress)
-apps/server        Cloudflare Worker + Durable Object per game (in progress)
+apps/server        Cloudflare Worker + Durable Object per game (implemented)
 apps/web           React + Vite client: lobby, table, rules page (planned)
 docs/              Design spec and implementation plans
 ```
