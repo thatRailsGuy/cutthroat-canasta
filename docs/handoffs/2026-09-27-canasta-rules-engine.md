@@ -22,15 +22,15 @@ The plan is being executed with subagent-driven development: a fresh implementer
 | 2. Seeded RNG, deck | Done, reviewed | `966d8f3` |
 | 3. Errors, types, fixtures, meld rules | Done, reviewed | `b197c4b` |
 | 4. Discard pile rules | Done, reviewed | `0d69035`, `8524ae7` |
-| 5. Turn rules and play validation | In progress | |
-| 6. Round scoring | Not started | |
+| 5. Turn rules and play validation | Done, reviewed | `3263d7f` |
+| 6. Round scoring | In progress | |
 | 7. Game lifecycle and dealing | Not started | |
 | 8. Player actions (`applyAction`) | Not started | |
 | 9. Views, legality preview, exports | Not started | |
 | 10. Random-game simulation and README | Not started | |
 
 - The README was rewritten early at the user's request (`9a10fe3`, `f619980`).
-- The engine tests pass (67 as of Task 4). Typecheck, lint and `format:check` are clean.
+- The engine tests pass (100 as of Task 5). Typecheck, lint and `format:check` are clean.
 - After Plan 1: write Plan 2 (server) and Plan 3 (web client and rules page) against the engine's real API.
 
 ## Key Decisions
@@ -54,8 +54,8 @@ Committed on `feat-initial-game` since `6abf692`:
 
 - Root: `package.json`, `package-lock.json`, `tsconfig.base.json`, `eslint.config.js`, `.prettierrc.json`, `.prettierignore`, `.gitignore`, `README.md`
 - `packages/engine/`: `package.json`, `tsconfig.json`
-- `packages/engine/src/`: `cards.ts`, `constants.ts`, `rng.ts`, `deck.ts`, `errors.ts`, `types.ts`, `meldRules.ts`, `pileRules.ts`, and `index.ts` (a placeholder that Task 9 replaces)
-- `packages/engine/test/`: `fixtures.ts`, `cards.test.ts`, `constants.test.ts`, `rng.test.ts`, `deck.test.ts`, `meldRules.test.ts`, `pileRules.test.ts`
+- `packages/engine/src/`: `cards.ts`, `constants.ts`, `rng.ts`, `deck.ts`, `errors.ts`, `types.ts`, `meldRules.ts`, `pileRules.ts`, `turnRules.ts`, `play.ts`, and `index.ts` (a placeholder that Task 9 replaces)
+- `packages/engine/test/`: `fixtures.ts`, `cards.test.ts`, `constants.test.ts`, `rng.test.ts`, `deck.test.ts`, `meldRules.test.ts`, `pileRules.test.ts`, `turnRules.test.ts`, `play.test.ts`
 
 ## Failed Approaches
 
