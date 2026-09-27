@@ -1,6 +1,6 @@
 ---
 created: 2026-09-27T19:40:06Z
-branch: feat-server
+branch: main
 trigger: manual
 restored: false
 topic: canasta-rules-engine
@@ -93,7 +93,7 @@ Committed on `main` since `6abf692` (via `feat-initial-game`):
 
 ## Next Steps
 
-1. Plan 2 (server) is complete on `feat-server`, and the user's merge decision is pending. Before Plan 3, the user must decide the open questions below.
+1. Plan 2 (server) is complete and merged to `main` (branch `feat-server` deleted). Before Plan 3, the user must decide the open questions below.
 2. Write Plan 3 (web client and rules page). The rules page renders from the engine constants and uses `RULE_ERROR_SECTIONS` for its "Why?" links. Decide on revealing hands at round end and on an action feed (engine additions).
 3. Optional engine polish (all non-blocking): make the simulation bot prefer going out, since only about 11% of rounds end that way; add a shuffle test for 0- and 1-card inputs; tighten the test fixture `meld()` so it excludes 3s.
 
