@@ -34,6 +34,17 @@ Plan 1 is complete. It was executed with subagent-driven development: a fresh im
 - All 187 engine tests pass, including a 30-seed random-game simulation. Over those games the bot made 2,726 melds and 349 pickups, formed 203 canastas, and ended 13 rounds by going out. Typecheck, lint and `format:check` are clean.
 - `feat-initial-game` was merged into `main` (fast-forward), pushed to origin, and deleted.
 
+### Plan 2: server (`feat-server`)
+
+| Task | Status | Commits |
+| --- | --- | --- |
+| 1. Server package and Workers test harness | Done, reviewed | `90497f8`, `a652490` |
+| 2. Game codes and seeds | In progress | |
+| 3. Client/server protocol | Not started | |
+| 4. Room message handler | Not started | |
+| 5. GameRoom Durable Object and routes | Not started | |
+| 6. Dev workflow, bundle check, docs | Not started | |
+
 ## Key Decisions
 
 - **Stack:** Cloudflare Workers with one Durable Object per game; React + Vite; one engine shared by server and client. boardgame.io was rejected because its server needs Node and it is barely maintained.
@@ -50,6 +61,10 @@ Plan 1 is complete. It was executed with subagent-driven development: a fresh im
 - **Duplicate player ids are rejected** with `DUPLICATE_PLAYER`, so a reconnect must reattach the existing seat, never call `addPlayer` again.
 - **Deferred to Plans 2 and 3:** revealing everyone's hands at round end, and a public action feed. `viewFor` currently hides other hands even after the round, and it removes the log.
 - **Commits:** plain imperative messages with no attribution lines. The user's CLAUDE.md forbids them, and a hook rejects them.
+- **Server tooling (Plan 2, Task 1):**
+  - `apps/server` pins `wrangler` to exactly `4.124.0`, the version `@cloudflare/vitest-pool-workers@0.22.0` pins, so the tree has one workerd build. `compatibility_date` is `2026-08-22`, the newest that workerd accepts. Bump the pool and wrangler together.
+  - Server tests use `SELF` from `cloudflare:test`, because typing `exports` from `cloudflare:workers` failed.
+- **Lockfile gotcha:** an incremental `npm install` on this tree strips platform-specific optional entries (rolldown and esbuild bindings; npm/cli#4828). To change dependencies, regenerate cleanly: `rm -rf package-lock.json node_modules apps/*/node_modules packages/*/node_modules && npm install --package-lock-only --ignore-scripts && npm ci`. Then check that `grep -c '@rolldown/binding-' package-lock.json` is non-zero.
 - **Prettier ignores** `docs/`, `.superpowers/` and `package-lock.json`. README.md is formatted.
 
 ## Modified Files
