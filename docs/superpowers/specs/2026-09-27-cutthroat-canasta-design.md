@@ -157,12 +157,14 @@ type Round = {
   stock: Card[]; discard: Card[]
   pileFrozenForAll: boolean      // a wild was buried as the upcard or discarded; cleared when the pile is picked up
   phase: 'draw' | 'play'
+  nextMeldId: number
 }
 
 type Game = {
   players: Player[]; round: Round | null; history: RoundScore[]
   status: 'lobby' | 'playing' | 'roundOver' | 'gameOver'
   seed: number; log: Action[]
+  winners: string[]
 }
 ```
 
@@ -200,16 +202,24 @@ Rule constants (card values, initial meld minimums, the deck and hand-size funct
 
 | Module | Responsibility |
 | --- | --- |
-| `cards` | Card helpers: `isWild`, `isNatural`, `isRed3`, `isBlack3`, `cardValue` |
-| `setup` | Deck construction, seeded shuffle, deal, Red 3 layout, upcard burial |
+| `cards` | Card helpers: `isWild`, `isNatural`, `isRed3`, `isBlack3` |
+| `constants` | Rule constants: card values, bonuses, tiers, deck/hand sizing, winning score |
+| `rng` | Seeded PRNG (mulberry32) and shuffle |
+| `deck` | Deck construction for a given number of decks |
+| `errors` | Rule error codes, their rules-page sections, and the `RuleError` constructor |
+| `types` | Core type definitions: `Card`, `Player`, `Round`, `Game`, `Action`, etc. |
+| `clone` | Deep-clones a `Game` so actions can produce new state without mutating the input |
 | `meldRules` | Validity of new melds and additions (3.4) |
 | `pileRules` | Freeze status and pickup legality (3.6) |
-| `initialMeld` | Minimums and whether a play meets them (3.5) |
-| `goingOut` | Canasta requirement, first-turn restriction, rejecting a play that empties the hand (3.7) |
+| `turnRules` | Turn/phase checks, discard legality, and the going-out restrictions (3.3, 3.7) |
+| `play` | Validates a meld/pickup batch against a hand and pile, and applies it |
 | `scoring` | Round scoring and end-of-game detection (3.8, 3.9) |
-| `turn` | Phase transitions, drawn Red 3s, empty stock, turn rotation (3.3) |
+| `round` | Dealing, turn advancement, and ending a round |
+| `game` | Lobby management: `createGame`, `addPlayer`, `startGame`, `startNextRound` |
+| `actions` | `applyAction`, the engine's per-turn action dispatcher |
 | `view` | `viewFor` and hiding private information |
-| `rng` | Seeded PRNG (for example mulberry32) |
+| `preview` | `legalityPreview`, the client-side legality check against a `PlayerView` |
+| `index` | Public exports |
 
 ## 5. Server (`apps/server`)
 
