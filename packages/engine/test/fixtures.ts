@@ -1,5 +1,6 @@
 import type { Card, Rank, Suit } from '../src/cards'
 import type { Game, GameResult, Meld, Player, Round } from '../src/types'
+import { addPlayer, createGame } from '../src/game'
 
 const SUIT_CODES: Record<string, Suit> = { c: 'clubs', d: 'diamonds', h: 'hearts', s: 'spades' }
 let nextCardId = 10_000
@@ -76,4 +77,23 @@ export function makeGame(opts: {
 export function unwrap(result: GameResult): Game {
   if (!result.ok) throw new Error(`${result.error.code}: ${result.error.message}`)
   return result.game
+}
+
+export function lobby(players: number, seed = 42): Game {
+  let game = createGame(seed)
+  for (let i = 0; i < players; i++) game = unwrap(addPlayer(game, `p${i}`, `Player ${i}`))
+  return game
+}
+
+export function allCardIds(game: Game): number[] {
+  const round = game.round!
+  return [
+    ...round.stock,
+    ...round.discard,
+    ...game.players.flatMap((p) => [...p.hand, ...p.red3s, ...p.melds.flatMap((m) => m.cards)]),
+  ].map((c) => c.id)
+}
+
+export function countCards(game: Game): number {
+  return allCardIds(game).length
 }
