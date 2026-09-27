@@ -30,16 +30,22 @@ export interface Outcome {
   reply: ServerMessage[]
   /** Attach this player to the sender's connection. */
   bindPlayerId?: string
-  /** The state changed: save it, then send every joined connection its view. */
+  /** The state changed: save it. */
   changed: boolean
+  /** Send every joined connection its view. */
+  broadcast: boolean
 }
 
 export function createRoom(code: string, seed: number): RoomState {
   return { code, game: createGame(seed), hostId: null, tokens: {} }
 }
 
-export function stateMessage(state: RoomState, playerId: string): ServerMessage {
-  return { type: 'state', view: viewFor(state.game, playerId), hostId: state.hostId }
+export function stateMessage(
+  state: RoomState,
+  playerId: string,
+  connected: string[],
+): ServerMessage {
+  return { type: 'state', view: viewFor(state.game, playerId), hostId: state.hostId, connected }
 }
 
 export function handleMessage(
@@ -74,9 +80,10 @@ function join(
     const playerId = state.tokens[token]
     return {
       state,
-      reply: [joined(state, playerId, token), stateMessage(state, playerId)],
+      reply: [joined(state, playerId, token)],
       bindPlayerId: playerId,
       changed: false,
+      broadcast: true,
     }
   }
 
@@ -95,6 +102,7 @@ function join(
     reply: [joined(next, playerId, newToken)],
     bindPlayerId: playerId,
     changed: true,
+    broadcast: true,
   }
 }
 
@@ -107,7 +115,7 @@ function hostOnly(state: RoomState, senderId: string | null, run: () => GameResu
 
 function fromResult(state: RoomState, result: GameResult): Outcome {
   if (!result.ok) return ruleErrorOutcome(state, result.error)
-  return { state: { ...state, game: result.game }, reply: [], changed: true }
+  return { state: { ...state, game: result.game }, reply: [], changed: true, broadcast: true }
 }
 
 function ruleErrorOutcome(state: RoomState, error: RuleError): Outcome {
@@ -115,11 +123,12 @@ function ruleErrorOutcome(state: RoomState, error: RuleError): Outcome {
     state,
     reply: [{ type: 'error', code: error.code, message: error.message }],
     changed: false,
+    broadcast: false,
   }
 }
 
 function protocolError(state: RoomState, code: ProtocolErrorCode, message: string): Outcome {
-  return { state, reply: [{ type: 'error', code, message }], changed: false }
+  return { state, reply: [{ type: 'error', code, message }], changed: false, broadcast: false }
 }
 
 function joined(state: RoomState, playerId: string, token: string): ServerMessage {

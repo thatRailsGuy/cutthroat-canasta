@@ -47,15 +47,15 @@ export class GameRoom extends DurableObject<Env> {
 
     const { playerId } = ws.deserializeAttachment() as Attachment
     const outcome = handleMessage(this.room, playerId, parsed.message, ids)
-    if (outcome.bindPlayerId) {
-      ws.serializeAttachment({ playerId: outcome.bindPlayerId } satisfies Attachment)
-    }
     if (outcome.changed) {
       this.room = outcome.state
       await this.ctx.storage.put('room', this.room)
     }
+    if (outcome.bindPlayerId) {
+      ws.serializeAttachment({ playerId: outcome.bindPlayerId } satisfies Attachment)
+    }
     for (const message of outcome.reply) send(ws, message)
-    if (outcome.changed) this.broadcast()
+    if (outcome.broadcast) this.broadcast()
   }
 
   async webSocketClose(ws: WebSocket, code: number, reason: string): Promise<void> {
@@ -64,14 +64,31 @@ export class GameRoom extends DurableObject<Env> {
     } catch {
       // Already closed, or a reserved close code that can't be echoed.
     }
+    this.broadcast(ws)
   }
 
-  private broadcast(): void {
+  async webSocketError(ws: WebSocket): Promise<void> {
+    this.broadcast(ws)
+  }
+
+  private broadcast(except?: WebSocket): void {
     const room = this.room
     if (!room) return
-    for (const ws of this.ctx.getWebSockets()) {
-      const { playerId } = ws.deserializeAttachment() as Attachment
-      if (playerId) send(ws, stateMessage(room, playerId))
+    const sockets = this.ctx.getWebSockets()
+    const attachments = new Map(
+      sockets.map((ws) => [ws, ws.deserializeAttachment() as Attachment] as const),
+    )
+    const connectedIds = new Set(
+      sockets
+        .filter((ws) => ws !== except)
+        .map((ws) => attachments.get(ws)?.playerId)
+        .filter((playerId): playerId is string => playerId !== null && playerId !== undefined),
+    )
+    const connected = room.game.players.map((p) => p.id).filter((id) => connectedIds.has(id))
+    for (const ws of sockets) {
+      if (ws === except) continue
+      const { playerId } = attachments.get(ws)!
+      if (playerId) send(ws, stateMessage(room, playerId, connected))
     }
   }
 }

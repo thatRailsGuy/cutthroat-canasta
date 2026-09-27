@@ -186,6 +186,26 @@ describe('game room', () => {
     expect(state.view.status).toBe('playing')
   })
 
+  it('tracks who is connected', async () => {
+    const code = await createGame()
+    const ann = await connect(code)
+    const annJoined = await join(ann, 'Ann')
+    await nextState(ann)
+    const bob = await connect(code)
+    const bobJoined = await join(bob, 'Bob')
+    await nextState(bob)
+    expect((await nextState(ann)).connected).toEqual([annJoined.playerId, bobJoined.playerId])
+
+    bob.close()
+    expect((await nextState(ann)).connected).toEqual([annJoined.playerId])
+
+    const bobAgain = await connect(code)
+    const bobRejoined = await join(bobAgain, 'Bob', bobJoined.token)
+    expect(bobRejoined.playerId).toBe(bobJoined.playerId)
+    await nextState(bobAgain)
+    expect((await nextState(ann)).connected).toEqual([annJoined.playerId, bobJoined.playerId])
+  })
+
   it('persists the room to Durable Object storage', async () => {
     const { code, annJoined } = await startedGame()
     const stub = env.GAME_ROOM.get(env.GAME_ROOM.idFromName(code))

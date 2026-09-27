@@ -31,6 +31,7 @@ describe('join', () => {
       sequentialIds(),
     )
     expect(outcome.changed).toBe(true)
+    expect(outcome.broadcast).toBe(true)
     expect(outcome.bindPlayerId).toBe('p1')
     expect(outcome.reply).toEqual([{ type: 'joined', code: 'ABCDEF', playerId: 'p1', token: 't1' }])
     expect(outcome.state.hostId).toBe('p1')
@@ -48,6 +49,7 @@ describe('join', () => {
     const { state, ids } = roomWith(['Ann'])
     const outcome = handleMessage(state, null, { type: 'join', name: 'ann' }, ids)
     expect(outcome.changed).toBe(false)
+    expect(outcome.broadcast).toBe(false)
     expect(errorOf(outcome)).toMatchObject({ type: 'error', code: 'NAME_TAKEN' })
   })
 
@@ -61,15 +63,17 @@ describe('join', () => {
     const { state, ids } = started()
     const outcome = handleMessage(state, null, { type: 'join', name: 'Ann', token: 't1' }, ids)
     expect(outcome.changed).toBe(false)
+    expect(outcome.broadcast).toBe(true)
     expect(outcome.state).toBe(state)
     expect(outcome.bindPlayerId).toBe('p1')
-    expect(outcome.reply[0]).toEqual({
-      type: 'joined',
-      code: 'ABCDEF',
-      playerId: 'p1',
-      token: 't1',
-    })
-    expect(outcome.reply[1]).toMatchObject({ type: 'state', hostId: 'p1' })
+    expect(outcome.reply).toEqual([
+      {
+        type: 'joined',
+        code: 'ABCDEF',
+        playerId: 'p1',
+        token: 't1',
+      },
+    ])
   })
 
   it('treats an unknown token as a new player in the lobby', () => {
@@ -107,6 +111,7 @@ describe('host controls', () => {
     })
     const outcome = handleMessage(state, 'p1', { type: 'start' }, ids)
     expect(outcome.changed).toBe(true)
+    expect(outcome.broadcast).toBe(true)
     expect(outcome.reply).toEqual([])
     expect(outcome.state.game.status).toBe('playing')
   })
@@ -137,6 +142,7 @@ describe('actions', () => {
     // Ann (p1) dealt, so Bob (p2, seat 1) goes first.
     const outcome = handleMessage(state, 'p2', draw, ids)
     expect(outcome.changed).toBe(true)
+    expect(outcome.broadcast).toBe(true)
     expect(outcome.state.game.round?.phase).toBe('play')
   })
 
@@ -144,6 +150,7 @@ describe('actions', () => {
     const { state, ids } = started()
     const outcome = handleMessage(state, 'p1', draw, ids)
     expect(outcome.changed).toBe(false)
+    expect(outcome.broadcast).toBe(false)
     expect(outcome.state).toBe(state)
     expect(errorOf(outcome)).toMatchObject({ type: 'error', code: 'NOT_YOUR_TURN' })
   })
@@ -163,10 +170,10 @@ describe('actions', () => {
 })
 
 describe('stateMessage', () => {
-  it("sends the player's own view and the host id", () => {
+  it("sends the player's own view, the host id, and who's connected", () => {
     const { state } = started()
-    const message = stateMessage(state, 'p2')
-    expect(message).toMatchObject({ type: 'state', hostId: 'p1' })
+    const message = stateMessage(state, 'p2', ['p1', 'p2'])
+    expect(message).toMatchObject({ type: 'state', hostId: 'p1', connected: ['p1', 'p2'] })
     if (message.type !== 'state') throw new Error('expected a state message')
     expect(message.view.you?.id).toBe('p2')
     expect(message.view.players[0]).not.toHaveProperty('hand')

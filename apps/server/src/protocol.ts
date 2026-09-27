@@ -41,7 +41,7 @@ export type ServerErrorCode = RuleErrorCode | ProtocolErrorCode
 
 export type ServerMessage =
   | { type: 'joined'; code: string; playerId: string; token: string }
-  | { type: 'state'; view: PlayerView; hostId: string | null }
+  | { type: 'state'; view: PlayerView; hostId: string | null; connected: string[] }
   | { type: 'error'; code: ServerErrorCode; message: string }
 
 export type ParseResult = { ok: true; message: ClientMessage } | { ok: false; error: ServerMessage }
