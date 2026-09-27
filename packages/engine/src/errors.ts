@@ -35,6 +35,7 @@ export const RULE_ERROR_SECTIONS = {
   NOT_IN_LOBBY: 'setup',
   TABLE_FULL: 'setup',
   NAME_TAKEN: 'setup',
+  DUPLICATE_PLAYER: 'setup',
   NOT_ENOUGH_PLAYERS: 'setup',
   ROUND_NOT_OVER: 'scoring',
 } as const satisfies Record<string, RuleSection>

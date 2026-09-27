@@ -20,6 +20,9 @@ export function addPlayer(game: Game, id: string, name: string): GameResult {
   if (game.players.length >= MAX_PLAYERS) {
     return fail('TABLE_FULL', `The table is full (${MAX_PLAYERS} players).`)
   }
+  if (game.players.some((p) => p.id === id)) {
+    return fail('DUPLICATE_PLAYER', 'That player is already at the table.')
+  }
   if (game.players.some((p) => p.name.toLowerCase() === name.toLowerCase())) {
     return fail('NAME_TAKEN', `Someone at the table is already called ${name}.`)
   }

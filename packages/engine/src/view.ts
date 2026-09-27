@@ -31,6 +31,11 @@ export interface PlayerView {
   winners: string[]
 }
 
+/**
+ * Builds the per-player view of a game. The returned objects (players, melds, cards,
+ * history, etc.) are shared references into the `Game`, not copies — callers must treat
+ * this as read-only and serialize it before sending it anywhere (e.g. over the network).
+ */
 export function viewFor(game: Game, playerId: string): PlayerView {
   const round = game.round
   return {

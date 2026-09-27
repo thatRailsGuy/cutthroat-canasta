@@ -20,6 +20,8 @@ export function scorePlayer(player: Player, wentOut: string | null): ScoreBreakd
       (sum, m) => sum + (isNaturalCanasta(m) ? NATURAL_CANASTA_BONUS : MIXED_CANASTA_BONUS),
       0,
     )
+  // melds.length > 0 means the player made an initial meld this round; relies on
+  // dealRound resetting melds at the start of each round.
   const red3Sign = player.melds.length > 0 ? 1 : -1
   const red3Points = red3Sign * player.red3s.length * RED_THREE_BONUS
   const isOut = wentOut === player.id

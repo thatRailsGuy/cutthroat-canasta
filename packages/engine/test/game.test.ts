@@ -20,6 +20,12 @@ describe('lobby', () => {
     expect(result.ok ? null : result.error.code).toBe('NAME_TAKEN')
   })
 
+  it('rejects a duplicate player id', () => {
+    const game = unwrap(addPlayer(createGame(1), 'a', 'Ann'))
+    const result = addPlayer(game, 'a', 'Bea')
+    expect(result.ok ? null : result.error.code).toBe('DUPLICATE_PLAYER')
+  })
+
   it('seats at most 8 players', () => {
     const result = addPlayer(lobby(8), 'p8', 'Player 8')
     expect(result.ok ? null : result.error.code).toBe('TABLE_FULL')

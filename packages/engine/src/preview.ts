@@ -31,5 +31,9 @@ export function legalityPreview(view: PlayerView, action: Action): RuleError | n
       )
       return result.ok ? null : result.error
     }
+    default: {
+      const exhaustive: never = action
+      throw new Error(`Unknown action type: ${(exhaustive as { type?: unknown }).type}`)
+    }
   }
 }

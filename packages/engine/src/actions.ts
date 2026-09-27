@@ -32,6 +32,10 @@ function perform(game: Game, round: Round, player: Player, action: Action): Rule
       return meld(game, round, player, action.play)
     case 'discard':
       return discard(game, round, player, action.cardId)
+    default: {
+      const exhaustive: never = action
+      throw new Error(`Unknown action type: ${(exhaustive as { type?: unknown }).type}`)
+    }
   }
 }
 

@@ -14,6 +14,13 @@ const twoPlayers = (
 ) => [makePlayer(a), makePlayer(b)]
 
 describe('turn order and phases', () => {
+  it('throws on an unknown action type', () => {
+    const game = makeGame({ players: twoPlayers({ id: 'a', hand: cards('4c 5c') }) })
+    expect(() => applyAction(game, 'a', { type: 'bogus' } as unknown as Action)).toThrow(
+      'Unknown action type',
+    )
+  })
+
   it("rejects actions when it isn't your turn", () => {
     const game = makeGame({ players: twoPlayers({ id: 'a', hand: cards('4c 5c') }) })
     expect(errorCode(game, 'b', { type: 'discard', cardId: game.players[1].hand[0].id })).toBe(
@@ -89,6 +96,7 @@ describe('drawStock', () => {
     expect(next.status).toBe('roundOver')
     expect(next.players[0].red3s).toHaveLength(1)
     expect(next.history[0].breakdown.a.red3Points).toBe(100)
+    expect(next.history[0]).toMatchObject({ endedBy: 'stockOut', wentOut: null })
   })
 })
 

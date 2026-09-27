@@ -50,4 +50,11 @@ describe('legalityPreview', () => {
       'CARD_NOT_IN_HAND',
     )
   })
+
+  it('throws on an unknown action type', () => {
+    const view = viewFor(game, 'a')
+    expect(() => legalityPreview(view, { type: 'bogus' } as unknown as Action)).toThrow(
+      'Unknown action type',
+    )
+  })
 })
