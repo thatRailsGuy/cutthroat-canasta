@@ -21,7 +21,7 @@ See [docs/superpowers/specs/2026-09-27-cutthroat-canasta-design.md](docs/superpo
 
 ```text
 packages/engine    TypeScript rules engine (in progress)
-apps/server        Cloudflare Worker + Durable Object per game (planned)
+apps/server        Cloudflare Worker + Durable Object per game (in progress)
 apps/web           React + Vite client: lobby, table, rules page (planned)
 docs/              Design spec and implementation plans
 ```
@@ -37,8 +37,35 @@ npm run typecheck        # Type check all packages
 npm run lint             # Lint with ESLint
 npm run format           # Format with Prettier
 npm run format:check     # Check formatting without modifying files
+npm run dev:server       # Run the game server locally (wrangler dev, http://localhost:8787)
 ```
+
+## Server
+
+`apps/server` is a Cloudflare Worker. Each game is one `GameRoom` Durable Object, holding the game state and every player's WebSocket.
+
+- `POST /api/games` creates a game and returns `201 { "code": "ABC234" }`.
+- `GET /api/games/:code/ws` opens the game's WebSocket.
+
+Messages are JSON. The client sends:
+
+| Message                                            | Meaning                                                       |
+| -------------------------------------------------- | ------------------------------------------------------------- |
+| `{ "type": "join", "name": "Ann", "token"?: "…" }` | Take a seat (lobby only), or reattach with a saved token      |
+| `{ "type": "start" }`                              | Host only: deal the first round                               |
+| `{ "type": "action", "action": { … } }`            | A turn action: `drawStock`, `pickUpPile`, `meld` or `discard` |
+| `{ "type": "nextRound" }`                          | Host only: deal the next round                                |
+
+The server sends:
+
+| Message                                             | Meaning                                                                   |
+| --------------------------------------------------- | ------------------------------------------------------------------------- |
+| `{ "type": "joined", "code", "playerId", "token" }` | Your seat. Save the token to reconnect                                    |
+| `{ "type": "state", "view", "hostId" }`             | Your view of the game after any change. Other hands appear only as counts |
+| `{ "type": "error", "code", "message" }`            | Your last message was rejected. Only you receive it                       |
+
+Message types are exported from `@canasta/server/protocol`.
 
 ## Status
 
-The rules engine (`packages/engine`) is under construction. The server (`apps/server`) and web client (`apps/web`) are planned and not yet started. The engine is checked by a random-game simulation test that plays full games under a seeded bot and asserts invariants (card conservation, hidden-information leakage, and score-breakdown consistency) hold throughout.
+The rules engine (`packages/engine`) is under construction. The server (`apps/server`) is implemented. The web client (`apps/web`) is planned and not yet started. The engine is checked by a random-game simulation test that plays full games under a seeded bot and asserts invariants (card conservation, hidden-information leakage, and score-breakdown consistency) hold throughout.
