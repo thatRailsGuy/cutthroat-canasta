@@ -21,8 +21,8 @@ The plan is being executed with subagent-driven development: a fresh implementer
 | 1. Workspace setup, cards, constants | Done, reviewed | `74775bd`, `23b5c22` |
 | 2. Seeded RNG, deck | Done, reviewed | `966d8f3` |
 | 3. Errors, types, fixtures, meld rules | Done, reviewed | `b197c4b` |
-| 4. Discard pile rules | Fix round 1 in re-review | `0d69035`, `8524ae7` |
-| 5. Turn rules and play validation | Not started | |
+| 4. Discard pile rules | Done, reviewed | `0d69035`, `8524ae7` |
+| 5. Turn rules and play validation | In progress | |
 | 6. Round scoring | Not started | |
 | 7. Game lifecycle and dealing | Not started | |
 | 8. Player actions (`applyAction`) | Not started | |
@@ -71,7 +71,7 @@ Committed on `feat-initial-game` since `6abf692`:
 
 ## Next Steps
 
-1. Finish the Task 4 re-review, then run Tasks 5–10 in order: brief, implementer, review, fix loop.
+1. Run Tasks 5–10 in order: brief, implementer, review, fix loop.
 2. Run a final whole-branch review on the most capable model, including the deferred minor findings in the ledger.
 3. Finish the branch (merge or PR decision with the user).
 4. Write Plan 2 (server) and Plan 3 (web client and rules page).
