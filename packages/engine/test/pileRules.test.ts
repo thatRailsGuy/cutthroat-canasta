@@ -73,6 +73,17 @@ describe('checkPickupShape', () => {
       expect(checkPickupShape(player, pile(top), batch)?.code).toBe('FROZEN_NEEDS_NATURAL_PAIR')
     })
 
+    it('reports the freeze, not the canasta, when adding to a finished canasta while frozen', () => {
+      const top = card('5h')
+      const canasta = meld('5c 5s 5d 5c 5s 5d 5h')
+      const player = makePlayer({ id: 'a', melds: [canasta], hasPickedUpPile: false })
+      const batch: MeldBatch = {
+        newMelds: [],
+        additions: [{ meldId: canasta.id, cardIds: [top.id] }],
+      }
+      expect(checkPickupShape(player, pile(top), batch)?.code).toBe('FROZEN_NEEDS_NATURAL_PAIR')
+    })
+
     it('stays frozen by a wild in the pile even after a pickup', () => {
       const top = card('9h')
       const player = makePlayer({ id: 'a', hand: cards('9s JK'), hasPickedUpPile: true })

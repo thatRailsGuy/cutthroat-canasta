@@ -41,13 +41,14 @@ export function checkPickupShape(
   if (addition) {
     const target = player.melds.find((m) => m.id === addition.meldId)
     if (!target) return ruleError('MELD_NOT_FOUND', "That meld doesn't exist.")
+    if (frozen) return frozenError(top)
     if (isCanasta(target)) {
       return ruleError(
         'CANASTA_CANNOT_TAKE_PILE',
         'A finished canasta cannot take the top discard. Start a new meld with a pair from your hand instead.',
       )
     }
-    return frozen ? frozenError(top) : null
+    return null
   }
 
   const newMeld = batch.newMelds.find((cardIds) => cardIds.includes(top.id))
