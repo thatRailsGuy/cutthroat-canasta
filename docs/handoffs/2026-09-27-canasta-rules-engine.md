@@ -44,6 +44,9 @@ Plan 1 is complete. It was executed with subagent-driven development: a fresh im
 | 4. Room message handler | Done, reviewed | `6a5685d` |
 | 5. GameRoom Durable Object and routes | Done, reviewed | `9f9c970` |
 | 6. Dev workflow, bundle check, docs | Done, reviewed | `f93e58f` |
+| Final review fixes | Done, re-reviewed | `1cc96cf`, `bdab845`, `b51a0a8` |
+
+Plan 2 is complete: 62 server tests plus 187 engine tests pass, and the Worker bundles (795 KiB, 127 KiB gzipped). The final review added presence (`connected` in `state`), normalized player names, and pinned the test pool to exactly `0.22.0`.
 
 ## Key Decisions
 
@@ -90,10 +93,14 @@ Committed on `main` since `6abf692` (via `feat-initial-game`):
 
 ## Next Steps
 
-1. Plan 2 (server) is written: `docs/superpowers/plans/2026-09-27-server.md` (6 tasks, on branch `feat-server`), awaiting user review and execution. It was written against the real engine API in `packages/engine/src/index.ts`. Validate incoming actions with zod. Treat `viewFor` output as read-only (it shares objects with `Game`) and serialize it before sending. Generate the game seed with a secure random source and never send it.
+1. Plan 2 (server) is complete on `feat-server`, and the user's merge decision is pending. Before Plan 3, the user must decide the open questions below. Validate incoming actions with zod. Treat `viewFor` output as read-only (it shares objects with `Game`) and serialize it before sending. Generate the game seed with a secure random source and never send it.
 2. Write Plan 3 (web client and rules page). The rules page renders from the engine constants and uses `RULE_ERROR_SECTIONS` for its "Why?" links. Decide on revealing hands at round end and on an action feed (engine additions).
 3. Optional engine polish (all non-blocking): make the simulation bot prefer going out, since only about 11% of rounds end that way; add a shuffle test for 0- and 1-card inputs; tighten the test fixture `meld()` so it excludes 3s.
 
 ## Open Questions
 
-- None blocking. The user approved the spec, including the [clarified] rules. Any rule change should update spec Section 3 first.
+These came from the Plan 2 final review. They need a user decision before Plan 3, because they change the spec or the protocol:
+- **Seat lifecycle.** A lost token or a second browser leaves a ghost seat that can stall a game for good, and there's no leave, kick or token reissue. Options: a lobby `leave` plus a host `kick`; a host-issued "rejoin link" (token reissue) for a player who isn't connected; or both.
+- **Host absence.** Only the host can send `nextRound` (spec Section 5). If the host disappears, the table is stuck at the round boundary. Options: hand the host role to the longest-seated connected player, or let any seated player start the next round.
+- **Shuffle seed strength.** The engine's mulberry32 has a 32-bit seed, so a player could brute-force it from their own hand and learn every hand and the stock order. Fix: a PRNG with at least 128 bits of state (sfc32 or xoshiro128**) seeded from 4 crypto u32 values, with `Game.seed` changed to a tuple. This is an engine change.
+- Any rule change should update spec Section 3 first.
