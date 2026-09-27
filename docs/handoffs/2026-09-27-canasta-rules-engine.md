@@ -42,8 +42,8 @@ Plan 1 is complete. It was executed with subagent-driven development: a fresh im
 | 2. Game codes and seeds | Done, reviewed | `ecc8e83` |
 | 3. Client/server protocol | Done, reviewed | `b3aa135`, `429b77e` |
 | 4. Room message handler | Done, reviewed | `6a5685d` |
-| 5. GameRoom Durable Object and routes | In progress | |
-| 6. Dev workflow, bundle check, docs | Not started | |
+| 5. GameRoom Durable Object and routes | Done, reviewed | `9f9c970` |
+| 6. Dev workflow, bundle check, docs | In progress | |
 
 ## Key Decisions
 
