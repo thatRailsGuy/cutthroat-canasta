@@ -3,4 +3,8 @@
   "name": "cutthroat-canasta",
   "main": "src/index.ts",
   "compatibility_date": "2026-08-22",
+  "durable_objects": {
+    "bindings": [{ "name": "GAME_ROOM", "class_name": "GameRoom" }],
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["GameRoom"] }],
 }
