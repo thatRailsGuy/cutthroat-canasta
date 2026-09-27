@@ -37,6 +37,20 @@ describe('parseClientMessage accepts', () => {
   it('drops unknown fields', () => {
     expect(parse({ type: 'start', extra: true })).toEqual({ ok: true, message: { type: 'start' } })
   })
+
+  it('strips zero-width characters from join names', () => {
+    expect(parse({ type: 'join', name: 'Bob​' })).toEqual({
+      ok: true,
+      message: { type: 'join', name: 'Bob' },
+    })
+  })
+
+  it('NFKC-normalizes fullwidth join names', () => {
+    expect(parse({ type: 'join', name: 'Ｂｏｂ' })).toEqual({
+      ok: true,
+      message: { type: 'join', name: 'Bob' },
+    })
+  })
 })
 
 describe('parseClientMessage rejects', () => {
@@ -49,6 +63,7 @@ describe('parseClientMessage rejects', () => {
     ['a fractional card id', { type: 'action', action: { type: 'discard', cardId: 1.5 } }],
     ['a string card id', { type: 'action', action: { type: 'discard', cardId: '3' } }],
     ['a meld without a play', { type: 'action', action: { type: 'meld' } }],
+    ['a name of only zero-width and control characters', { type: 'join', name: '​\u0007' }],
   ])('%s', (_, message) => {
     expect(errorCode(parse(message))).toMatchObject({ type: 'error', code: 'BAD_MESSAGE' })
   })

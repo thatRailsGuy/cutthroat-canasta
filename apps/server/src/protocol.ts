@@ -18,10 +18,20 @@ export const actionSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('discard'), cardId }),
 ])
 
+const joinName = z
+  .string()
+  .transform((name) =>
+    name
+      .normalize('NFKC')
+      .replace(/[\p{Cc}\p{Cf}]/gu, '')
+      .trim(),
+  )
+  .pipe(z.string().min(1).max(MAX_NAME_LENGTH))
+
 export const clientMessageSchema = z.discriminatedUnion('type', [
   z.object({
     type: z.literal('join'),
-    name: z.string().trim().min(1).max(MAX_NAME_LENGTH),
+    name: joinName,
     token: z.string().min(1).max(64).optional(),
   }),
   z.object({ type: z.literal('start') }),
