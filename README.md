@@ -41,4 +41,4 @@ npm run format:check     # Check formatting without modifying files
 
 ## Status
 
-The rules engine (`packages/engine`) is under construction. The server (`apps/server`) and web client (`apps/web`) are planned and not yet started.
+The rules engine (`packages/engine`) is under construction. The server (`apps/server`) and web client (`apps/web`) are planned and not yet started. The engine is checked by a random-game simulation test that plays full games under a seeded bot and asserts invariants (card conservation, hidden-information leakage, and score-breakdown consistency) hold throughout.
