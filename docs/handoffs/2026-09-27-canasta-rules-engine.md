@@ -1,6 +1,6 @@
 ---
 created: 2026-09-27T19:40:06Z
-branch: feat-initial-game
+branch: main
 trigger: manual
 restored: false
 topic: canasta-rules-engine
@@ -32,7 +32,7 @@ Plan 1 is complete. It was executed with subagent-driven development: a fresh im
 
 - The README was rewritten early at the user's request (`9a10fe3`, `f619980`).
 - All 187 engine tests pass, including a 30-seed random-game simulation. Over those games the bot made 2,726 melds and 349 pickups, formed 203 canastas, and ended 13 rounds by going out. Typecheck, lint and `format:check` are clean.
-- The branch `feat-initial-game` is not yet merged or pushed.
+- `feat-initial-game` was merged into `main` (fast-forward), pushed to origin, and deleted.
 
 ## Key Decisions
 
@@ -54,7 +54,7 @@ Plan 1 is complete. It was executed with subagent-driven development: a fresh im
 
 ## Modified Files
 
-Committed on `feat-initial-game` since `6abf692`:
+Committed on `main` since `6abf692` (via `feat-initial-game`):
 
 - Root: `package.json`, `package-lock.json`, `tsconfig.base.json`, `eslint.config.js`, `.prettierrc.json`, `.prettierignore`, `.gitignore`, `README.md`
 - `packages/engine/`: `package.json`, `tsconfig.json`
@@ -74,10 +74,9 @@ Committed on `feat-initial-game` since `6abf692`:
 
 ## Next Steps
 
-1. Finish the branch: merge or PR (the user's decision).
-2. Write Plan 2 (server) against the real engine API in `packages/engine/src/index.ts`. Validate incoming actions with zod. Treat `viewFor` output as read-only (it shares objects with `Game`) and serialize it before sending. Generate the game seed with a secure random source and never send it.
-3. Write Plan 3 (web client and rules page). The rules page renders from the engine constants and uses `RULE_ERROR_SECTIONS` for its "Why?" links. Decide on revealing hands at round end and on an action feed (engine additions).
-4. Optional engine polish (all non-blocking): make the simulation bot prefer going out, since only about 11% of rounds end that way; add a shuffle test for 0- and 1-card inputs; tighten the test fixture `meld()` so it excludes 3s.
+1. Write Plan 2 (server) against the real engine API in `packages/engine/src/index.ts`. Validate incoming actions with zod. Treat `viewFor` output as read-only (it shares objects with `Game`) and serialize it before sending. Generate the game seed with a secure random source and never send it.
+2. Write Plan 3 (web client and rules page). The rules page renders from the engine constants and uses `RULE_ERROR_SECTIONS` for its "Why?" links. Decide on revealing hands at round end and on an action feed (engine additions).
+3. Optional engine polish (all non-blocking): make the simulation bot prefer going out, since only about 11% of rounds end that way; add a shuffle test for 0- and 1-card inputs; tighten the test fixture `meld()` so it excludes 3s.
 
 ## Open Questions
 
