@@ -97,3 +97,18 @@ export function allCardIds(game: Game): number[] {
 export function countCards(game: Game): number {
   return allCardIds(game).length
 }
+
+/** Every card id reachable anywhere inside a value (anything shaped like a Card). */
+export function visibleCardIds(value: unknown): number[] {
+  const found: number[] = []
+  const walk = (v: unknown): void => {
+    if (Array.isArray(v)) v.forEach(walk)
+    else if (v && typeof v === 'object') {
+      const record = v as Record<string, unknown>
+      if (typeof record.id === 'number' && typeof record.rank === 'string') found.push(record.id)
+      Object.values(record).forEach(walk)
+    }
+  }
+  walk(value)
+  return found
+}
