@@ -27,10 +27,10 @@ The plan is being executed with subagent-driven development: a fresh implementer
 | 7. Game lifecycle and dealing | Done, reviewed | `ee47c30` |
 | 8. Player actions (`applyAction`) | Done, reviewed | `a76fd1b` |
 | 9. Views, legality preview, exports | Done, reviewed | `d78d8fd` |
-| 10. Random-game simulation and README | In progress | |
+| 10. Random-game simulation and README | Done, reviewed | `6cb38f9` |
 
 - The README was rewritten early at the user's request (`9a10fe3`, `f619980`).
-- The engine tests pass (154 as of Task 9). Typecheck, lint and `format:check` are clean.
+- The engine tests pass (184 including the 30-seed simulation). Typecheck, lint and `format:check` are clean.
 - After Plan 1: write Plan 2 (server) and Plan 3 (web client and rules page) against the engine's real API.
 
 ## Key Decisions
@@ -55,7 +55,7 @@ Committed on `feat-initial-game` since `6abf692`:
 - Root: `package.json`, `package-lock.json`, `tsconfig.base.json`, `eslint.config.js`, `.prettierrc.json`, `.prettierignore`, `.gitignore`, `README.md`
 - `packages/engine/`: `package.json`, `tsconfig.json`
 - `packages/engine/src/`: `cards.ts`, `constants.ts`, `rng.ts`, `deck.ts`, `errors.ts`, `types.ts`, `meldRules.ts`, `pileRules.ts`, `turnRules.ts`, `play.ts`, `scoring.ts`, `clone.ts`, `round.ts`, `game.ts`, `actions.ts`, `view.ts`, `preview.ts`, `index.ts`
-- `packages/engine/test/`: `fixtures.ts`, `cards.test.ts`, `constants.test.ts`, `rng.test.ts`, `deck.test.ts`, `meldRules.test.ts`, `pileRules.test.ts`, `turnRules.test.ts`, `play.test.ts`, `scoring.test.ts`, `game.test.ts`, `actions.test.ts`, `view.test.ts`, `preview.test.ts`
+- `packages/engine/test/`: `fixtures.ts`, `cards.test.ts`, `constants.test.ts`, `rng.test.ts`, `deck.test.ts`, `meldRules.test.ts`, `pileRules.test.ts`, `turnRules.test.ts`, `play.test.ts`, `scoring.test.ts`, `game.test.ts`, `actions.test.ts`, `view.test.ts`, `preview.test.ts`, `simulation.test.ts`
 
 ## Failed Approaches
 
@@ -71,7 +71,7 @@ Committed on `feat-initial-game` since `6abf692`:
 
 ## Next Steps
 
-1. Run Tasks 5–10 in order: brief, implementer, review, fix loop.
+1. All 10 tasks done. Final whole-branch review in progress.
 2. Run a final whole-branch review on the most capable model, including the deferred minor findings in the ledger.
 3. Finish the branch (merge or PR decision with the user).
 4. Write Plan 2 (server) and Plan 3 (web client and rules page).
