@@ -26,11 +26,11 @@ The plan is being executed with subagent-driven development: a fresh implementer
 | 6. Round scoring | Done, reviewed | `026d838` |
 | 7. Game lifecycle and dealing | Done, reviewed | `ee47c30` |
 | 8. Player actions (`applyAction`) | Done, reviewed | `a76fd1b` |
-| 9. Views, legality preview, exports | In progress | |
-| 10. Random-game simulation and README | Not started | |
+| 9. Views, legality preview, exports | Done, reviewed | `d78d8fd` |
+| 10. Random-game simulation and README | In progress | |
 
 - The README was rewritten early at the user's request (`9a10fe3`, `f619980`).
-- The engine tests pass (144 as of Task 8). Typecheck, lint and `format:check` are clean.
+- The engine tests pass (154 as of Task 9). Typecheck, lint and `format:check` are clean.
 - After Plan 1: write Plan 2 (server) and Plan 3 (web client and rules page) against the engine's real API.
 
 ## Key Decisions
@@ -54,8 +54,8 @@ Committed on `feat-initial-game` since `6abf692`:
 
 - Root: `package.json`, `package-lock.json`, `tsconfig.base.json`, `eslint.config.js`, `.prettierrc.json`, `.prettierignore`, `.gitignore`, `README.md`
 - `packages/engine/`: `package.json`, `tsconfig.json`
-- `packages/engine/src/`: `cards.ts`, `constants.ts`, `rng.ts`, `deck.ts`, `errors.ts`, `types.ts`, `meldRules.ts`, `pileRules.ts`, `turnRules.ts`, `play.ts`, `scoring.ts`, `clone.ts`, `round.ts`, `game.ts`, `actions.ts`, and `index.ts` (a placeholder that Task 9 replaces)
-- `packages/engine/test/`: `fixtures.ts`, `cards.test.ts`, `constants.test.ts`, `rng.test.ts`, `deck.test.ts`, `meldRules.test.ts`, `pileRules.test.ts`, `turnRules.test.ts`, `play.test.ts`, `scoring.test.ts`, `game.test.ts`, `actions.test.ts`
+- `packages/engine/src/`: `cards.ts`, `constants.ts`, `rng.ts`, `deck.ts`, `errors.ts`, `types.ts`, `meldRules.ts`, `pileRules.ts`, `turnRules.ts`, `play.ts`, `scoring.ts`, `clone.ts`, `round.ts`, `game.ts`, `actions.ts`, `view.ts`, `preview.ts`, `index.ts`
+- `packages/engine/test/`: `fixtures.ts`, `cards.test.ts`, `constants.test.ts`, `rng.test.ts`, `deck.test.ts`, `meldRules.test.ts`, `pileRules.test.ts`, `turnRules.test.ts`, `play.test.ts`, `scoring.test.ts`, `game.test.ts`, `actions.test.ts`, `view.test.ts`, `preview.test.ts`
 
 ## Failed Approaches
 
