@@ -72,7 +72,7 @@ This section combines the V3 sheet with the decisions from the design discussion
 2. **Play:** make any number of meld plays (3.4).
 3. **Discard:** discard one card to end the turn. Discarding your last card counts as going out (3.7).
 
-**[clarified] Empty stock:** if the stock is empty when a player must draw, that player may pick up the discard pile if it is legal for them. If it is not legal, the round ends immediately. Nobody gets a going-out bonus, and everyone scores normally (3.8).
+**[clarified] Empty stock:** if the stock is empty when a player must draw, that player may pick up the discard pile if it is legal for them. Otherwise they choose "draw", which ends the round immediately. Nobody gets a going-out bonus, and everyone scores normally (3.8). The round also ends this way if a draw finds only Red 3s left, so there's no replacement card.
 
 ### 3.4 Melds
 
@@ -113,7 +113,7 @@ This section combines the V3 sheet with the decisions from the design discussion
 
 - To go out, a player must have at least 1 canasta after their play. They then either meld every card left in their hand or discard their final card.
 - **First-turn restriction:** a player cannot go out on their own first turn of a round.
-- **[clarified]** A play that would empty your hand when you are not allowed to go out is rejected. You must always keep a card to discard.
+- **[clarified]** When you are not allowed to go out, a play must leave you at least 2 cards: one to discard and one to keep. Otherwise you would be stuck unable to discard.
 - Going out ends the round immediately.
 
 ### 3.8 Round scoring
@@ -189,7 +189,7 @@ Lobby and round actions (`startGame`, `startNextRound`) are separate engine func
 ```ts
 applyAction(game, playerId, action): { ok: true; game: Game } | { ok: false; error: RuleError }
 viewFor(game, playerId): PlayerView   // other hands shown as counts, the stock as a count, seed and log removed
-legalityPreview(view, playerId, action): RuleError | null  // client-side check against a PlayerView
+legalityPreview(view, action): RuleError | null  // client-side check against a PlayerView (view.you is the acting player)
 ```
 
 `RuleError = { code: RuleErrorCode; message: string }`. Every rejected action returns a specific code, for example `FROZEN_NEEDS_NATURAL_PAIR`, `WILDS_EXCEED_NATURALS`, `INITIAL_MELD_TOO_LOW`, `CANNOT_GO_OUT_FIRST_TURN`, or `CANASTA_CANNOT_TAKE_PILE`. The engine never throws for rule violations. It throws only for programmer errors, such as an unknown card id.
