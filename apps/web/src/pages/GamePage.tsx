@@ -2,7 +2,10 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router'
 import { gameExists, normalizeCode } from '../api'
 import type { ConnectionStatus } from '../connection'
+import { RulesDrawer } from '../components/RulesDrawer'
 import { Toasts } from '../components/Toasts'
+import { RulesDrawerContext } from '../rules/drawer'
+import type { PageSection } from '../rules/sections'
 import { loadName, loadToken, tokenFromHash } from '../storage'
 import { useGame } from '../useGame'
 import { Lobby } from './Lobby'
@@ -96,6 +99,8 @@ function Game({ code }: { code: string }) {
 function Session({ code, linkToken, autoJoinName, joinsByItself }: SessionProps) {
   const navigate = useNavigate()
   const { state, join, send, dismissToast } = useGame(code, { linkToken, autoJoinName })
+  // The drawer lives here, inside the session, so opening it never unmounts the connection.
+  const [drawer, setDrawer] = useState<PageSection | null>(null)
 
   useEffect(() => {
     if (!state.removed) return
@@ -134,11 +139,15 @@ function Session({ code, linkToken, autoJoinName, joinsByItself }: SessionProps)
   }
 
   return (
-    <>
+    <RulesDrawerContext.Provider value={setDrawer}>
       <ConnectionBanner connection={state.connection} failures={state.failures} code={code} />
       {body}
+      <button type="button" className={styles.rulesButton} onClick={() => setDrawer('overview')}>
+        Rules
+      </button>
       <Toasts toasts={state.toasts} onDismiss={dismissToast} />
-    </>
+      <RulesDrawer section={drawer} onClose={() => setDrawer(null)} />
+    </RulesDrawerContext.Provider>
   )
 }
 

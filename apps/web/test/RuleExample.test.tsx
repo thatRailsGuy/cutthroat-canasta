@@ -17,6 +17,15 @@ describe('RuleExample', () => {
     },
   )
 
+  it('leaves out the freeze note when the top card itself blocks the pile', () => {
+    const blocked = RULES_EXAMPLES.find((e) => e.id === 'pickup-black-3')!
+    const { unmount } = render(<RuleExample example={blocked} />)
+    expect(screen.queryByText(/frozen for you/i)).toBeNull()
+    unmount()
+    render(<RuleExample example={RULES_EXAMPLES.find((e) => e.id === 'pickup-unfrozen-wild')!} />)
+    expect(screen.getByText('Not frozen for you.')).toBeInTheDocument()
+  })
+
   it('shows every player’s breakdown for a scoring example', () => {
     const example = RULES_EXAMPLES.find((e) => e.id === 'scoring-round')!
     render(<RuleExample example={example} />)

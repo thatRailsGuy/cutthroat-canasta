@@ -1,4 +1,4 @@
-import type { Card as CardValue } from '@canasta/engine'
+import { isBlack3, isWild, type Card as CardValue } from '@canasta/engine'
 import {
   buildMeld,
   buildPickup,
@@ -55,6 +55,8 @@ function MeldBody({ example }: { example: MeldExample }) {
 
 function PickupBody({ example }: { example: PickupExample }) {
   const { top, player } = buildPickup(example)
+  // A Black 3 or a wild on top blocks the pile for everyone, so the freeze doesn't matter.
+  const blocked = isBlack3(top) || isWild(top)
   const frozen = !example.hasPickedUpPile || example.wildInPile
   const reason = !example.hasPickedUpPile
     ? 'you have not picked it up yet this round'
@@ -72,7 +74,11 @@ function PickupBody({ example }: { example: PickupExample }) {
           cards={m.cards}
         />
       ))}
-      <p className={styles.note}>{frozen ? `Frozen for you: ${reason}.` : 'Not frozen for you.'}</p>
+      {!blocked && (
+        <p className={styles.note}>
+          {frozen ? `Frozen for you: ${reason}.` : 'Not frozen for you.'}
+        </p>
+      )}
     </>
   )
 }
