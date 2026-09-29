@@ -12,8 +12,12 @@ const PING_INTERVAL_MS: typeof HEARTBEAT_INTERVAL_MS = 20_000
 
 export const RECONNECT_BASE_MS = 500
 export const RECONNECT_MAX_MS = 15_000
-/** Nothing heard for this long (two missed pongs) means the socket is half-open. */
-export const SILENCE_LIMIT_MS = PING_INTERVAL_MS * 2 + 5_000
+/**
+ * A ping with no reply (a pong or any other message) for this long means the socket is
+ * half-open. Liveness is measured from the outstanding ping, not from the last message, because
+ * background tabs may run the ping interval only about once a minute.
+ */
+export const PONG_TIMEOUT_MS = 10_000
 
 const OPEN = 1
 
@@ -46,18 +50,21 @@ function parse(data: unknown): ServerMessage | null {
 }
 
 /**
- * One game's WebSocket. It reconnects with backoff whenever the socket closes, and pings on an
- * interval. If nothing arrives for SILENCE_LIMIT_MS, it treats the socket as half-open, closes
- * it and reconnects, so the player rejoins with their saved token.
+ * One game's WebSocket. It reconnects with backoff whenever the socket closes, and pings every
+ * PING_INTERVAL_MS while no ping is waiting for an answer. If a ping goes unanswered for
+ * PONG_TIMEOUT_MS, it treats the socket as half-open, closes it and reconnects, so the player
+ * rejoins with their saved token.
  */
 export class GameConnection {
   private readonly options: ConnectionOptions
   private socket: WebSocket | null = null
   private failures = 0
   private stopped = true
-  private lastHeard = 0
+  /** When the ping that is waiting for an answer was sent, or null if none is waiting. */
+  private pingSentAt: number | null = null
   private reconnectTimer: ReturnType<typeof setTimeout> | undefined
   private pingTimer: ReturnType<typeof setInterval> | undefined
+  private pongTimer: ReturnType<typeof setTimeout> | undefined
 
   constructor(options: ConnectionOptions) {
     this.options = options
@@ -86,15 +93,39 @@ export class GameConnection {
     return true
   }
 
-  /** Drops a silent socket, or else pings. Runs on the interval and when the page is shown. */
+  /**
+   * Pings at once and drops the socket if no answer arrives within PONG_TIMEOUT_MS. Run it when
+   * the page is shown, so a socket that died while the tab was hidden is found quickly.
+   */
   check(): void {
-    if (!this.socket || !this.isOpen()) return
-    if (Date.now() - this.lastHeard > SILENCE_LIMIT_MS) {
-      this.discardSocket()
-      this.scheduleReconnect()
-      return
-    }
-    this.socket.send(PING)
+    if (!this.isOpen()) return
+    this.ping()
+  }
+
+  /** The interval's tick: ping, unless a ping is still waiting for its answer. */
+  private tick(): void {
+    if (!this.isOpen()) return
+    if (this.pingSentAt === null) this.ping()
+    // A backstop in case the pong timer was throttled more than the interval.
+    else if (Date.now() - this.pingSentAt > PONG_TIMEOUT_MS) this.dropDeadSocket()
+  }
+
+  private ping(): void {
+    this.pingSentAt = Date.now()
+    this.socket?.send(PING)
+    clearTimeout(this.pongTimer)
+    this.pongTimer = setTimeout(() => this.dropDeadSocket(), PONG_TIMEOUT_MS)
+  }
+
+  /** Forgets the outstanding ping: any message answers it, and a discarded socket needs none. */
+  private clearPing(): void {
+    this.pingSentAt = null
+    clearTimeout(this.pongTimer)
+  }
+
+  private dropDeadSocket(): void {
+    this.discardSocket()
+    this.scheduleReconnect()
   }
 
   private open(): void {
@@ -102,13 +133,12 @@ export class GameConnection {
     this.socket = socket
     socket.onopen = () => {
       this.failures = 0
-      this.lastHeard = Date.now()
-      this.pingTimer = setInterval(() => this.check(), PING_INTERVAL_MS)
+      this.pingTimer = setInterval(() => this.tick(), PING_INTERVAL_MS)
       this.options.onStatus('open', 0)
       this.options.onOpen()
     }
     socket.onmessage = (event: MessageEvent) => {
-      this.lastHeard = Date.now()
+      this.clearPing()
       const message = parse(event.data)
       if (message && message.type !== 'pong') this.options.onMessage(message)
     }
@@ -131,6 +161,7 @@ export class GameConnection {
   /** Detaches and closes the current socket without triggering a reconnect. */
   private discardSocket(): void {
     clearInterval(this.pingTimer)
+    this.clearPing()
     const socket = this.socket
     this.socket = null
     if (!socket) return

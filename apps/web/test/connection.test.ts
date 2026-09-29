@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   GameConnection,
+  PONG_TIMEOUT_MS,
   RECONNECT_MAX_MS,
-  SILENCE_LIMIT_MS,
   reconnectDelay,
   type ConnectionOptions,
 } from '../src/connection'
@@ -129,14 +129,70 @@ describe('GameConnection', () => {
     expect(latest().sent).toHaveLength(2)
   })
 
-  it('closes a silent, half-open socket and reconnects', () => {
+  it('closes a silent, half-open socket once its ping times out, and reconnects', () => {
     const { sockets, latest } = setup()
     latest().accept()
     const first = latest()
-    vi.advanceTimersByTime(SILENCE_LIMIT_MS + 20_000)
+    vi.advanceTimersByTime(20_000)
+    expect(first.sent).toEqual(['{"type":"ping"}'])
+    vi.advanceTimersByTime(PONG_TIMEOUT_MS - 1)
+    expect(first.closed).toBe(false)
+    vi.advanceTimersByTime(1)
     expect(first.closed).toBe(true)
+    vi.advanceTimersByTime(500)
+    expect(sockets).toHaveLength(2)
+  })
+
+  it('drops the socket when a ping goes unanswered after earlier ones were answered', () => {
+    const { sockets, latest } = setup()
+    latest().accept()
+    vi.advanceTimersByTime(20_000)
+    // Any message answers a ping, not only a pong.
+    latest().receive({ type: 'error', code: 'NOT_HOST', message: 'No.' })
+    vi.advanceTimersByTime(20_000)
+    latest().receive({ type: 'pong' })
+    vi.advanceTimersByTime(20_000 + PONG_TIMEOUT_MS)
+    expect(sockets[0].sent).toHaveLength(3)
+    expect(sockets[0].closed).toBe(true)
     vi.advanceTimersByTime(RECONNECT_MAX_MS)
-    expect(sockets.length).toBeGreaterThan(1)
+    expect(sockets).toHaveLength(2)
+  })
+
+  it('keeps a healthy socket in a background tab whose timers run once a minute', () => {
+    const { options, sockets, latest } = setup()
+    latest().accept()
+    for (let minute = 0; minute < 5; minute++) {
+      // A throttled tab: the clock moves 60 s, but the 20 s interval fires only once.
+      vi.setSystemTime(Date.now() + 40_000)
+      vi.advanceTimersByTime(20_000)
+      latest().receive({ type: 'pong' })
+    }
+    expect(latest().sent).toHaveLength(5)
+    expect(latest().closed).toBe(false)
+    expect(sockets).toHaveLength(1)
+    expect(options.onStatus).not.toHaveBeenCalledWith('reconnecting', expect.anything())
+  })
+
+  it('pings at once when the page is shown, and drops a dead socket within the timeout', () => {
+    const { connection, sockets, latest } = setup()
+    latest().accept()
+    vi.advanceTimersByTime(5_000)
+    connection.check()
+    expect(latest().sent).toEqual(['{"type":"ping"}'])
+    vi.advanceTimersByTime(PONG_TIMEOUT_MS - 1)
+    expect(sockets[0].closed).toBe(false)
+    vi.advanceTimersByTime(1)
+    expect(sockets[0].closed).toBe(true)
+  })
+
+  it('keeps the socket when the ping sent on showing the page is answered', () => {
+    const { connection, sockets, latest } = setup()
+    latest().accept()
+    connection.check()
+    latest().receive({ type: 'pong' })
+    vi.advanceTimersByTime(PONG_TIMEOUT_MS + 1)
+    expect(sockets[0].closed).toBe(false)
+    expect(sockets).toHaveLength(1)
   })
 
   it('stops for good when asked', () => {
