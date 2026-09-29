@@ -1,4 +1,5 @@
 import { RULE_ERROR_SECTIONS, type Action, type PlayerView } from '@canasta/engine'
+import { rankPlural } from '../cards'
 import { stagingPreview, type Staging, type StagingAction } from '../staging'
 import { Card } from './Card'
 import { WhyLink } from './WhyLink'
@@ -18,7 +19,7 @@ export function StagingArea({ view, staging, dispatch, onAction }: StagingAreaPr
   const cardById = new Map([...(you?.hand ?? []), ...(top ? [top] : [])].map((c) => [c.id, c]))
   const meldName = (meldId: string) => {
     const meld = you?.melds.find((m) => m.id === meldId)
-    return meld ? `Add to your ${meld.rank}s` : 'Add to meld'
+    return meld ? `Add to your ${rankPlural(meld.rank)}` : 'Add to meld'
   }
   const ready = (kind: 'meld' | 'pickUpPile' | 'discard') =>
     preview.kind === kind && preview.error === null

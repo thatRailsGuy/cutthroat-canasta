@@ -40,7 +40,7 @@ export function CenterPile({ view, yourTurn, selected, onToggleTop, onDraw }: Ce
           <span className={styles.empty}>Empty pile</span>
         )}
         <span>{round.discardCount} in pile</span>
-        {frozen && frozenReason && (
+        {top && frozen && frozenReason && (
           <span className={styles.frozen} title={`Frozen because ${frozenReason}`}>
             Frozen for you: {frozenReason}
           </span>

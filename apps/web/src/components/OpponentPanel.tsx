@@ -1,4 +1,5 @@
 import type { PublicPlayer } from '@canasta/engine'
+import { useRef, useState } from 'react'
 import { MeldList } from './MeldList'
 import styles from './Table.module.css'
 
@@ -22,7 +23,9 @@ export function OpponentPanel(props: OpponentPanelProps) {
       <header>
         <span
           className={isConnected ? styles.online : styles.offline}
-          title={isConnected ? 'Connected' : 'Not connected'}
+          role="img"
+          aria-label={isConnected ? 'Online' : 'Offline'}
+          title={isConnected ? 'Online' : 'Offline'}
         />
         <strong>{player.name}</strong>
         {isHost && <span className={styles.badge}>Host</span>}
@@ -36,6 +39,8 @@ export function OpponentPanel(props: OpponentPanelProps) {
 }
 
 export function RejoinControl({ onReissue, link }: { onReissue: () => void; link?: string }) {
+  const inputRef = useRef<HTMLInputElement>(null)
+  const [copyResult, setCopyResult] = useState<'copied' | 'manual' | null>(null)
   if (!link) {
     return (
       <button type="button" onClick={onReissue}>
@@ -43,17 +48,36 @@ export function RejoinControl({ onReissue, link }: { onReissue: () => void; link
       </button>
     )
   }
+  /**
+   * The Clipboard API exists only in secure contexts, so it is missing over plain http on a LAN.
+   * Then the link is selected for the host to copy by hand.
+   */
+  const copy = () => {
+    const manual = () => {
+      setCopyResult('manual')
+      inputRef.current?.select()
+    }
+    if (!navigator.clipboard) return manual()
+    navigator.clipboard
+      .writeText(link)
+      .then(() => setCopyResult('copied'))
+      .catch(manual)
+  }
   return (
     <div className={styles.rejoin}>
       <input
+        ref={inputRef}
         readOnly
         value={link}
         aria-label="Rejoin link"
         onFocus={(e) => e.currentTarget.select()}
       />
-      <button type="button" onClick={() => void navigator.clipboard?.writeText(link)}>
+      <button type="button" onClick={copy}>
         Copy
       </button>
+      <span role="status">
+        {copyResult === 'copied' ? 'Copied' : copyResult === 'manual' ? 'Select and copy' : ''}
+      </span>
     </div>
   )
 }

@@ -43,6 +43,16 @@ const RANK_ORDER: Rank[] = [
 ]
 const SUIT_ORDER: Suit[] = ['spades', 'hearts', 'clubs', 'diamonds']
 
+/** Position in hand order (wilds, Ace down to 4, then 3s), for sorting by rank. */
+export function rankIndex(rank: Rank): number {
+  return RANK_ORDER.indexOf(rank)
+}
+
+/** A rank in the plural, for meld labels: "Aces", "Kings", "7s". */
+export function rankPlural(rank: Rank): string {
+  return `${RANK_NAMES[rank]}s`
+}
+
 export function isRed(card: Card): boolean {
   return card.suit === 'hearts' || card.suit === 'diamonds'
 }
@@ -60,9 +70,6 @@ export function cardName(card: Card): string {
 export function sortHand(cards: readonly Card[]): Card[] {
   const suitIndex = (c: Card) => (c.suit ? SUIT_ORDER.indexOf(c.suit) : -1)
   return [...cards].sort(
-    (a, b) =>
-      RANK_ORDER.indexOf(a.rank) - RANK_ORDER.indexOf(b.rank) ||
-      suitIndex(a) - suitIndex(b) ||
-      a.id - b.id,
+    (a, b) => rankIndex(a.rank) - rankIndex(b.rank) || suitIndex(a) - suitIndex(b) || a.id - b.id,
   )
 }

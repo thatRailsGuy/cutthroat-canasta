@@ -104,7 +104,7 @@ describe('StagingArea', () => {
     })
     const { click, onAction } = setup(view)
     await click('King of clubs')
-    await click(/Add selected cards to your Ks/)
+    await click(/Add selected cards to your Kings/)
     await click('7 of hearts')
     await click('7 of spades')
     await click('7 of diamonds')

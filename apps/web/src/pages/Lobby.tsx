@@ -24,7 +24,11 @@ export function Lobby({ code, view, playerId, hostId, connected, send }: LobbyPr
       <ul className={styles.seats}>
         {view.players.map((p) => (
           <li key={p.id}>
-            <span className={connected.includes(p.id) ? styles.online : styles.offline} />
+            <span
+              className={connected.includes(p.id) ? styles.online : styles.offline}
+              role="img"
+              aria-label={connected.includes(p.id) ? 'Online' : 'Offline'}
+            />
             {p.name}
             {p.id === hostId && ' (host)'}
             {p.id === playerId && ' (you)'}

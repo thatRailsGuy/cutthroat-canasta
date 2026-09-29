@@ -19,8 +19,8 @@ export function Card({ card, selected = false, size = 'normal', onClick }: CardP
   ].join(' ')
   const face = card.suit ? (
     <>
-      <span className={styles.rank}>{card.rank}</span>
-      <span className={styles.suit}>{SUIT_SYMBOLS[card.suit]}</span>
+      <span>{card.rank}</span>
+      <span>{SUIT_SYMBOLS[card.suit]}</span>
     </>
   ) : (
     <span className={styles.joker}>★</span>

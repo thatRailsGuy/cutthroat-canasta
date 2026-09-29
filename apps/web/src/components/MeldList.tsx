@@ -1,4 +1,5 @@
 import { isCanasta, isNaturalCanasta, type Card as CardValue, type Meld } from '@canasta/engine'
+import { rankIndex, rankPlural } from '../cards'
 import { CardRow } from './Card'
 import styles from './Table.module.css'
 
@@ -12,7 +13,7 @@ export interface MeldListProps {
 /** Melds grouped by rank, with finished canastas marked natural or mixed. */
 export function MeldList({ melds, red3s, onPick }: MeldListProps) {
   const ordered = [...melds].sort(
-    (a, b) => a.rank.localeCompare(b.rank) || a.id.localeCompare(b.id),
+    (a, b) => rankIndex(a.rank) - rankIndex(b.rank) || a.id.localeCompare(b.id),
   )
   return (
     <div className={styles.melds}>
@@ -25,7 +26,7 @@ export function MeldList({ melds, red3s, onPick }: MeldListProps) {
         const body = (
           <>
             <span className={styles.meldLabel}>
-              {meld.rank}s · {label}
+              {rankPlural(meld.rank)} · {label}
             </span>
             <CardRow cards={meld.cards} />
           </>
@@ -35,7 +36,7 @@ export function MeldList({ melds, red3s, onPick }: MeldListProps) {
             key={meld.id}
             type="button"
             className={styles.meld}
-            aria-label={`Add selected cards to your ${meld.rank}s (${label})`}
+            aria-label={`Add selected cards to your ${rankPlural(meld.rank)} (${label})`}
             onClick={() => onPick(meld.id)}
           >
             {body}
