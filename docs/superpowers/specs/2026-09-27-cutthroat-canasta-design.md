@@ -252,7 +252,7 @@ Rule constants (card values, initial meld minimums, the deck and hand-size funct
   - Server to client: `joined {playerId, token}`, `state {view, hostId, connected}` (sent to each socket with its own view), `error {code, message}` (sent only to the socket that caused it), `removed {reason}` (sent to a socket whose seat was given up or kicked), `reissued {playerId, token}` (sent only to the host), `seatReissued {playerId}` (sent to every joined socket).
 - **Identity.**
   - There are no accounts. `join` without a token takes a new seat, which is only possible in the lobby, and returns a random token. The client saves the token in localStorage keyed by game code.
-  - `join` with a known token reattaches that seat. Unknown tokens are rejected once the game has started.
+  - `join` with a known token reattaches that seat. An unknown token (from a seat that was left, kicked or reissued) is rejected with `UNKNOWN_TOKEN` at any game status, never turned into a new seat, so a stale token can't leave a ghost seat in the lobby. The client then forgets the token and asks for a name.
   - `leave` gives up your seat, and `kick {playerId}` lets the host remove another player. Both work only in the lobby. The removed seat's tokens stop working, and its sockets get `removed` and become unjoined.
   - `reissue {playerId}` lets the host get a new token for a player who is not connected, at any game status. It replaces that player's old tokens. The host shares it as a rejoin link, so a player who lost their token or changed devices gets their seat back. The whole table is told about every reissue, so the host can't quietly take over a seat and read its hand.
 - **Disconnects.** The game waits. v1 has no turn timers.

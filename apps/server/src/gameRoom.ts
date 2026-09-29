@@ -62,7 +62,11 @@ export class GameRoom extends DurableObject<Env> {
     ws.serializeAttachment({ playerId, seenAt: Date.now() } satisfies Attachment)
     const droppedPlayer = this.dropStaleSockets()
     const parsed = parseClientMessage(raw)
-    if (!parsed.ok) return send(ws, parsed.error)
+    if (!parsed.ok) {
+      send(ws, parsed.error)
+      if (droppedPlayer) this.broadcast()
+      return
+    }
 
     const outcome = handleMessage(this.room, playerId, parsed.message, ids, this.connected())
     if (outcome.changed) {

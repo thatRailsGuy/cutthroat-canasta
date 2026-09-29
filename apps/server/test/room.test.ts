@@ -81,7 +81,7 @@ describe('join', () => {
     ])
   })
 
-  it('treats an unknown token as a new player in the lobby', () => {
+  it('rejects an unknown token in the lobby instead of adding a second seat', () => {
     const { state, ids } = roomWith(['Ann'])
     const outcome = handleMessage(
       state,
@@ -90,8 +90,21 @@ describe('join', () => {
       ids,
       [],
     )
-    expect(outcome.bindPlayerId).toBe('p2')
-    expect(outcome.reply[0]).toMatchObject({ type: 'joined', playerId: 'p2', token: 't2' })
+    expect(errorOf(outcome)).toMatchObject({ type: 'error', code: 'UNKNOWN_TOKEN' })
+    expect(outcome.bindPlayerId).toBeUndefined()
+    expect(outcome.changed).toBe(false)
+  })
+
+  it('rejects an unknown token once the game has started', () => {
+    const { state, ids } = started()
+    const outcome = handleMessage(
+      state,
+      null,
+      { type: 'join', name: 'Cat', token: 'nope' },
+      ids,
+      [],
+    )
+    expect(errorOf(outcome)).toMatchObject({ type: 'error', code: 'UNKNOWN_TOKEN' })
   })
 
   it.each(['__proto__', 'constructor', 'toString'])(
@@ -99,8 +112,8 @@ describe('join', () => {
     (token) => {
       const { state, ids } = roomWith(['Ann'])
       const outcome = handleMessage(state, null, { type: 'join', name: 'Bob', token }, ids, [])
-      expect(outcome.bindPlayerId).toBe('p2')
-      expect(outcome.state.game.players).toHaveLength(2)
+      expect(errorOf(outcome)).toMatchObject({ type: 'error', code: 'UNKNOWN_TOKEN' })
+      expect(outcome.state.game.players).toHaveLength(1)
     },
   )
 

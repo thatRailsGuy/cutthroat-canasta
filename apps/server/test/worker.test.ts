@@ -270,7 +270,7 @@ describe('seats', () => {
     expect(rejoined.playerId).toBeTruthy()
   })
 
-  it('lets the host kick a player, whose old token then takes a fresh seat', async () => {
+  it('lets the host kick a player, whose old token is then refused', async () => {
     const { code, ann, bob, bobJoined } = await lobbyGame()
     ann.send({ type: 'kick', playerId: bobJoined.playerId })
     expect(await bob.next()).toEqual({ type: 'removed', reason: 'kicked' })
@@ -280,8 +280,9 @@ describe('seats', () => {
     expect(await bob.next()).toMatchObject({ type: 'error', code: 'NOT_JOINED' })
 
     const again = await connect(code)
-    const rejoined = await join(again, 'Bob', bobJoined.token)
-    expect(rejoined.playerId).not.toBe(bobJoined.playerId)
+    again.send({ type: 'join', name: 'Bob', token: bobJoined.token })
+    expect(await again.next()).toMatchObject({ type: 'error', code: 'UNKNOWN_TOKEN' })
+    expect((await join(again, 'Bob')).playerId).not.toBe(bobJoined.playerId)
   })
 
   it('reissues a disconnected seat, revoking the old token and telling the table', async () => {
@@ -309,7 +310,7 @@ describe('seats', () => {
 
     const stale = await connect(code)
     stale.send({ type: 'join', name: 'Bob', token: bobJoined.token })
-    expect(await stale.next()).toMatchObject({ type: 'error', code: 'NOT_IN_LOBBY' })
+    expect(await stale.next()).toMatchObject({ type: 'error', code: 'UNKNOWN_TOKEN' })
 
     const fresh = await connect(code)
     const { token } = reissued as Extract<ServerMessage, { type: 'reissued' }>
@@ -366,5 +367,14 @@ describe('heartbeat', () => {
     expect(await ann.next()).toMatchObject({ type: 'error', code: 'NOT_YOUR_TURN' })
     expect((await nextState(ann)).connected).toEqual([annJoined.playerId])
     expect(await bob.closed()).toBe(STALE_CLOSE_CODE)
+  })
+
+  it('tells the table a silent player is gone, even after a malformed message', async () => {
+    const { code, ann, annJoined, bobJoined } = await startedGame({ halfOpenBob: true })
+    await silence(code, bobJoined.playerId)
+
+    ann.sendRaw('not json')
+    expect(await ann.next()).toMatchObject({ type: 'error', code: 'BAD_MESSAGE' })
+    expect((await nextState(ann)).connected).toEqual([annJoined.playerId])
   })
 })

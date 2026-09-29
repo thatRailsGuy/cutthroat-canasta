@@ -49,15 +49,15 @@ npm run dev:server       # Run the game server locally (wrangler dev, http://loc
 
 Messages are JSON. The client sends:
 
-| Message                                            | Meaning                                                       |
-| -------------------------------------------------- | ------------------------------------------------------------- |
-| `{ "type": "join", "name": "Ann", "token"?: "…" }` | Take a seat (lobby only), or reattach with a saved token      |
-| `{ "type": "start" }`                              | Host only: deal the first round                               |
-| `{ "type": "action", "action": { … } }`            | A turn action: `drawStock`, `pickUpPile`, `meld` or `discard` |
-| `{ "type": "nextRound" }`                          | Any seated player: deal the next round                        |
-| `{ "type": "leave" }`                              | Give up your seat (lobby only)                                |
-| `{ "type": "kick", "playerId": "…" }`              | Host only: remove a player (lobby only)                       |
-| `{ "type": "reissue", "playerId": "…" }`           | Host only: new token for a player who isn't connected         |
+| Message                                            | Meaning                                                                                         |
+| -------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `{ "type": "join", "name": "Ann", "token"?: "…" }` | Take a seat (lobby only), or reattach with a saved token. An unknown token gets `UNKNOWN_TOKEN` |
+| `{ "type": "start" }`                              | Host only: deal the first round                                                                 |
+| `{ "type": "action", "action": { … } }`            | A turn action: `drawStock`, `pickUpPile`, `meld` or `discard`                                   |
+| `{ "type": "nextRound" }`                          | Any seated player: deal the next round                                                          |
+| `{ "type": "leave" }`                              | Give up your seat (lobby only)                                                                  |
+| `{ "type": "kick", "playerId": "…" }`              | Host only: remove a player (lobby only)                                                         |
+| `{ "type": "reissue", "playerId": "…" }`           | Host only: new token for a player who isn't connected                                           |
 
 The server sends:
 

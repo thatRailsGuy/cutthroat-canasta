@@ -91,7 +91,16 @@ function join(
 ): Outcome {
   if (senderId) return protocolError(state, 'ALREADY_JOINED', "You've already joined this game.")
 
-  if (token !== undefined && Object.hasOwn(state.tokens, token)) {
+  if (token !== undefined) {
+    // A kicked, left or reissued seat's token. Taking a fresh seat instead would leave a ghost
+    // seat in the lobby, so the client drops the token and asks for a name.
+    if (!Object.hasOwn(state.tokens, token)) {
+      return protocolError(
+        state,
+        'UNKNOWN_TOKEN',
+        'That seat link is no longer valid. Join again with your name.',
+      )
+    }
     const playerId = state.tokens[token]
     return {
       state,

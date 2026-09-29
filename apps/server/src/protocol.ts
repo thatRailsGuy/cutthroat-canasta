@@ -74,6 +74,7 @@ export type ProtocolErrorCode =
   | 'ALREADY_JOINED'
   | 'NO_SUCH_PLAYER'
   | 'PLAYER_CONNECTED'
+  | 'UNKNOWN_TOKEN'
 export type ServerErrorCode = RuleErrorCode | ProtocolErrorCode
 
 export type ServerMessage =
