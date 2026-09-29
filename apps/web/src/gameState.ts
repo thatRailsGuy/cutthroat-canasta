@@ -86,7 +86,19 @@ function onMessage(state: GameState, message: ServerMessage, joinFailed: boolean
     case 'state':
       return { ...state, view: message.view, hostId: message.hostId, connected: message.connected }
     case 'error': {
-      if (joinFailed) return { ...state, joining: false, joinError: message.message }
+      if (joinFailed) {
+        // This socket has no seat, so anything left from an earlier seat (say a reissued one)
+        // is stale. Clearing it lets the page show the join form with the error.
+        return {
+          ...state,
+          joining: false,
+          joinError: message.message,
+          playerId: initialGameState.playerId,
+          view: initialGameState.view,
+          hostId: initialGameState.hostId,
+          connected: initialGameState.connected,
+        }
+      }
       // Two players can press Next round together; the second one's ROUND_NOT_OVER is noise.
       if (message.code === 'ROUND_NOT_OVER') return state
       const toast = {

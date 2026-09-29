@@ -185,6 +185,17 @@ describe('GameConnection', () => {
     expect(sockets[0].closed).toBe(true)
   })
 
+  it('does not put off the drop when the page is shown again while a ping is waiting', () => {
+    const { connection, sockets, latest } = setup()
+    latest().accept()
+    connection.check()
+    vi.advanceTimersByTime(5_000)
+    connection.check()
+    expect(latest().sent).toEqual(['{"type":"ping"}'])
+    vi.advanceTimersByTime(PONG_TIMEOUT_MS - 5_000)
+    expect(sockets[0].closed).toBe(true)
+  })
+
   it('keeps the socket when the ping sent on showing the page is answered', () => {
     const { connection, sockets, latest } = setup()
     latest().accept()

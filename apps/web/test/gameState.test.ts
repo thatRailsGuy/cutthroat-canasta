@@ -46,6 +46,32 @@ describe('gameReducer', () => {
     expect(state).toMatchObject({ joining: false, joinError: 'Taken.', toasts: [] })
   })
 
+  it('forgets the old seat and view when a rejoin fails, so the join form shows', () => {
+    let state = receive(initialGameState, {
+      type: 'joined',
+      code: 'ABCDEF',
+      playerId: 'you',
+      token: 't',
+    })
+    const view = makeView({ hand: [], phase: 'draw' })
+    state = receive(state, { type: 'state', view, hostId: 'you', connected: ['you', 'bob'] })
+    // The socket dropped and the host reissued the seat; the reconnect's join fails.
+    state = gameReducer(state, { type: 'joining' })
+    state = receive(
+      state,
+      { type: 'error', code: 'UNKNOWN_TOKEN', message: 'That seat link is no longer valid.' },
+      true,
+    )
+    expect(state).toMatchObject({
+      joining: false,
+      joinError: 'That seat link is no longer valid.',
+      playerId: null,
+      view: null,
+      hostId: null,
+      connected: [],
+    })
+  })
+
   it('keeps rejoin tokens for the host and seat notices for everyone', () => {
     let state = receive(initialGameState, { type: 'reissued', playerId: 'bob', token: 'new' })
     state = receive(state, { type: 'seatReissued', playerId: 'bob' })

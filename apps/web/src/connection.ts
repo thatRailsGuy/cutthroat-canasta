@@ -95,10 +95,12 @@ export class GameConnection {
 
   /**
    * Pings at once and drops the socket if no answer arrives within PONG_TIMEOUT_MS. Run it when
-   * the page is shown, so a socket that died while the tab was hidden is found quickly.
+   * the page is shown, so a socket that died while the tab was hidden is found quickly. If a
+   * ping is already waiting, it does nothing: that ping's timer decides, so showing the page
+   * again and again can't put off the drop.
    */
   check(): void {
-    if (!this.isOpen()) return
+    if (!this.isOpen() || this.pingSentAt !== null) return
     this.ping()
   }
 
