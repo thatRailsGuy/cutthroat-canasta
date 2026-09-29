@@ -158,12 +158,25 @@ type Round = {
   pileFrozenForAll: boolean      // a wild was buried as the upcard or discarded; cleared when the pile is picked up
   phase: 'draw' | 'play'
   nextMeldId: number
+  feed: FeedEvent[]              // public events this round, oldest first; reset at each deal
 }
+
+type Played = { newMelds: Card[][]; additions: { meldId: string; cards: Card[] }[] }
+
+type FeedEvent =
+  | { type: 'drewStock'; playerId: string; red3s: Card[] }   // Red 3s turned up while drawing
+  | { type: 'pickedUpPile'; playerId: string; count: number; played: Played }
+  | { type: 'melded'; playerId: string; played: Played }
+  | { type: 'discarded'; playerId: string; card: Card }
+  | { type: 'wentOut'; playerId: string }
+  | { type: 'stockOut' }
+
+type Seed = [number, number, number, number]   // four u32s: 128 bits of PRNG state
 
 type Game = {
   players: Player[]; round: Round | null; history: RoundScore[]
   status: 'lobby' | 'playing' | 'roundOver' | 'gameOver'
-  seed: number; log: Action[]
+  seed: Seed; log: Action[]
   winners: string[]
 }
 ```
@@ -191,10 +204,13 @@ Lobby and round actions (`startGame`, `startNextRound`) are separate engine func
 ```ts
 applyAction(game, playerId, action): { ok: true; game: Game } | { ok: false; error: RuleError }
 viewFor(game, playerId): PlayerView   // other hands shown as counts, the stock as a count, seed and log removed
+removePlayer(game, playerId): GameResult  // lobby only; throws for an unknown id
 legalityPreview(view, action): RuleError | null  // client-side check against a PlayerView (view.you is the acting player)
 ```
 
 `RuleError = { code: RuleErrorCode; message: string }`. Every rejected action returns a specific code, for example `FROZEN_NEEDS_NATURAL_PAIR`, `WILDS_EXCEED_NATURALS`, `INITIAL_MELD_TOO_LOW`, `CANNOT_GO_OUT_FIRST_TURN`, or `CANASTA_CANNOT_TAKE_PILE`. The engine never throws for rule violations. It throws only for programmer errors, such as an unknown card id.
+
+`PlayerView` includes the round's `feed`. Every card in it was face up when the event happened, so the feed can show cards that a pickup has since moved into a hand. That matches a physical table, where players see each discard. When the round ends (`roundOver` or `gameOver`), each `PublicPlayer` has `revealedHand: Card[]`, so players can check the scoring. During play it is `null`.
 
 Rule constants (card values, initial meld minimums, the deck and hand-size functions, bonus values, the winning score) are exported, so the rules page renders from the same source.
 
@@ -204,7 +220,7 @@ Rule constants (card values, initial meld minimums, the deck and hand-size funct
 | --- | --- |
 | `cards` | Card helpers: `isWild`, `isNatural`, `isRed3`, `isBlack3` |
 | `constants` | Rule constants: card values, bonuses, tiers, deck/hand sizing, winning score |
-| `rng` | Seeded PRNG (mulberry32) and shuffle |
+| `rng` | Seeded PRNG (sfc32, 128-bit seed) and shuffle |
 | `deck` | Deck construction for a given number of decks |
 | `errors` | Rule error codes, their rules-page sections, and the `RuleError` constructor |
 | `types` | Core type definitions: `Card`, `Player`, `Round`, `Game`, `Action`, etc. |
@@ -215,7 +231,7 @@ Rule constants (card values, initial meld minimums, the deck and hand-size funct
 | `play` | Validates a meld/pickup batch against a hand and pile, and applies it |
 | `scoring` | Round scoring and end-of-game detection (3.8, 3.9) |
 | `round` | Dealing, turn advancement, and ending a round |
-| `game` | Lobby management: `createGame`, `addPlayer`, `startGame`, `startNextRound` |
+| `game` | Lobby management: `createGame`, `addPlayer`, `removePlayer`, `startGame`, `startNextRound` |
 | `actions` | `applyAction`, the engine's per-turn action dispatcher |
 | `view` | `viewFor` and hiding private information |
 | `preview` | `legalityPreview`, the client-side legality check against a `PlayerView` |
@@ -229,13 +245,16 @@ Rule constants (card values, initial meld minimums, the deck and hand-size funct
 - **GameRoom Durable Object.**
   - Uses the WebSocket Hibernation API, so idle games cost nothing.
   - Saves the `Game` to DO storage after every successful action.
-  - Seats 2–8 players. The first player to join is the host. Only the host can start the game and start the next round.
+  - Seats 2–8 players. The first player to join is the host. Only the host can start the game, kick a player from the lobby, and issue a rejoin token. Any seated player can start the next round, so a missing host can't stall the table.
+  - If the host leaves the lobby, the next player in seat order becomes the host.
 - **Protocol.** Every message is JSON. Incoming messages are validated with zod before they reach the engine.
-  - Client to server: `join {name, token?}`, `start`, `action {action}`, `nextRound`.
-  - Server to client: `joined {playerId, token}`, `state {view}` (sent to each socket with its own view), `error {code, message}` (sent only to the socket that caused it).
+  - Client to server: `join {name, token?}`, `start`, `action {action}`, `nextRound`, `leave`, `kick {playerId}`, `reissue {playerId}`.
+  - Server to client: `joined {playerId, token}`, `state {view, hostId, connected}` (sent to each socket with its own view), `error {code, message}` (sent only to the socket that caused it), `removed {reason}` (sent to a socket whose seat was given up or kicked), `reissued {playerId, token}` (sent only to the host).
 - **Identity.**
   - There are no accounts. `join` without a token takes a new seat, which is only possible in the lobby, and returns a random token. The client saves the token in localStorage keyed by game code.
   - `join` with a known token reattaches that seat. Unknown tokens are rejected once the game has started.
+  - `leave` gives up your seat, and `kick {playerId}` lets the host remove another player. Both work only in the lobby. The removed seat's tokens stop working, and its sockets get `removed` and become unjoined.
+  - `reissue {playerId}` lets the host get a new token for a player who is not connected, at any game status. It replaces that player's old tokens. The host shares it as a rejoin link, so a player who lost their token or changed devices gets their seat back.
 - **Disconnects.** The game waits. v1 has no turn timers.
 
 ## 6. Client (`apps/web`)
@@ -254,7 +273,9 @@ Rule constants (card values, initial meld minimums, the deck and hand-size funct
 - **Opponent panels:** name, card count, melds, Red 3s, cumulative score, and a current-turn highlight.
 - **Center:** stock count, the top discard, pile size, and a *Frozen for you* badge with the reason.
 - **Errors:** shown as a toast with the rule message and a "Why?" link to that rule's section on the rules page.
-- **Round-end scoreboard:** each player's scoring breakdown (3.8) and cumulative totals. The host sees a **Next round** button.
+- **Action feed:** a short list of the round's public events, newest first (for example "Ann picked up 9 cards", "Bob discarded 7♥").
+- **Round-end scoreboard:** each player's scoring breakdown (3.8), their revealed hand, and cumulative totals. Every player sees a **Next round** button.
+- **Lobby controls:** a **Leave** button for everyone, and a **Kick** button per player for the host. During the game, the host can copy a rejoin link for a player who is not connected.
 - **Game-over screen:** the winner and the final totals.
 
 ### 6.3 Local development
