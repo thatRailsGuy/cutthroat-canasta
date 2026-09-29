@@ -20,7 +20,7 @@ See [docs/superpowers/specs/2026-09-27-cutthroat-canasta-design.md](docs/superpo
 ## Project layout
 
 ```text
-packages/engine    TypeScript rules engine (in progress)
+packages/engine    TypeScript rules engine (implemented)
 apps/server        Cloudflare Worker + Durable Object per game (implemented)
 apps/web           React + Vite client: lobby, table, rules page (planned)
 docs/              Design spec and implementation plans
@@ -54,18 +54,23 @@ Messages are JSON. The client sends:
 | `{ "type": "join", "name": "Ann", "token"?: "…" }` | Take a seat (lobby only), or reattach with a saved token      |
 | `{ "type": "start" }`                              | Host only: deal the first round                               |
 | `{ "type": "action", "action": { … } }`            | A turn action: `drawStock`, `pickUpPile`, `meld` or `discard` |
-| `{ "type": "nextRound" }`                          | Host only: deal the next round                                |
+| `{ "type": "nextRound" }`                          | Any seated player: deal the next round                        |
+| `{ "type": "leave" }`                              | Give up your seat (lobby only)                                |
+| `{ "type": "kick", "playerId": "…" }`              | Host only: remove a player (lobby only)                       |
+| `{ "type": "reissue", "playerId": "…" }`           | Host only: new token for a player who isn't connected         |
 
 The server sends:
 
-| Message                                             | Meaning                                                                   |
-| --------------------------------------------------- | ------------------------------------------------------------------------- |
-| `{ "type": "joined", "code", "playerId", "token" }` | Your seat. Save the token to reconnect                                    |
-| `{ "type": "state", "view", "hostId" }`             | Your view of the game after any change. Other hands appear only as counts |
-| `{ "type": "error", "code", "message" }`            | Your last message was rejected. Only you receive it                       |
+| Message                                              | Meaning                                                                                               |
+| ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `{ "type": "joined", "code", "playerId", "token" }`  | Your seat. Save the token to reconnect                                                                |
+| `{ "type": "state", "view", "hostId", "connected" }` | Your view after any change, with the round's public feed. Other hands are counts until the round ends |
+| `{ "type": "error", "code", "message" }`             | Your last message was rejected. Only you receive it                                                   |
+| `{ "type": "removed", "reason" }`                    | Your seat is gone (`left` or `kicked`). The connection is unjoined                                    |
+| `{ "type": "reissued", "playerId", "token" }`        | Host only: share this token as a rejoin link. Old tokens stop working                                 |
 
 Message types are exported from `@canasta/server/protocol`.
 
 ## Status
 
-The rules engine (`packages/engine`) is under construction. The server (`apps/server`) is implemented. The web client (`apps/web`) is planned and not yet started. The engine is checked by a random-game simulation test that plays full games under a seeded bot and asserts invariants (card conservation, hidden-information leakage, and score-breakdown consistency) hold throughout.
+The rules engine (`packages/engine`) and the server (`apps/server`) are implemented. The web client (`apps/web`) is planned and not yet started. The engine is checked by a random-game simulation test that plays full games under a seeded bot and asserts invariants (card conservation, hidden-information leakage, and score-breakdown consistency) hold throughout.
