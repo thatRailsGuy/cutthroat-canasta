@@ -288,15 +288,26 @@ describe('feed', () => {
     expect(next.round!.feed).toEqual([{ type: 'drewStock', playerId: 'a', red3s: [stock[1]] }])
   })
 
-  it('records a stock-out after the draw that found nothing', () => {
+  it('records only a stock-out when the stock was already empty', () => {
     const game = makeGame({
       players: twoPlayers({ id: 'a', hand: cards('4c') }),
       stock: [],
       phase: 'draw',
     })
     const next = unwrap(applyAction(game, 'a', { type: 'drawStock' }))
+    expect(next.round!.feed).toEqual([{ type: 'stockOut' }])
+  })
+
+  it('records the red 3s found on a draw that then ran out the stock', () => {
+    const stock = cards('3h')
+    const game = makeGame({
+      players: twoPlayers({ id: 'a', hand: cards('4c'), melds: [meld('Qh Qd Qs')] }),
+      stock,
+      phase: 'draw',
+    })
+    const next = unwrap(applyAction(game, 'a', { type: 'drawStock' }))
     expect(next.round!.feed).toEqual([
-      { type: 'drewStock', playerId: 'a', red3s: [] },
+      { type: 'drewStock', playerId: 'a', red3s: [stock[0]] },
       { type: 'stockOut' },
     ])
   })

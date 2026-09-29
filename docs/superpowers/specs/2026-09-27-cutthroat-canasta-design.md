@@ -165,7 +165,7 @@ type Played = { newMelds: Card[][]; additions: { meldId: string; cards: Card[] }
 
 type FeedEvent =
   | { type: 'drewStock'; playerId: string; red3s: Card[] }   // Red 3s turned up while drawing
-  | { type: 'pickedUpPile'; playerId: string; count: number; played: Played }
+  | { type: 'pickedUpPile'; playerId: string; count: number; played: Played }   // count includes the top card
   | { type: 'melded'; playerId: string; played: Played }
   | { type: 'discarded'; playerId: string; card: Card }
   | { type: 'wentOut'; playerId: string }

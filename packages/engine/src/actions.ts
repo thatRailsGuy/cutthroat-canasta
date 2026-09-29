@@ -47,7 +47,8 @@ function drawStock(game: Game, round: Round, player: Player): null {
     card = round.stock.pop()
   }
   player.red3s.push(...red3s)
-  round.feed.push({ type: 'drewStock', playerId: player.id, red3s })
+  // An empty stock means nothing was drawn, so only the stock-out is news.
+  if (card || red3s.length > 0) round.feed.push({ type: 'drewStock', playerId: player.id, red3s })
   if (!card) {
     round.feed.push({ type: 'stockOut' })
     endRound(game, null)

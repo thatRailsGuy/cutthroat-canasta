@@ -49,6 +49,7 @@ export interface Played {
 
 export type FeedEvent =
   | { type: 'drewStock'; playerId: string; red3s: Card[] }
+  /** `count` is the whole pile, including the top card that went into a meld. */
   | { type: 'pickedUpPile'; playerId: string; count: number; played: Played }
   | { type: 'melded'; playerId: string; played: Played }
   | { type: 'discarded'; playerId: string; card: Card }
