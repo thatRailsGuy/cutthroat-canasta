@@ -210,7 +210,7 @@ legalityPreview(view, action): RuleError | null  // client-side check against a 
 
 `RuleError = { code: RuleErrorCode; message: string }`. Every rejected action returns a specific code, for example `FROZEN_NEEDS_NATURAL_PAIR`, `WILDS_EXCEED_NATURALS`, `INITIAL_MELD_TOO_LOW`, `CANNOT_GO_OUT_FIRST_TURN`, or `CANASTA_CANNOT_TAKE_PILE`. The engine never throws for rule violations. It throws only for programmer errors, such as an unknown card id.
 
-`PlayerView` includes the round's `feed`. Every card in it was face up when the event happened, so the feed can show cards that a pickup has since moved into a hand. That matches a physical table, where players see each discard. When the round ends (`roundOver` or `gameOver`), each `PublicPlayer` has `revealedHand: Card[]`, so players can check the scoring. During play it is `null`.
+`PlayerView` includes the round's `feed`. Every card in it was face up when the event happened, so the feed can show cards that a pickup has since moved into a hand. That matches a physical table, where players see each discard. When a round ends, every player's remaining hand is stored with its score (`RoundScore.hands`). The scoreboard can show the hands even after someone deals the next round.
 
 Rule constants (card values, initial meld minimums, the deck and hand-size functions, bonus values, the winning score) are exported, so the rules page renders from the same source.
 
@@ -249,12 +249,12 @@ Rule constants (card values, initial meld minimums, the deck and hand-size funct
   - If the host leaves the lobby, the next player in seat order becomes the host.
 - **Protocol.** Every message is JSON. Incoming messages are validated with zod before they reach the engine.
   - Client to server: `join {name, token?}`, `start`, `action {action}`, `nextRound`, `leave`, `kick {playerId}`, `reissue {playerId}`.
-  - Server to client: `joined {playerId, token}`, `state {view, hostId, connected}` (sent to each socket with its own view), `error {code, message}` (sent only to the socket that caused it), `removed {reason}` (sent to a socket whose seat was given up or kicked), `reissued {playerId, token}` (sent only to the host).
+  - Server to client: `joined {playerId, token}`, `state {view, hostId, connected}` (sent to each socket with its own view), `error {code, message}` (sent only to the socket that caused it), `removed {reason}` (sent to a socket whose seat was given up or kicked), `reissued {playerId, token}` (sent only to the host), `seatReissued {playerId}` (sent to every joined socket).
 - **Identity.**
   - There are no accounts. `join` without a token takes a new seat, which is only possible in the lobby, and returns a random token. The client saves the token in localStorage keyed by game code.
   - `join` with a known token reattaches that seat. Unknown tokens are rejected once the game has started.
   - `leave` gives up your seat, and `kick {playerId}` lets the host remove another player. Both work only in the lobby. The removed seat's tokens stop working, and its sockets get `removed` and become unjoined.
-  - `reissue {playerId}` lets the host get a new token for a player who is not connected, at any game status. It replaces that player's old tokens. The host shares it as a rejoin link, so a player who lost their token or changed devices gets their seat back.
+  - `reissue {playerId}` lets the host get a new token for a player who is not connected, at any game status. It replaces that player's old tokens. The host shares it as a rejoin link, so a player who lost their token or changed devices gets their seat back. The whole table is told about every reissue, so the host can't quietly take over a seat and read its hand.
 - **Disconnects.** The game waits. v1 has no turn timers.
 
 ## 6. Client (`apps/web`)

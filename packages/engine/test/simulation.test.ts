@@ -109,15 +109,20 @@ function checkInvariants(game: Game, totalCards: number, faceUp: Set<number>): v
           .map((c) => c.id)
           .filter((id) => !faceUp.has(id)),
       )
-      const leaked = visibleCardIds(viewFor(game, viewer.id)).filter((id) => secret.has(id))
+      // Card ids repeat every round, so past rounds' hands in history are checked separately.
+      const view = { ...viewFor(game, viewer.id), history: [] }
+      const leaked = visibleCardIds(view).filter((id) => secret.has(id))
       expect(leaked).toEqual([])
     }
   } else {
-    // At round end every hand is revealed, and the stock stays hidden.
+    // At round end every hand goes into history, and the stock stays hidden.
     const view = viewFor(game, game.players[0].id)
-    expect(view.players.map((p) => p.revealedHand)).toEqual(game.players.map((p) => p.hand))
+    expect(view.history.at(-1)!.hands).toEqual(
+      Object.fromEntries(game.players.map((p) => [p.id, p.hand])),
+    )
     const stock = new Set(round.stock.map((c) => c.id))
-    expect(visibleCardIds(view).filter((id) => stock.has(id))).toEqual([])
+    const current = { ...view, history: view.history.slice(-1) }
+    expect(visibleCardIds(current).filter((id) => stock.has(id))).toEqual([])
   }
 
   for (const entry of game.history) {

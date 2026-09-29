@@ -56,6 +56,11 @@ export class GameRoom extends DurableObject<Env> {
       ws.serializeAttachment({ playerId: outcome.bindPlayerId } satisfies Attachment)
     }
     for (const message of outcome.reply) send(ws, message)
+    if (outcome.announce) {
+      for (const socket of this.ctx.getWebSockets()) {
+        if ((socket.deserializeAttachment() as Attachment).playerId) send(socket, outcome.announce)
+      }
+    }
     if (outcome.detach) {
       const { playerId: gone, reason } = outcome.detach
       for (const socket of this.ctx.getWebSockets()) {

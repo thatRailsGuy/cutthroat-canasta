@@ -234,6 +234,7 @@ describe('discard', () => {
     const next = unwrap(applyAction(game, 'a', { type: 'discard', cardId: hand[0].id }))
     expect(next.status).toBe('roundOver')
     expect(next.history[0]).toMatchObject({ endedBy: 'goingOut', wentOut: 'a' })
+    expect(next.history[0].hands).toEqual({ a: [], b: game.players[1].hand })
     expect(next.players.map((p) => p.score)).toEqual([635, -20])
   })
 

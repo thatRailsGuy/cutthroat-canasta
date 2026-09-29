@@ -77,6 +77,7 @@ export function endRound(game: Game, wentOut: string | null): void {
     endedBy: wentOut ? 'goingOut' : 'stockOut',
     wentOut,
     breakdown,
+    hands: Object.fromEntries(game.players.map((p) => [p.id, [...p.hand]])),
   })
   const best = Math.max(...game.players.map((p) => p.score))
   if (best >= WINNING_SCORE) {

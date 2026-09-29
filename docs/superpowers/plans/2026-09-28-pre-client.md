@@ -37,7 +37,7 @@
 
 ### Task 3: revealed hands and `removePlayer` (engine)
 
-- `PublicPlayer.revealedHand: Card[] | null`. It is the hand when the status is `roundOver` or `gameOver`, and `null` otherwise.
+- `RoundScore.hands`: every player's hand when the round ended. This replaced an earlier `PublicPlayer.revealedHand`, which disappeared as soon as someone dealt the next round.
 - `removePlayer(game, playerId)`: lobby only (`NOT_IN_LOBBY`). It throws for an unknown id.
 - The simulation leak check runs only while the status is `playing`, and a new check confirms that every hand is revealed at round end.
 

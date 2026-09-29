@@ -72,6 +72,8 @@ export interface RoundScore {
   endedBy: 'goingOut' | 'stockOut'
   wentOut: string | null
   breakdown: Record<string, ScoreBreakdown>
+  /** Every player's hand when the round ended, so the scoreboard can show it later. */
+  hands: Record<string, Card[]>
 }
 
 export type GameStatus = 'lobby' | 'playing' | 'roundOver' | 'gameOver'

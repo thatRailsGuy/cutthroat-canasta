@@ -68,6 +68,7 @@ The server sends:
 | `{ "type": "error", "code", "message" }`             | Your last message was rejected. Only you receive it                                                   |
 | `{ "type": "removed", "reason" }`                    | Your seat is gone (`left` or `kicked`). The connection is unjoined                                    |
 | `{ "type": "reissued", "playerId", "token" }`        | Host only: share this token as a rejoin link. Old tokens stop working                                 |
+| `{ "type": "seatReissued", "playerId" }`             | Everyone: the host issued a rejoin link for this seat                                                 |
 
 Message types are exported from `@canasta/server/protocol`.
 

@@ -236,6 +236,7 @@ describe('reissue', () => {
       changed: true,
       broadcast: false,
       reply: [{ type: 'reissued', playerId: 'p2', token: 't3' }],
+      announce: { type: 'seatReissued', playerId: 'p2' },
     })
     expect(outcome.state.tokens).toEqual({ t1: 'p1', t3: 'p2' })
     const rejoin = handleMessage(

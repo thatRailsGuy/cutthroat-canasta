@@ -34,6 +34,8 @@ export interface Outcome {
   bindPlayerId?: string
   /** This player's seat is gone: tell their connections and unbind them. */
   detach?: { playerId: string; reason: RemovedReason }
+  /** A notice for every joined connection, sent after the reply. */
+  announce?: ServerMessage
   /** The state changed: save it. */
   changed: boolean
   /** Send every joined connection its view. */
@@ -133,7 +135,10 @@ function removeSeat(state: RoomState, playerId: string, reason: RemovedReason): 
   return { state: next, reply: [], detach: { playerId, reason }, changed: true, broadcast: true }
 }
 
-/** Replaces a disconnected player's tokens with a new one, which the host shares as a link. */
+/**
+ * Replaces a disconnected player's tokens with a new one, which the host shares as a link.
+ * The whole table is told, so the host can't quietly take over a seat and read its hand.
+ */
 function reissue(
   state: RoomState,
   playerId: string,
@@ -156,6 +161,7 @@ function reissue(
   return {
     state: next,
     reply: [{ type: 'reissued', playerId, token }],
+    announce: { type: 'seatReissued', playerId },
     changed: true,
     broadcast: false,
   }

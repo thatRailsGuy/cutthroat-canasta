@@ -66,6 +66,7 @@ export type ServerMessage =
   | { type: 'error'; code: ServerErrorCode; message: string }
   | { type: 'removed'; reason: RemovedReason }
   | { type: 'reissued'; playerId: string; token: string }
+  | { type: 'seatReissued'; playerId: string }
 
 /** Why a socket's seat went away: it left, or the host kicked it. */
 export type RemovedReason = 'left' | 'kicked'

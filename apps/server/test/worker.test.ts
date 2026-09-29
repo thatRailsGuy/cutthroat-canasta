@@ -248,14 +248,28 @@ describe('seats', () => {
     expect(rejoined.playerId).not.toBe(bobJoined.playerId)
   })
 
-  it('reissues a disconnected seat, revoking the old token', async () => {
-    const { code, ann, bob, bobJoined } = await startedGame()
-    bob.close()
+  it('reissues a disconnected seat, revoking the old token and telling the table', async () => {
+    const { code, ann, bob, bobJoined } = await lobbyGame()
+    const cat = await connect(code)
+    await join(cat, 'Cat')
+    await nextState(cat)
     await nextState(ann)
+    await nextState(bob)
+    const watcher = await connect(code)
+    ann.send({ type: 'start' })
+    await Promise.all([nextState(ann), nextState(bob), nextState(cat)])
+
+    bob.close()
+    await Promise.all([nextState(ann), nextState(cat)])
     ann.send({ type: 'reissue', playerId: bobJoined.playerId })
     const reissued = await ann.next()
     expect(reissued).toMatchObject({ type: 'reissued', playerId: bobJoined.playerId })
+    const notice = { type: 'seatReissued', playerId: bobJoined.playerId }
+    expect(await ann.next()).toEqual(notice)
+    expect(await cat.next()).toEqual(notice)
     await ann.expectQuiet()
+    await cat.expectQuiet()
+    await watcher.expectQuiet()
 
     const stale = await connect(code)
     stale.send({ type: 'join', name: 'Bob', token: bobJoined.token })
