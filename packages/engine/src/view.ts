@@ -1,5 +1,5 @@
 import type { Card } from './cards'
-import type { Game, GameStatus, Meld, Phase, Player, RoundScore } from './types'
+import type { FeedEvent, Game, GameStatus, Meld, Phase, Player, RoundScore } from './types'
 
 export interface PublicPlayer {
   id: string
@@ -20,6 +20,7 @@ export interface RoundView {
   discardTop: Card | null
   discardCount: number
   pileFrozenForAll: boolean
+  feed: FeedEvent[]
 }
 
 export interface PlayerView {
@@ -59,6 +60,7 @@ export function viewFor(game: Game, playerId: string): PlayerView {
           discardTop: round.discard.at(-1) ?? null,
           discardCount: round.discard.length,
           pileFrozenForAll: round.pileFrozenForAll,
+          feed: round.feed,
         }
       : null,
     history: game.history,

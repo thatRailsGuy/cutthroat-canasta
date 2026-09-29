@@ -37,7 +37,23 @@ export interface Round {
   pileFrozenForAll: boolean
   phase: Phase
   nextMeldId: number
+  /** Public events this round, oldest first. Every card in it was face up at the time. */
+  feed: FeedEvent[]
 }
+
+/** Cards a play put on the table. */
+export interface Played {
+  newMelds: Card[][]
+  additions: { meldId: string; cards: Card[] }[]
+}
+
+export type FeedEvent =
+  | { type: 'drewStock'; playerId: string; red3s: Card[] }
+  | { type: 'pickedUpPile'; playerId: string; count: number; played: Played }
+  | { type: 'melded'; playerId: string; played: Played }
+  | { type: 'discarded'; playerId: string; card: Card }
+  | { type: 'wentOut'; playerId: string }
+  | { type: 'stockOut' }
 
 export interface ScoreBreakdown {
   meldPoints: number

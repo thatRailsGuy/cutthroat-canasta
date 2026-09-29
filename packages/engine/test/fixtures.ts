@@ -66,6 +66,7 @@ export function makeGame(opts: {
       pileFrozenForAll: opts.pileFrozenForAll ?? false,
       phase: opts.phase ?? 'play',
       nextMeldId: 100,
+      feed: [],
     },
     history: [],
     status: 'playing',

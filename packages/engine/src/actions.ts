@@ -1,11 +1,11 @@
-import { isRed3, isWild, type CardId } from './cards'
+import { isRed3, isWild, type Card, type CardId } from './cards'
 import { cloneGame } from './clone'
 import type { RuleError } from './errors'
 import { pileStateOf } from './pileRules'
-import { applyPlay, validatePlay } from './play'
+import { applyPlay, validatePlay, type ValidatedPlay } from './play'
 import { advanceTurn, endRound } from './round'
 import { checkDiscard, checkPhase, checkTurn } from './turnRules'
-import type { Action, Game, GameResult, MeldBatch, Player, Round } from './types'
+import type { Action, Game, GameResult, MeldBatch, Played, Player, Round } from './types'
 
 export function applyAction(game: Game, playerId: string, action: Action): GameResult {
   const currentId = game.round ? game.players[game.round.current]?.id : undefined
@@ -40,12 +40,16 @@ function perform(game: Game, round: Round, player: Player, action: Action): Rule
 }
 
 function drawStock(game: Game, round: Round, player: Player): null {
+  const red3s: Card[] = []
   let card = round.stock.pop()
   while (card && isRed3(card)) {
-    player.red3s.push(card)
+    red3s.push(card)
     card = round.stock.pop()
   }
+  player.red3s.push(...red3s)
+  round.feed.push({ type: 'drewStock', playerId: player.id, red3s })
   if (!card) {
+    round.feed.push({ type: 'stockOut' })
     endRound(game, null)
     return null
   }
@@ -61,13 +65,19 @@ function pickUpPile(game: Game, round: Round, player: Player, batch: MeldBatch):
   )
   if (!result.ok) return result.error
   const rest = round.discard.slice(0, -1)
+  round.feed.push({
+    type: 'pickedUpPile',
+    playerId: player.id,
+    count: round.discard.length,
+    played: played(result.play),
+  })
   round.discard = []
   applyPlay(round, player, result.play)
   player.hand.push(...rest)
   player.hasPickedUpPile = true
   round.pileFrozenForAll = false
   round.phase = 'play'
-  if (result.play.goesOut) endRound(game, player.id)
+  if (result.play.goesOut) goOut(game, round, player)
   return null
 }
 
@@ -77,8 +87,9 @@ function meld(game: Game, round: Round, player: Player, batch: MeldBatch): RuleE
     batch,
   )
   if (!result.ok) return result.error
+  round.feed.push({ type: 'melded', playerId: player.id, played: played(result.play) })
   applyPlay(round, player, result.play)
-  if (result.play.goesOut) endRound(game, player.id)
+  if (result.play.goesOut) goOut(game, round, player)
   return null
 }
 
@@ -90,8 +101,22 @@ function discard(game: Game, round: Round, player: Player, cardId: CardId): Rule
     1,
   )
   round.discard.push(card)
+  round.feed.push({ type: 'discarded', playerId: player.id, card })
   if (isWild(card)) round.pileFrozenForAll = true
-  if (player.hand.length === 0) endRound(game, player.id)
+  if (player.hand.length === 0) goOut(game, round, player)
   else advanceTurn(game)
   return null
+}
+
+function goOut(game: Game, round: Round, player: Player): void {
+  round.feed.push({ type: 'wentOut', playerId: player.id })
+  endRound(game, player.id)
+}
+
+/** Copies the cards, so later additions to a meld never rewrite the feed. */
+function played(play: ValidatedPlay): Played {
+  return {
+    newMelds: play.newMelds.map((cards) => [...cards]),
+    additions: play.additions.map((a) => ({ meldId: a.meldId, cards: [...a.cards] })),
+  }
 }

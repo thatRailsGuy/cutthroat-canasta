@@ -275,3 +275,121 @@ describe('winning', () => {
     expect(next.winners).toEqual(['a', 'b'])
   })
 })
+
+describe('feed', () => {
+  it('records a draw with the red 3s it turned up, but not the drawn card', () => {
+    const stock = cards('9c 3h')
+    const game = makeGame({
+      players: twoPlayers({ id: 'a', hand: cards('4c') }),
+      stock,
+      phase: 'draw',
+    })
+    const next = unwrap(applyAction(game, 'a', { type: 'drawStock' }))
+    expect(next.round!.feed).toEqual([{ type: 'drewStock', playerId: 'a', red3s: [stock[1]] }])
+  })
+
+  it('records a stock-out after the draw that found nothing', () => {
+    const game = makeGame({
+      players: twoPlayers({ id: 'a', hand: cards('4c') }),
+      stock: [],
+      phase: 'draw',
+    })
+    const next = unwrap(applyAction(game, 'a', { type: 'drawStock' }))
+    expect(next.round!.feed).toEqual([
+      { type: 'drewStock', playerId: 'a', red3s: [] },
+      { type: 'stockOut' },
+    ])
+  })
+
+  it('records a pickup with the whole pile size and the cards it melded', () => {
+    const discard = cards('Jc 8d 9h')
+    const pair = cards('9s 9d')
+    const game = makeGame({
+      players: twoPlayers({ id: 'a', hand: [...pair, ...cards('4c')], melds: [meld('Qh Qd Qs')] }),
+      discard,
+      phase: 'draw',
+    })
+    const next = unwrap(
+      applyAction(game, 'a', {
+        type: 'pickUpPile',
+        play: { newMelds: [[discard[2].id, ...ids(pair)]], additions: [] },
+      }),
+    )
+    expect(next.round!.feed).toEqual([
+      {
+        type: 'pickedUpPile',
+        playerId: 'a',
+        count: 3,
+        played: { newMelds: [[discard[2], ...pair]], additions: [] },
+      },
+    ])
+  })
+
+  it('records melds and additions', () => {
+    const queens = meld('Qh Qd Qs')
+    const nines = cards('9h 9s 9d')
+    const queen = cards('Qc')
+    const game = makeGame({
+      players: twoPlayers({
+        id: 'a',
+        hand: [...nines, ...queen, ...cards('4c 5c')],
+        melds: [queens],
+      }),
+    })
+    const next = unwrap(
+      applyAction(game, 'a', {
+        type: 'meld',
+        play: { newMelds: [ids(nines)], additions: [{ meldId: queens.id, cardIds: ids(queen) }] },
+      }),
+    )
+    expect(next.round!.feed).toEqual([
+      {
+        type: 'melded',
+        playerId: 'a',
+        played: { newMelds: [nines], additions: [{ meldId: queens.id, cards: queen }] },
+      },
+    ])
+  })
+
+  it('keeps a past meld event unchanged when cards are later added to that meld', () => {
+    const nines = cards('9h 9s 9d')
+    const more = cards('9c')
+    const game = makeGame({
+      players: twoPlayers({
+        id: 'a',
+        hand: [...nines, ...more, ...cards('4c 5c')],
+        melds: [meld('Qh Qd Qs')],
+      }),
+    })
+    const first = unwrap(
+      applyAction(game, 'a', { type: 'meld', play: { newMelds: [ids(nines)], additions: [] } }),
+    )
+    const meldId = first.players[0].melds[1].id
+    const second = unwrap(
+      applyAction(first, 'a', {
+        type: 'meld',
+        play: { newMelds: [], additions: [{ meldId, cardIds: ids(more) }] },
+      }),
+    )
+    expect(second.round!.feed[0]).toMatchObject({ played: { newMelds: [nines] } })
+  })
+
+  it('records a discard, and going out after the discard that emptied the hand', () => {
+    const hand = cards('4c')
+    const game = makeGame({ players: twoPlayers({ id: 'a', hand, melds: [canastaOf5s()] }) })
+    const next = unwrap(applyAction(game, 'a', { type: 'discard', cardId: hand[0].id }))
+    expect(next.round!.feed).toEqual([
+      { type: 'discarded', playerId: 'a', card: hand[0] },
+      { type: 'wentOut', playerId: 'a' },
+    ])
+  })
+
+  it('records going out by melding', () => {
+    const kings = cards('Kh Kd Ks Kc Kh Kd Ks')
+    const game = makeGame({ players: twoPlayers({ id: 'a', hand: kings }) })
+    const next = unwrap(
+      applyAction(game, 'a', { type: 'meld', play: { newMelds: [ids(kings)], additions: [] } }),
+    )
+    expect(next.round!.feed.map((e) => e.type)).toEqual(['melded', 'wentOut'])
+  })
+})

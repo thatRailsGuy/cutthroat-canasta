@@ -39,6 +39,10 @@ describe('viewFor', () => {
     expect(visibleCardIds(view).filter((id) => secret.has(id))).toEqual([])
   })
 
+  it("includes the round's feed", () => {
+    expect(view.round?.feed).toBe(game.round!.feed)
+  })
+
   it('has no "you" for someone not at the table', () => {
     expect(viewFor(game, 'stranger').you).toBeNull()
   })

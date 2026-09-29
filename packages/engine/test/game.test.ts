@@ -99,6 +99,13 @@ describe('dealing', () => {
     const round2 = unwrap(startNextRound({ ...round1, status: 'roundOver' }))
     expect(round2.players[0].hand).not.toEqual(round1.players[0].hand)
   })
+
+  it('starts each round with an empty feed', () => {
+    const game = unwrap(startGame(lobby(2)))
+    game.round!.feed.push({ type: 'stockOut' })
+    const next = unwrap(startNextRound({ ...game, status: 'roundOver' }))
+    expect(next.round!.feed).toEqual([])
+  })
 })
 
 describe('startNextRound', () => {

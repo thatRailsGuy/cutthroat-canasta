@@ -44,6 +44,7 @@ export function dealRound(game: Game, number: number, dealer: number): void {
     pileFrozenForAll,
     phase: 'draw',
     nextMeldId: 0,
+    feed: [],
   }
   game.status = 'playing'
   beginTurn(game)

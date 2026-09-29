@@ -82,19 +82,31 @@ function takeTurn(game: Game, rng: Rng): Game {
   throw new Error(`Player ${me.id} has no legal discard: ${JSON.stringify(me.hand)}`)
 }
 
-function checkInvariants(game: Game, totalCards: number): void {
+/** Records every card that is face up now: the top discard, melds and Red 3s. */
+function markFaceUp(game: Game, faceUp: Set<number>): void {
+  const top = game.round!.discard.at(-1)
+  if (top) faceUp.add(top.id)
+  for (const p of game.players) {
+    for (const c of [...p.red3s, ...p.melds.flatMap((m) => m.cards)]) faceUp.add(c.id)
+  }
+}
+
+function checkInvariants(game: Game, totalCards: number, faceUp: Set<number>): void {
   const round = game.round!
   expect(countCards(game)).toBe(totalCards)
   const allIds = allCardIds(game)
   expect(new Set(allIds).size).toBe(allIds.length)
 
   for (const viewer of game.players) {
+    // The feed may show any card that was face up this round, even after a pickup took it.
     const secret = new Set(
       [
         ...game.players.filter((p) => p.id !== viewer.id).flatMap((p) => p.hand),
         ...round.stock,
         ...round.discard.slice(0, -1),
-      ].map((c) => c.id),
+      ]
+        .map((c) => c.id)
+        .filter((id) => !faceUp.has(id)),
     )
     const leaked = visibleCardIds(viewFor(game, viewer.id)).filter((id) => secret.has(id))
     expect(leaked).toEqual([])
@@ -124,10 +136,13 @@ describe('random games', () => {
       let game = unwrap(startGame(lobby(players, seed)))
 
       for (let round = 0; round < MAX_ROUNDS && game.status !== 'gameOver'; round++) {
+        const faceUp = new Set<number>()
+        markFaceUp(game, faceUp)
         for (let turns = 0; game.status === 'playing'; turns++) {
           if (turns > MAX_TURNS_PER_ROUND) throw new Error('Round never ended')
           game = takeTurn(game, rng)
-          checkInvariants(game, totalCards)
+          markFaceUp(game, faceUp)
+          checkInvariants(game, totalCards, faceUp)
         }
         if (game.status === 'roundOver') game = unwrap(startNextRound(game))
       }
