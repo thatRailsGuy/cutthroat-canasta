@@ -63,7 +63,7 @@ The user settled the four open questions on 2026-09-28, choosing the recommended
 | Review fixes (empty-stock draw event, kick text) | `bd10829` |
 | Hands kept in `RoundScore.hands`; reissues announced to the table | `4ca647a` |
 
-209 engine and 86 server tests pass. A whole-branch review found no critical bugs and no leaks. The simulation's leak check now counts any card that was face up this round as public. A planted leak still fails all 30 seeds.
+206 engine and 86 server tests pass. A whole-branch review found no critical bugs and no leaks. The simulation's leak check now counts any card that was face up this round as public. A planted leak still fails all 30 seeds.
 
 ## Key Decisions
 
