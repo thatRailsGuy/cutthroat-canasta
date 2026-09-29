@@ -277,7 +277,8 @@ describe('reissue', () => {
     ).toEqual({
       type: 'error',
       code: 'PLAYER_CONNECTED',
-      message: "Bob is still connected, so they don't need a rejoin link.",
+      message:
+        "Bob is still connected, so they don't need a rejoin link. If they're stuck, try again in a minute.",
     })
   })
 

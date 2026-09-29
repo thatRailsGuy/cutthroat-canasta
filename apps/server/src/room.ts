@@ -164,7 +164,7 @@ function reissue(
     return protocolError(
       state,
       'PLAYER_CONNECTED',
-      `${name} is still connected, so they don't need a rejoin link.`,
+      `${name} is still connected, so they don't need a rejoin link. If they're stuck, try again in a minute.`,
     )
   }
   const token = ids.newToken()

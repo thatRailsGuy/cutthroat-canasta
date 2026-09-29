@@ -82,7 +82,11 @@ The plan is `docs/superpowers/plans/2026-09-28-web-client.md`. Its Amendments (d
 | 8. Assemble the table | Done (manual playtest pending) | `a7d7f25`, fixes `af23d67` |
 | 9. Engine-checked rules examples and tables | Done, reviewed | `b2668d8`, fixes (G) `15d7127` |
 | 10. Rules page and in-game drawer | Done (by-hand page check pending) | `4ca58ef`, fixes `ec0480d` |
-| 11. Documentation | Done | this commit |
+| 11. Documentation | Done | `fc5459b` |
+| Final review fixes (H) | Done, re-reviewed | `b7d8679`, `79d1d75` |
+| Final review follow-up (I) | Done | this commit |
+
+The final whole-branch review said READY TO MERGE after the (H) fixes. (I) only adds a retry hint to the `PLAYER_CONNECTED` message and corrects the ghost-seat note.
 
 - **Tests:** 224 engine, 97 server and 78 web tests pass. Typecheck, lint and `format:check` are clean. `vite build` gives about 312 kB of JS (99 kB gzipped), and the bundle has no `zod` and no `parseClientMessage`.
 - **Smoke runs:** scripted runs through the Vite proxy to `wrangler dev` passed. They covered create, lookup (200 and 404), join, start, hidden hands, an out-of-turn refusal, draw, discard, the feed, reissue and rejoin, a stale token refused, and ping and pong. Nobody has played it in a browser yet.
@@ -174,8 +178,8 @@ On `feat-web-client` (Plan 3):
 
 ## Next Steps
 
-1. **Manual playtest** with two browser profiles and a 375 px window. The checklist is in Plan 3, Task 4 Step 6, Task 8 Step 3 and Task 10 Step 4. Note that Bob's stale token now shows "That seat link is no longer valid. Join again with your name.", not the plan's `NOT_IN_LOBBY` text. Also read the "Standard Canasta" column of the house-rules table once.
-2. **Final whole-branch review** of `feat-web-client` on the most capable model. Fix what it finds.
+1. **Manual playtest** with two browser profiles and a 375 px window. The checklist is in Plan 3, Task 4 Step 6, Task 8 Step 3 and Task 10 Step 4. Note that Bob's stale token mid-game now shows "That seat link is no longer valid. Ask the host for a new rejoin link.", not the plan's `NOT_IN_LOBBY` text. Also read the "Standard Canasta" column of the house-rules table once.
+2. **Final whole-branch review:** done. It said READY TO MERGE after the (H) fixes, and (I) followed.
 3. **Merge:** fast-forward `feat-web-client` into `main`, push (with the noreply email), and delete the branch.
 4. Deployment is deferred: Workers static assets, and `wrangler deploy` needs the user's Cloudflare account.
 5. Optional engine polish: make the simulation bot prefer going out, and tighten the test fixture `meld()` so it excludes 3s.
@@ -184,7 +188,7 @@ On `feat-web-client` (Plan 3):
 
 Decided or fixed:
 - **Host can take a disconnected seat (decided: announce).** Every reissue sends `seatReissued` to the whole table, and the client shows it in the feed area for the rest of that round. A player who reconnects later misses it.
-- **Half-open sockets (fixed in Plan 3).** A socket that has been silent for 70 s is unbound and closed, but only when the room next wakes: pings are auto-responded and never wake it. So the host sees **Seat stuck? Make rejoin link** on every connected opponent, as well as the prominent control for a disconnected one. The reissue request wakes the room, the stale drop runs first, and a dead phone's seat is then reissued. A live player's seat is refused with `PLAYER_CONNECTED` ("Bob is still connected…"), shown as a toast. This covers a phone that dies on its own turn, when nobody else can act.
+- **Half-open sockets (fixed in Plan 3).** A socket that has been silent for 70 s is unbound and closed, but only when the room next wakes: pings are auto-responded and never wake it. So the host sees **Seat stuck? Make rejoin link** on every connected opponent, as well as the prominent control for a disconnected one. The reissue request wakes the room, the stale drop runs first, and a dead phone's seat is then reissued. A live player's seat is refused with `PLAYER_CONNECTED` ("Bob is still connected… If they're stuck, try again in a minute."), shown as a toast. This covers a phone that dies on its own turn, when nobody else can act.
 - **An early `nextRound` wipes the round-end review (decided: history).** The hands are kept in `RoundScore.hands`, and the round's feed resets when the next round is dealt.
 - **Plan 3's three questions (decided 2026-09-28):** minimal presence with no alarm, a 20 s ping with a 70 s stale limit, and `GET /api/games/:code`.
 
@@ -194,7 +198,7 @@ Still open:
 - **Feed payload** grows with the square of the round length, because every broadcast resends the whole feed. Watch it. If it matters, send only the new events (only `gameState.ts` would change).
 - **A rejoin link overwrites a saved token.** Opening `/g/CODE#token=…` on a device that already holds a token for that game replaces it without asking. If the device was seated as someone else, that seat's token is lost from this device.
 - **`UNKNOWN_TOKEN` costs a click.** A player coming from the home page with a stale saved token sees the error, then the join form with their name filled in. There is no silent retry by name. Mid-game, the message says to ask the host for a new rejoin link, but the join form still shows: an unjoined socket gets no state, so the client can't tell the game has started. Joining by name there gets `NOT_IN_LOBBY`.
-- **Ghost-seat race.** If the socket drops after the server accepts a name join but before `joined` arrives, the client has no token. The next open joins by name again and takes a second seat (lobby only). A client-generated join id, or a token sent before the join, would close it.
+- **Ghost-seat race.** If the socket drops after the server accepts a name join but before `joined` arrives, the client has no token. The next open joins by name again, which is refused with `NAME_TAKEN`, because names are unique case-insensitively. The player sees that error on the join form, and the first seat is left as an orphan that only a kick removes (lobby only). A client-generated join id, or a token sent before the join, would close it.
 - **Two tabs in one browser share a token.** The key is `canasta:token:<CODE>`, so a second tab in the same profile joins as the same seat: both tabs show that player's hand and can act for them. Playtest with separate browser profiles.
 - **Toasts are hidden while the rules drawer is open.** The drawer is a modal `<dialog>` in the top layer, so rule-error toasts and "Not connected" toasts sit behind it until it closes.
 - Any rule change should update spec Section 3 first.
