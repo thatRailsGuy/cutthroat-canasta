@@ -76,8 +76,8 @@ async function nextState(client: Client): Promise<StateMessage> {
   return message as StateMessage
 }
 
-/** Creates a game with Ann (host) and Bob joined, drains the lobby broadcasts, and starts it. */
-async function startedGame() {
+/** Creates a game with Ann (host) and Bob joined, and drains the lobby broadcasts. */
+async function lobbyGame() {
   const code = await createGame()
   const ann = await connect(code)
   const annJoined = await join(ann, 'Ann')
@@ -86,15 +86,17 @@ async function startedGame() {
   const bobJoined = await join(bob, 'Bob')
   await nextState(bob)
   await nextState(ann)
-  ann.send({ type: 'start' })
+  return { code, ann, bob, annJoined, bobJoined }
+}
+
+/** Like lobbyGame, then the host starts the game. */
+async function startedGame() {
+  const lobby = await lobbyGame()
+  lobby.ann.send({ type: 'start' })
   return {
-    code,
-    ann,
-    bob,
-    annJoined,
-    bobJoined,
-    annState: await nextState(ann),
-    bobState: await nextState(bob),
+    ...lobby,
+    annState: await nextState(lobby.ann),
+    bobState: await nextState(lobby.bob),
   }
 }
 
@@ -216,5 +218,57 @@ describe('game room', () => {
       expect(room?.game.status).toBe('playing')
       expect(room?.game.players.map((p) => p.name)).toEqual(['Ann', 'Bob'])
     })
+  })
+})
+
+describe('seats', () => {
+  it('lets a player leave the lobby and join again', async () => {
+    const { ann, bob } = await lobbyGame()
+    bob.send({ type: 'leave' })
+    expect(await bob.next()).toEqual({ type: 'removed', reason: 'left' })
+    expect((await nextState(ann)).view.players.map((p) => p.name)).toEqual(['Ann'])
+    await bob.expectQuiet()
+
+    const rejoined = await join(bob, 'Robert')
+    expect((await nextState(bob)).view.players.map((p) => p.name)).toEqual(['Ann', 'Robert'])
+    expect(rejoined.playerId).toBeTruthy()
+  })
+
+  it('lets the host kick a player, whose old token then takes a fresh seat', async () => {
+    const { code, ann, bob, bobJoined } = await lobbyGame()
+    ann.send({ type: 'kick', playerId: bobJoined.playerId })
+    expect(await bob.next()).toEqual({ type: 'removed', reason: 'kicked' })
+    expect((await nextState(ann)).view.players).toHaveLength(1)
+
+    bob.send({ type: 'start' })
+    expect(await bob.next()).toMatchObject({ type: 'error', code: 'NOT_JOINED' })
+
+    const again = await connect(code)
+    const rejoined = await join(again, 'Bob', bobJoined.token)
+    expect(rejoined.playerId).not.toBe(bobJoined.playerId)
+  })
+
+  it('reissues a disconnected seat, revoking the old token', async () => {
+    const { code, ann, bob, bobJoined } = await startedGame()
+    bob.close()
+    await nextState(ann)
+    ann.send({ type: 'reissue', playerId: bobJoined.playerId })
+    const reissued = await ann.next()
+    expect(reissued).toMatchObject({ type: 'reissued', playerId: bobJoined.playerId })
+    await ann.expectQuiet()
+
+    const stale = await connect(code)
+    stale.send({ type: 'join', name: 'Bob', token: bobJoined.token })
+    expect(await stale.next()).toMatchObject({ type: 'error', code: 'NOT_IN_LOBBY' })
+
+    const fresh = await connect(code)
+    const { token } = reissued as Extract<ServerMessage, { type: 'reissued' }>
+    expect((await join(fresh, 'Bob', token)).playerId).toBe(bobJoined.playerId)
+  })
+
+  it('refuses to reissue a connected seat', async () => {
+    const { ann, bobJoined } = await startedGame()
+    ann.send({ type: 'reissue', playerId: bobJoined.playerId })
+    expect(await ann.next()).toMatchObject({ type: 'error', code: 'PLAYER_CONNECTED' })
   })
 })

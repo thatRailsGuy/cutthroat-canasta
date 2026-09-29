@@ -47,7 +47,7 @@ export class GameRoom extends DurableObject<Env> {
     if (!parsed.ok) return send(ws, parsed.error)
 
     const { playerId } = ws.deserializeAttachment() as Attachment
-    const outcome = handleMessage(this.room, playerId, parsed.message, ids)
+    const outcome = handleMessage(this.room, playerId, parsed.message, ids, this.connected())
     if (outcome.changed) {
       this.room = outcome.state
       await this.ctx.storage.put('room', this.room)
@@ -56,6 +56,14 @@ export class GameRoom extends DurableObject<Env> {
       ws.serializeAttachment({ playerId: outcome.bindPlayerId } satisfies Attachment)
     }
     for (const message of outcome.reply) send(ws, message)
+    if (outcome.detach) {
+      const { playerId: gone, reason } = outcome.detach
+      for (const socket of this.ctx.getWebSockets()) {
+        if ((socket.deserializeAttachment() as Attachment).playerId !== gone) continue
+        socket.serializeAttachment({ playerId: null } satisfies Attachment)
+        send(socket, { type: 'removed', reason })
+      }
+    }
     if (outcome.broadcast) this.broadcast()
   }
 
@@ -72,23 +80,24 @@ export class GameRoom extends DurableObject<Env> {
     this.broadcast(ws)
   }
 
+  /** Seated players with an open socket, in seat order. `except` is a socket that is closing. */
+  private connected(except?: WebSocket): string[] {
+    const ids = new Set(
+      this.ctx
+        .getWebSockets()
+        .filter((ws) => ws !== except)
+        .map((ws) => (ws.deserializeAttachment() as Attachment).playerId),
+    )
+    return (this.room?.game.players ?? []).map((p) => p.id).filter((id) => ids.has(id))
+  }
+
   private broadcast(except?: WebSocket): void {
     const room = this.room
     if (!room) return
-    const sockets = this.ctx.getWebSockets()
-    const attachments = new Map(
-      sockets.map((ws) => [ws, ws.deserializeAttachment() as Attachment] as const),
-    )
-    const connectedIds = new Set(
-      sockets
-        .filter((ws) => ws !== except)
-        .map((ws) => attachments.get(ws)?.playerId)
-        .filter((playerId): playerId is string => playerId !== null && playerId !== undefined),
-    )
-    const connected = room.game.players.map((p) => p.id).filter((id) => connectedIds.has(id))
-    for (const ws of sockets) {
+    const connected = this.connected(except)
+    for (const ws of this.ctx.getWebSockets()) {
       if (ws === except) continue
-      const { playerId } = attachments.get(ws)!
+      const { playerId } = ws.deserializeAttachment() as Attachment
       if (playerId) send(ws, stateMessage(room, playerId, connected))
     }
   }

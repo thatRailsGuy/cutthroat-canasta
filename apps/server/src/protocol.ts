@@ -28,6 +28,8 @@ const joinName = z
   )
   .pipe(z.string().min(1).max(MAX_NAME_LENGTH))
 
+const playerId = z.string().min(1).max(64)
+
 export const clientMessageSchema = z.discriminatedUnion('type', [
   z.object({
     type: z.literal('join'),
@@ -37,6 +39,9 @@ export const clientMessageSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('start') }),
   z.object({ type: z.literal('nextRound') }),
   z.object({ type: z.literal('action'), action: actionSchema }),
+  z.object({ type: z.literal('leave') }),
+  z.object({ type: z.literal('kick'), playerId }),
+  z.object({ type: z.literal('reissue'), playerId }),
 ])
 
 export type ClientMessage = z.infer<typeof clientMessageSchema>
@@ -46,13 +51,24 @@ type Assert<T extends true> = T
 type SameType<A, B> = [A] extends [B] ? ([B] extends [A] ? true : false) : false
 export type ActionSchemaMatchesEngine = Assert<SameType<z.infer<typeof actionSchema>, Action>>
 
-export type ProtocolErrorCode = 'BAD_MESSAGE' | 'NOT_JOINED' | 'NOT_HOST' | 'ALREADY_JOINED'
+export type ProtocolErrorCode =
+  | 'BAD_MESSAGE'
+  | 'NOT_JOINED'
+  | 'NOT_HOST'
+  | 'ALREADY_JOINED'
+  | 'NO_SUCH_PLAYER'
+  | 'PLAYER_CONNECTED'
 export type ServerErrorCode = RuleErrorCode | ProtocolErrorCode
 
 export type ServerMessage =
   | { type: 'joined'; code: string; playerId: string; token: string }
   | { type: 'state'; view: PlayerView; hostId: string | null; connected: string[] }
   | { type: 'error'; code: ServerErrorCode; message: string }
+  | { type: 'removed'; reason: RemovedReason }
+  | { type: 'reissued'; playerId: string; token: string }
+
+/** Why a socket's seat went away: it left, or the host kicked it. */
+export type RemovedReason = 'left' | 'kicked'
 
 export type ParseResult = { ok: true; message: ClientMessage } | { ok: false; error: ServerMessage }
 

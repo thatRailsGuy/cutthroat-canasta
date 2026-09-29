@@ -10,6 +10,9 @@ describe('parseClientMessage accepts', () => {
     { type: 'join', name: 'Ann', token: 'abc' },
     { type: 'start' },
     { type: 'nextRound' },
+    { type: 'leave' },
+    { type: 'kick', playerId: 'p2' },
+    { type: 'reissue', playerId: 'p2' },
     { type: 'action', action: { type: 'drawStock' } },
     { type: 'action', action: { type: 'discard', cardId: 12 } },
     {
@@ -63,6 +66,9 @@ describe('parseClientMessage rejects', () => {
     ['a fractional card id', { type: 'action', action: { type: 'discard', cardId: 1.5 } }],
     ['a string card id', { type: 'action', action: { type: 'discard', cardId: '3' } }],
     ['a meld without a play', { type: 'action', action: { type: 'meld' } }],
+    ['a kick without a player', { type: 'kick' }],
+    ['a reissue with an empty player id', { type: 'reissue', playerId: '' }],
+    ['a kick with an oversized player id', { type: 'kick', playerId: 'x'.repeat(65) }],
     ['a name of only zero-width and control characters', { type: 'join', name: '​\u0007' }],
   ])('%s', (_, message) => {
     expect(errorCode(parse(message))).toMatchObject({ type: 'error', code: 'BAD_MESSAGE' })

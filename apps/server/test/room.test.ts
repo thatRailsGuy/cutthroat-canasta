@@ -14,13 +14,14 @@ function sequentialIds(): RoomIds {
 function roomWith(names: string[]): { state: RoomState; ids: RoomIds } {
   const ids = sequentialIds()
   let state = createRoom('ABCDEF', SEED)
-  for (const name of names) state = handleMessage(state, null, { type: 'join', name }, ids).state
+  for (const name of names)
+    state = handleMessage(state, null, { type: 'join', name }, ids, []).state
   return { state, ids }
 }
 
 function started(): { state: RoomState; ids: RoomIds } {
   const { state, ids } = roomWith(['Ann', 'Bob'])
-  return { state: handleMessage(state, 'p1', { type: 'start' }, ids).state, ids }
+  return { state: handleMessage(state, 'p1', { type: 'start' }, ids, []).state, ids }
 }
 
 const errorOf = (outcome: { reply: unknown[] }) => outcome.reply[0]
@@ -32,6 +33,7 @@ describe('join', () => {
       null,
       { type: 'join', name: 'Ann' },
       sequentialIds(),
+      [],
     )
     expect(outcome.changed).toBe(true)
     expect(outcome.broadcast).toBe(true)
@@ -50,7 +52,7 @@ describe('join', () => {
 
   it('returns engine errors such as a duplicate name', () => {
     const { state, ids } = roomWith(['Ann'])
-    const outcome = handleMessage(state, null, { type: 'join', name: 'ann' }, ids)
+    const outcome = handleMessage(state, null, { type: 'join', name: 'ann' }, ids, [])
     expect(outcome.changed).toBe(false)
     expect(outcome.broadcast).toBe(false)
     expect(errorOf(outcome)).toMatchObject({ type: 'error', code: 'NAME_TAKEN' })
@@ -58,13 +60,13 @@ describe('join', () => {
 
   it('rejects a second join on the same connection', () => {
     const { state, ids } = roomWith(['Ann'])
-    const outcome = handleMessage(state, 'p1', { type: 'join', name: 'Other' }, ids)
+    const outcome = handleMessage(state, 'p1', { type: 'join', name: 'Other' }, ids, [])
     expect(errorOf(outcome)).toMatchObject({ type: 'error', code: 'ALREADY_JOINED' })
   })
 
   it('reattaches a known token without changing state, even after the start', () => {
     const { state, ids } = started()
-    const outcome = handleMessage(state, null, { type: 'join', name: 'Ann', token: 't1' }, ids)
+    const outcome = handleMessage(state, null, { type: 'join', name: 'Ann', token: 't1' }, ids, [])
     expect(outcome.changed).toBe(false)
     expect(outcome.broadcast).toBe(true)
     expect(outcome.state).toBe(state)
@@ -81,7 +83,13 @@ describe('join', () => {
 
   it('treats an unknown token as a new player in the lobby', () => {
     const { state, ids } = roomWith(['Ann'])
-    const outcome = handleMessage(state, null, { type: 'join', name: 'Bob', token: 'nope' }, ids)
+    const outcome = handleMessage(
+      state,
+      null,
+      { type: 'join', name: 'Bob', token: 'nope' },
+      ids,
+      [],
+    )
     expect(outcome.bindPlayerId).toBe('p2')
     expect(outcome.reply[0]).toMatchObject({ type: 'joined', playerId: 'p2', token: 't2' })
   })
@@ -90,7 +98,7 @@ describe('join', () => {
     'does not treat inherited object keys as tokens (%s)',
     (token) => {
       const { state, ids } = roomWith(['Ann'])
-      const outcome = handleMessage(state, null, { type: 'join', name: 'Bob', token }, ids)
+      const outcome = handleMessage(state, null, { type: 'join', name: 'Bob', token }, ids, [])
       expect(outcome.bindPlayerId).toBe('p2')
       expect(outcome.state.game.players).toHaveLength(2)
     },
@@ -98,7 +106,7 @@ describe('join', () => {
 
   it('rejects new players once the game has started', () => {
     const { state, ids } = started()
-    const outcome = handleMessage(state, null, { type: 'join', name: 'Cat' }, ids)
+    const outcome = handleMessage(state, null, { type: 'join', name: 'Cat' }, ids, [])
     expect(errorOf(outcome)).toMatchObject({ type: 'error', code: 'NOT_IN_LOBBY' })
   })
 })
@@ -106,13 +114,13 @@ describe('join', () => {
 describe('host controls', () => {
   it('lets only the host start the game', () => {
     const { state, ids } = roomWith(['Ann', 'Bob'])
-    expect(errorOf(handleMessage(state, null, { type: 'start' }, ids))).toMatchObject({
+    expect(errorOf(handleMessage(state, null, { type: 'start' }, ids, []))).toMatchObject({
       code: 'NOT_JOINED',
     })
-    expect(errorOf(handleMessage(state, 'p2', { type: 'start' }, ids))).toMatchObject({
+    expect(errorOf(handleMessage(state, 'p2', { type: 'start' }, ids, []))).toMatchObject({
       code: 'NOT_HOST',
     })
-    const outcome = handleMessage(state, 'p1', { type: 'start' }, ids)
+    const outcome = handleMessage(state, 'p1', { type: 'start' }, ids, [])
     expect(outcome.changed).toBe(true)
     expect(outcome.broadcast).toBe(true)
     expect(outcome.reply).toEqual([])
@@ -121,19 +129,144 @@ describe('host controls', () => {
 
   it('passes engine errors through, such as starting alone', () => {
     const { state, ids } = roomWith(['Ann'])
-    expect(errorOf(handleMessage(state, 'p1', { type: 'start' }, ids))).toMatchObject({
+    expect(errorOf(handleMessage(state, 'p1', { type: 'start' }, ids, []))).toMatchObject({
       code: 'NOT_ENOUGH_PLAYERS',
     })
   })
 
-  it('lets only the host start the next round', () => {
+  it('lets any seated player start the next round', () => {
     const { state, ids } = started()
-    expect(errorOf(handleMessage(state, 'p2', { type: 'nextRound' }, ids))).toMatchObject({
-      code: 'NOT_HOST',
+    const roundOver: RoomState = { ...state, game: { ...state.game, status: 'roundOver' } }
+    expect(errorOf(handleMessage(roundOver, null, { type: 'nextRound' }, ids, []))).toMatchObject({
+      code: 'NOT_JOINED',
     })
-    expect(errorOf(handleMessage(state, 'p1', { type: 'nextRound' }, ids))).toMatchObject({
+    const outcome = handleMessage(roundOver, 'p2', { type: 'nextRound' }, ids, [])
+    expect(outcome.changed).toBe(true)
+    expect(outcome.state.game.round?.number).toBe(2)
+  })
+
+  it('rejects the next round while one is in progress', () => {
+    const { state, ids } = started()
+    expect(errorOf(handleMessage(state, 'p2', { type: 'nextRound' }, ids, []))).toMatchObject({
       code: 'ROUND_NOT_OVER',
     })
+  })
+})
+
+describe('leave', () => {
+  it('frees the seat, revokes its token, and detaches the sender', () => {
+    const { state, ids } = roomWith(['Ann', 'Bob'])
+    const outcome = handleMessage(state, 'p2', { type: 'leave' }, ids, [])
+    expect(outcome).toMatchObject({
+      changed: true,
+      broadcast: true,
+      reply: [],
+      detach: { playerId: 'p2', reason: 'left' },
+    })
+    expect(outcome.state.game.players.map((p) => p.id)).toEqual(['p1'])
+    expect(outcome.state.tokens).toEqual({ t1: 'p1' })
+    expect(outcome.state.hostId).toBe('p1')
+  })
+
+  it('hands the host role to the next seat when the host leaves', () => {
+    const { state, ids } = roomWith(['Ann', 'Bob', 'Cat'])
+    expect(handleMessage(state, 'p1', { type: 'leave' }, ids, []).state.hostId).toBe('p2')
+  })
+
+  it('leaves no host when the last player leaves, and the next to join becomes host', () => {
+    const { state, ids } = roomWith(['Ann'])
+    const empty = handleMessage(state, 'p1', { type: 'leave' }, ids, []).state
+    expect(empty.hostId).toBeNull()
+    expect(handleMessage(empty, null, { type: 'join', name: 'Bob' }, ids, []).state.hostId).toBe(
+      'p2',
+    )
+  })
+
+  it('is refused once the game has started', () => {
+    const { state, ids } = started()
+    expect(errorOf(handleMessage(state, 'p2', { type: 'leave' }, ids, []))).toMatchObject({
+      code: 'NOT_IN_LOBBY',
+    })
+  })
+
+  it('requires joining first', () => {
+    const { state, ids } = roomWith(['Ann'])
+    expect(errorOf(handleMessage(state, null, { type: 'leave' }, ids, []))).toMatchObject({
+      code: 'NOT_JOINED',
+    })
+  })
+})
+
+describe('kick', () => {
+  it('lets the host remove another player and detach them', () => {
+    const { state, ids } = roomWith(['Ann', 'Bob'])
+    const outcome = handleMessage(state, 'p1', { type: 'kick', playerId: 'p2' }, ids, [])
+    expect(outcome.detach).toEqual({ playerId: 'p2', reason: 'kicked' })
+    expect(outcome.state.game.players.map((p) => p.id)).toEqual(['p1'])
+    expect(outcome.state.tokens).toEqual({ t1: 'p1' })
+  })
+
+  it('is host only', () => {
+    const { state, ids } = roomWith(['Ann', 'Bob'])
+    expect(
+      errorOf(handleMessage(state, 'p2', { type: 'kick', playerId: 'p1' }, ids, [])),
+    ).toMatchObject({ code: 'NOT_HOST' })
+  })
+
+  it('rejects someone not at the table', () => {
+    const { state, ids } = roomWith(['Ann', 'Bob'])
+    expect(
+      errorOf(handleMessage(state, 'p1', { type: 'kick', playerId: 'nobody' }, ids, [])),
+    ).toMatchObject({ code: 'NO_SUCH_PLAYER' })
+  })
+
+  it('is refused once the game has started', () => {
+    const { state, ids } = started()
+    expect(
+      errorOf(handleMessage(state, 'p1', { type: 'kick', playerId: 'p2' }, ids, [])),
+    ).toMatchObject({ code: 'NOT_IN_LOBBY' })
+  })
+})
+
+describe('reissue', () => {
+  it('replaces the tokens of a disconnected seat and replies only to the host', () => {
+    const { state, ids } = started()
+    const outcome = handleMessage(state, 'p1', { type: 'reissue', playerId: 'p2' }, ids, ['p1'])
+    expect(outcome).toMatchObject({
+      changed: true,
+      broadcast: false,
+      reply: [{ type: 'reissued', playerId: 'p2', token: 't3' }],
+    })
+    expect(outcome.state.tokens).toEqual({ t1: 'p1', t3: 'p2' })
+    const rejoin = handleMessage(
+      outcome.state,
+      null,
+      { type: 'join', name: 'Bob', token: 't3' },
+      ids,
+      [],
+    )
+    expect(rejoin.bindPlayerId).toBe('p2')
+  })
+
+  it('refuses a connected player', () => {
+    const { state, ids } = started()
+    expect(
+      errorOf(handleMessage(state, 'p1', { type: 'reissue', playerId: 'p2' }, ids, ['p1', 'p2'])),
+    ).toMatchObject({ code: 'PLAYER_CONNECTED' })
+  })
+
+  it('is host only', () => {
+    const { state, ids } = started()
+    expect(
+      errorOf(handleMessage(state, 'p2', { type: 'reissue', playerId: 'p1' }, ids, ['p2'])),
+    ).toMatchObject({ code: 'NOT_HOST' })
+  })
+
+  it('rejects someone not at the table', () => {
+    const { state, ids } = started()
+    expect(
+      errorOf(handleMessage(state, 'p1', { type: 'reissue', playerId: 'nobody' }, ids, ['p1'])),
+    ).toMatchObject({ code: 'NO_SUCH_PLAYER' })
   })
 })
 
@@ -143,7 +276,7 @@ describe('actions', () => {
   it('applies an action for the player whose turn it is', () => {
     const { state, ids } = started()
     // Ann (p1) dealt, so Bob (p2, seat 1) goes first.
-    const outcome = handleMessage(state, 'p2', draw, ids)
+    const outcome = handleMessage(state, 'p2', draw, ids, [])
     expect(outcome.changed).toBe(true)
     expect(outcome.broadcast).toBe(true)
     expect(outcome.state.game.round?.phase).toBe('play')
@@ -151,7 +284,7 @@ describe('actions', () => {
 
   it('returns rule errors to the sender and leaves state untouched', () => {
     const { state, ids } = started()
-    const outcome = handleMessage(state, 'p1', draw, ids)
+    const outcome = handleMessage(state, 'p1', draw, ids, [])
     expect(outcome.changed).toBe(false)
     expect(outcome.broadcast).toBe(false)
     expect(outcome.state).toBe(state)
@@ -160,14 +293,14 @@ describe('actions', () => {
 
   it('requires joining first', () => {
     const { state, ids } = started()
-    expect(errorOf(handleMessage(state, null, draw, ids))).toMatchObject({ code: 'NOT_JOINED' })
+    expect(errorOf(handleMessage(state, null, draw, ids, []))).toMatchObject({ code: 'NOT_JOINED' })
   })
 
   it('never mutates the state it was given', () => {
     const { state, ids } = started()
     const before = JSON.stringify(state)
-    handleMessage(state, 'p2', draw, ids)
-    handleMessage(state, null, { type: 'join', name: 'Ann', token: 't1' }, ids)
+    handleMessage(state, 'p2', draw, ids, [])
+    handleMessage(state, null, { type: 'join', name: 'Ann', token: 't1' }, ids, [])
     expect(JSON.stringify(state)).toBe(before)
   })
 })
