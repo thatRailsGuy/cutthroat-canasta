@@ -1,12 +1,13 @@
 ---
 created: 2026-09-27T19:40:06Z
+updated: 2026-09-28
 branch: main
 trigger: manual
 restored: false
 topic: canasta-rules-engine
 ---
 
-# Handoff: Building the Cutthroat Canasta rules engine (Plan 1 of 3)
+# Handoff: Building Cutthroat Canasta (engine and server done; Plan 3 web client ready to execute)
 
 ## Goal
 
@@ -65,6 +66,19 @@ The user settled the four open questions on 2026-09-28, choosing the recommended
 
 206 engine and 86 server tests pass. A whole-branch review found no critical bugs and no leaks. The simulation's leak check now counts any card that was face up this round as public. A planted leak still fails all 30 seeds.
 
+### Plan 3: web client and rules page (planned, not started)
+
+- The plan is `docs/superpowers/plans/2026-09-28-web-client.md`: 11 tasks, about 5,300 lines.
+  - A drafting agent ran all its code in a scratch copy of the repo. 223 engine, 90 server and 56 web tests passed, the build was clean, and a live socket through the Vite proxy to `wrangler dev` worked.
+- Read its **Amendments** section first. It records the user's decisions of 2026-09-28, and it overrides the task text:
+  - Presence is minimal, with no alarm.
+  - The heartbeat pings every 20 s, and a socket is stale after 70 s.
+  - Add `GET /api/games/:code` (200 or 404). This is in Task 2, with the client side in Tasks 3 and 4.
+- **Execution mode (user's choice):** task by task, as in Plans 1 and 2, on a new branch `feat-web-client`. A fresh implementer per task, a spec and quality review after each, and a final whole-branch review. No code has been written yet.
+- **Stack:** React 19.3, React Router 8.4, Vite 8.3, CSS modules, and the root Vitest 5 with jsdom 29. Use jsdom 29, not 30, because jsdom 30 needs Node 24.15 and this machine has 24.10.
+- The worked examples live in the engine (`@canasta/engine/examples`), because an engine test can't import from `apps/web`.
+- The "Standard Canasta" column of the house-rules table was checked against the classic partnership rules. The concealed-bonus row was made explicit: standard pays 200 instead of 100.
+
 ## Key Decisions
 
 - **Stack:** Cloudflare Workers with one Durable Object per game; React + Vite; one engine shared by server and client. boardgame.io was rejected because its server needs Node and it is barely maintained.
@@ -81,6 +95,7 @@ The user settled the four open questions on 2026-09-28, choosing the recommended
 - **Duplicate player ids are rejected** with `DUPLICATE_PLAYER`, so a reconnect must reattach the existing seat, never call `addPlayer` again.
 - **Deferred to Plans 2 and 3:** revealing everyone's hands at round end, and a public action feed. `viewFor` currently hides other hands even after the round, and it removes the log.
 - **Commits:** plain imperative messages with no attribution lines. The user's CLAUDE.md forbids them, and a hook rejects them.
+- **Commit email:** GitHub rejects pushes that expose `ccecil@wisc.edu` (GH007). This repo's local `user.email` is now `764336+thatRailsGuy@users.noreply.github.com`. Plan 2.5's commits were re-authored to it before they were pushed. Never rewrite pushed history.
 - **Server tooling (Plan 2, Task 1):**
   - `apps/server` pins `wrangler` to exactly `4.124.0`, the version `@cloudflare/vitest-pool-workers@0.22.0` pins, so the tree has one workerd build. `compatibility_date` is `2026-08-22`, the newest that workerd accepts. Bump the pool and wrangler together.
   - Server tests use `SELF` from `cloudflare:test`, because typing `exports` from `cloudflare:workers` failed.
@@ -110,9 +125,11 @@ Committed on `main` since `6abf692` (via `feat-initial-game`):
 
 ## Next Steps
 
-1. `feat-pre-client` is merged to `main`.
-2. Write Plan 3 (web client and rules page). The rules page renders from the engine constants and uses `RULE_ERROR_SECTIONS` for its "Why?" links. The client needs a heartbeat, so half-open sockets don't show as connected.
-3. Optional engine polish: make the simulation bot prefer going out, and tighten the test fixture `meld()` so it excludes 3s.
+1. `git checkout -b feat-web-client` from `main`, then execute Plan 3 task by task. Apply the Amendments section. Run `npm run format` and the full checks before each commit.
+2. After Task 8 there is a manual playtest with 2 or more browser windows (`npm run dev:server` plus `npm run dev:web`).
+3. When all 11 tasks are done, run a final whole-branch review, fix what it finds, fast-forward merge to `main`, push, and delete the branch.
+4. Deployment is deferred: Workers static assets, and `wrangler deploy` needs the user's Cloudflare account.
+5. Optional engine polish: make the simulation bot prefer going out, and tighten the test fixture `meld()` so it excludes 3s.
 
 ## Open Questions
 
