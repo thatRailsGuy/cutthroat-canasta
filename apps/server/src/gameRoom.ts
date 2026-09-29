@@ -60,7 +60,7 @@ export class GameRoom extends DurableObject<Env> {
     if (!this.room) return
     const { playerId } = ws.deserializeAttachment() as Attachment
     ws.serializeAttachment({ playerId, seenAt: Date.now() } satisfies Attachment)
-    this.dropStaleSockets()
+    const droppedPlayer = this.dropStaleSockets()
     const parsed = parseClientMessage(raw)
     if (!parsed.ok) return send(ws, parsed.error)
 
@@ -89,7 +89,8 @@ export class GameRoom extends DurableObject<Env> {
         send(socket, { type: 'removed', reason })
       }
     }
-    if (outcome.broadcast) this.broadcast()
+    // A dropped player's dot must go grey even when this message changed nothing.
+    if (outcome.broadcast || droppedPlayer) this.broadcast()
   }
 
   async webSocketClose(ws: WebSocket, code: number, reason: string): Promise<void> {
@@ -111,12 +112,15 @@ export class GameRoom extends DurableObject<Env> {
    * Unbinds and closes sockets that have been silent for too long, such as a phone that died
    * without closing its socket. Their players stop counting as connected, so the host can
    * reissue the seat, and a closed socket can't keep reading the seat's hand afterwards.
+   * Returns true if it unbound a seated player, so the caller knows presence changed.
    */
-  private dropStaleSockets(): void {
+  private dropStaleSockets(): boolean {
     const now = Date.now()
+    let droppedPlayer = false
     for (const ws of this.ctx.getWebSockets()) {
-      const { seenAt } = ws.deserializeAttachment() as Attachment
+      const { playerId, seenAt } = ws.deserializeAttachment() as Attachment
       if (!isStale(lastSeen(seenAt, this.ctx.getWebSocketAutoResponseTimestamp(ws)), now)) continue
+      if (playerId) droppedPlayer = true
       ws.serializeAttachment({ playerId: null, seenAt } satisfies Attachment)
       try {
         ws.close(STALE_CLOSE_CODE, 'No heartbeat')
@@ -124,6 +128,7 @@ export class GameRoom extends DurableObject<Env> {
         // Already closed.
       }
     }
+    return droppedPlayer
   }
 
   /** Seated players with an open socket, in seat order. `except` is a socket that is closing. */

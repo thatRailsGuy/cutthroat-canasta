@@ -1,6 +1,6 @@
 import { SELF, env, runInDurableObject } from 'cloudflare:test'
 import { describe, expect, it } from 'vitest'
-import { HEARTBEAT_PING, type ServerMessage } from '../src/protocol'
+import { HEARTBEAT_PING, STALE_CLOSE_CODE, type ServerMessage } from '../src/protocol'
 import type { RoomState } from '../src/room'
 
 type Joined = Extract<ServerMessage, { type: 'joined' }>
@@ -11,6 +11,8 @@ interface Client {
   sendRaw(data: string): void
   next(): Promise<ServerMessage>
   expectQuiet(ms?: number): Promise<void>
+  /** Resolves with the close code once the server closes the socket. */
+  closed(): Promise<number>
   close(): void
 }
 
@@ -21,14 +23,21 @@ async function createGame(): Promise<string> {
   return code
 }
 
-async function connect(code: string): Promise<Client> {
+/**
+ * `halfOpen` makes the client skip the reply to a server's Close frame, as a dead phone would,
+ * so the room never gets a close event for it.
+ */
+async function connect(code: string, { halfOpen = false } = {}): Promise<Client> {
   const response = await SELF.fetch(`http://example.com/api/games/${code}/ws`, {
     headers: { Upgrade: 'websocket' },
   })
   const ws = response.webSocket
   if (!ws) throw new Error(`Expected a WebSocket, got status ${response.status}`)
-  ws.accept()
+  ws.accept({ allowHalfOpen: halfOpen })
 
+  const closed = new Promise<number>((resolve) => {
+    ws.addEventListener('close', (event) => resolve(event.code))
+  })
   const inbox: ServerMessage[] = []
   let wake: (() => void) | null = null
   ws.addEventListener('message', (event) => {
@@ -59,6 +68,7 @@ async function connect(code: string): Promise<Client> {
       if (inbox.length === 0) await waitForMessage(ms)
       expect(inbox).toEqual([])
     },
+    closed: () => closed,
     close: () => ws.close(1000, 'done'),
   }
 }
@@ -77,12 +87,12 @@ async function nextState(client: Client): Promise<StateMessage> {
 }
 
 /** Creates a game with Ann (host) and Bob joined, and drains the lobby broadcasts. */
-async function lobbyGame() {
+async function lobbyGame({ halfOpenBob = false } = {}) {
   const code = await createGame()
   const ann = await connect(code)
   const annJoined = await join(ann, 'Ann')
   await nextState(ann)
-  const bob = await connect(code)
+  const bob = await connect(code, { halfOpen: halfOpenBob })
   const bobJoined = await join(bob, 'Bob')
   await nextState(bob)
   await nextState(ann)
@@ -90,8 +100,8 @@ async function lobbyGame() {
 }
 
 /** Like lobbyGame, then the host starts the game. */
-async function startedGame() {
-  const lobby = await lobbyGame()
+async function startedGame(options: { halfOpenBob?: boolean } = {}) {
+  const lobby = await lobbyGame(options)
   lobby.ann.send({ type: 'start' })
   return {
     ...lobby,
@@ -322,21 +332,39 @@ describe('heartbeat', () => {
     await bob.expectQuiet()
   })
 
-  it('drops a silent socket, so its seat can be reissued', async () => {
-    const { code, ann, bob, bobJoined } = await startedGame()
+  /** Fakes a silent socket by backdating its attachment. */
+  async function silence(code: string, playerId: string) {
     const stub = env.GAME_ROOM.get(env.GAME_ROOM.idFromName(code))
     await runInDurableObject(stub, async (_instance, state) => {
       for (const ws of state.getWebSockets()) {
         const attachment = ws.deserializeAttachment() as { playerId: string | null }
-        if (attachment.playerId === bobJoined.playerId) {
+        if (attachment.playerId === playerId) {
           ws.serializeAttachment({ ...attachment, seenAt: 0 })
         }
       }
     })
+  }
+
+  it('drops a silent socket, so its seat can be reissued', async () => {
+    const { code, ann, bob, bobJoined } = await startedGame()
+    await silence(code, bobJoined.playerId)
 
     ann.send({ type: 'reissue', playerId: bobJoined.playerId })
     expect(await ann.next()).toMatchObject({ type: 'reissued', playerId: bobJoined.playerId })
     expect(await ann.next()).toEqual({ type: 'seatReissued', playerId: bobJoined.playerId })
+    expect(await bob.closed()).toBe(STALE_CLOSE_CODE)
     await bob.expectQuiet()
+  })
+
+  it('tells the table a silent player is gone, even after a rejected action', async () => {
+    // Half-open, so the only state Ann can get is the one the dropped seat triggers.
+    const { code, ann, annJoined, bob, bobJoined } = await startedGame({ halfOpenBob: true })
+    await silence(code, bobJoined.playerId)
+
+    // Ann dealt, so Bob goes first and Ann's draw is rejected.
+    ann.send({ type: 'action', action: { type: 'drawStock' } })
+    expect(await ann.next()).toMatchObject({ type: 'error', code: 'NOT_YOUR_TURN' })
+    expect((await nextState(ann)).connected).toEqual([annJoined.playerId])
+    expect(await bob.closed()).toBe(STALE_CLOSE_CODE)
   })
 })
