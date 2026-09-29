@@ -9,6 +9,8 @@ export interface PublicPlayer {
   melds: Meld[]
   red3s: Card[]
   turnsThisRound: number
+  /** Everyone's hand once the round is over, so players can check the scoring; otherwise null. */
+  revealedHand: Card[] | null
 }
 
 export interface RoundView {
@@ -39,6 +41,7 @@ export interface PlayerView {
  */
 export function viewFor(game: Game, playerId: string): PlayerView {
   const round = game.round
+  const revealed = game.status === 'roundOver' || game.status === 'gameOver'
   return {
     you: game.players.find((p) => p.id === playerId) ?? null,
     players: game.players.map((p) => ({
@@ -49,6 +52,7 @@ export function viewFor(game: Game, playerId: string): PlayerView {
       melds: p.melds,
       red3s: p.red3s,
       turnsThisRound: p.turnsThisRound,
+      revealedHand: revealed ? p.hand : null,
     })),
     round: round
       ? {

@@ -42,6 +42,17 @@ export function addPlayer(game: Game, id: string, name: string): GameResult {
   return { ok: true, game: next }
 }
 
+/** Lobby only. Throws for an unknown id: callers check the seat exists. */
+export function removePlayer(game: Game, id: string): GameResult {
+  if (game.status !== 'lobby') {
+    return fail('NOT_IN_LOBBY', 'Players can only leave before the game starts.')
+  }
+  if (!game.players.some((p) => p.id === id)) throw new Error(`Unknown player: ${id}`)
+  const next = cloneGame(game)
+  next.players = next.players.filter((p) => p.id !== id)
+  return { ok: true, game: next }
+}
+
 export function startGame(game: Game): GameResult {
   if (game.status !== 'lobby') return fail('NOT_IN_LOBBY', 'The game has already started.')
   if (game.players.length < MIN_PLAYERS) {

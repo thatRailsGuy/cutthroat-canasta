@@ -39,6 +39,18 @@ describe('viewFor', () => {
     expect(visibleCardIds(view).filter((id) => secret.has(id))).toEqual([])
   })
 
+  it('reveals no hands during play', () => {
+    expect(view.players.map((p) => p.revealedHand)).toEqual([null, null, null])
+  })
+
+  it.each(['roundOver', 'gameOver'] as const)(
+    'reveals every hand when the status is %s',
+    (status) => {
+      const over = viewFor({ ...game, status }, 'p0')
+      expect(over.players.map((p) => p.revealedHand)).toEqual(game.players.map((p) => p.hand))
+    },
+  )
+
   it("includes the round's feed", () => {
     expect(view.round?.feed).toBe(game.round!.feed)
   })

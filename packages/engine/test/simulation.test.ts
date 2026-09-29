@@ -97,19 +97,27 @@ function checkInvariants(game: Game, totalCards: number, faceUp: Set<number>): v
   const allIds = allCardIds(game)
   expect(new Set(allIds).size).toBe(allIds.length)
 
-  for (const viewer of game.players) {
-    // The feed may show any card that was face up this round, even after a pickup took it.
-    const secret = new Set(
-      [
-        ...game.players.filter((p) => p.id !== viewer.id).flatMap((p) => p.hand),
-        ...round.stock,
-        ...round.discard.slice(0, -1),
-      ]
-        .map((c) => c.id)
-        .filter((id) => !faceUp.has(id)),
-    )
-    const leaked = visibleCardIds(viewFor(game, viewer.id)).filter((id) => secret.has(id))
-    expect(leaked).toEqual([])
+  if (game.status === 'playing') {
+    for (const viewer of game.players) {
+      // The feed may show any card that was face up this round, even after a pickup took it.
+      const secret = new Set(
+        [
+          ...game.players.filter((p) => p.id !== viewer.id).flatMap((p) => p.hand),
+          ...round.stock,
+          ...round.discard.slice(0, -1),
+        ]
+          .map((c) => c.id)
+          .filter((id) => !faceUp.has(id)),
+      )
+      const leaked = visibleCardIds(viewFor(game, viewer.id)).filter((id) => secret.has(id))
+      expect(leaked).toEqual([])
+    }
+  } else {
+    // At round end every hand is revealed, and the stock stays hidden.
+    const view = viewFor(game, game.players[0].id)
+    expect(view.players.map((p) => p.revealedHand)).toEqual(game.players.map((p) => p.hand))
+    const stock = new Set(round.stock.map((c) => c.id))
+    expect(visibleCardIds(view).filter((id) => stock.has(id))).toEqual([])
   }
 
   for (const entry of game.history) {

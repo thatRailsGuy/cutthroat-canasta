@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { addPlayer, createGame, startGame, startNextRound } from '../src/game'
+import { addPlayer, createGame, removePlayer, startGame, startNextRound } from '../src/game'
 import { isRed3, isWild } from '../src/cards'
 import { countCards, lobby, makeGame, makePlayer, seedOf, unwrap } from './fixtures'
 
@@ -105,6 +105,33 @@ describe('dealing', () => {
     game.round!.feed.push({ type: 'stockOut' })
     const next = unwrap(startNextRound({ ...game, status: 'roundOver' }))
     expect(next.round!.feed).toEqual([])
+  })
+})
+
+describe('removePlayer', () => {
+  it('removes the seat and keeps the others in order', () => {
+    const game = unwrap(removePlayer(lobby(3), 'p1'))
+    expect(game.players.map((p) => p.id)).toEqual(['p0', 'p2'])
+  })
+
+  it('does not modify the game it was given', () => {
+    const game = lobby(3)
+    unwrap(removePlayer(game, 'p1'))
+    expect(game.players).toHaveLength(3)
+  })
+
+  it('frees the name for someone else', () => {
+    const game = unwrap(removePlayer(lobby(2), 'p1'))
+    expect(addPlayer(game, 'new', 'Player 1').ok).toBe(true)
+  })
+
+  it('rejects once the game has started', () => {
+    const result = removePlayer(unwrap(startGame(lobby(2))), 'p1')
+    expect(result.ok ? null : result.error.code).toBe('NOT_IN_LOBBY')
+  })
+
+  it('throws for an unknown player', () => {
+    expect(() => removePlayer(lobby(2), 'stranger')).toThrow('Unknown player')
   })
 })
 
