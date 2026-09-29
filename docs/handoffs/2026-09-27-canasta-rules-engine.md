@@ -1,17 +1,17 @@
 ---
 created: 2026-09-27T19:40:06Z
 updated: 2026-09-29
-branch: feat-web-client
+branch: main
 trigger: manual
 restored: false
 topic: canasta-rules-engine
 ---
 
-# Handoff: Building Cutthroat Canasta (engine, server and web client done; playtest and final review next)
+# Handoff: Building Cutthroat Canasta (engine, server and web client merged; manual playtest next)
 
 ## Goal
 
-Build an online version of our house Cutthroat Canasta rules (V3 sheet) for 2–8 players on separate devices. The stack is a TypeScript npm-workspaces monorepo: a pure rules engine, a Cloudflare Workers server, and a React + Vite client with a rules page. Plans 1 (engine), 2 and 2.5 (server) are merged. Plan 3 (web client, `apps/web`) is implemented on `feat-web-client`, and waits for a manual playtest and the final review.
+Build an online version of our house Cutthroat Canasta rules (V3 sheet) for 2–8 players on separate devices. The stack is a TypeScript npm-workspaces monorepo: a pure rules engine, a Cloudflare Workers server, and a React + Vite client with a rules page. Plans 1 (engine), 2 and 2.5 (server) are merged. Plan 3 (web client, `apps/web`) passed its final review and is merged to `main`. The user chose to merge before the manual playtest.
 
 ## Current State
 
@@ -178,9 +178,9 @@ On `feat-web-client` (Plan 3):
 
 ## Next Steps
 
-1. **Manual playtest** with two browser profiles and a 375 px window. The checklist is in Plan 3, Task 4 Step 6, Task 8 Step 3 and Task 10 Step 4. Note that Bob's stale token mid-game now shows "That seat link is no longer valid. Ask the host for a new rejoin link.", not the plan's `NOT_IN_LOBBY` text. Also read the "Standard Canasta" column of the house-rules table once.
+1. **Manual playtest:** follow `docs/playtest.md` (setup, phones over Wi-Fi, and the full checklist). It supersedes the by-hand steps in Plan 3 (Task 4 Step 6, Task 8 Step 3, Task 10 Step 4). Fix what it finds on a new branch from `main`.
 2. **Final whole-branch review:** done. It said READY TO MERGE after the (H) fixes, and (I) followed.
-3. **Merge:** fast-forward `feat-web-client` into `main`, push (with the noreply email), and delete the branch.
+3. **Merge:** done. `feat-web-client` was fast-forwarded into `main`, pushed and deleted.
 4. Deployment is deferred: Workers static assets, and `wrangler deploy` needs the user's Cloudflare account.
 5. Optional engine polish: make the simulation bot prefer going out, and tighten the test fixture `meld()` so it excludes 3s.
 
