@@ -6,6 +6,7 @@ import { Toasts } from '../components/Toasts'
 import { loadName, loadToken, tokenFromHash } from '../storage'
 import { useGame } from '../useGame'
 import { Lobby } from './Lobby'
+import { Table } from './Table'
 import styles from './Pages.module.css'
 
 /** Navigation state the home page passes: join with this name right away. */
@@ -128,7 +129,8 @@ function Session({ code, linkToken, autoJoinName, joinsByItself }: SessionProps)
       />
     )
   } else {
-    body = <p className={styles.banner}>The game has started.</p>
+    // A new key each round remounts the table, which resets staging: card ids repeat per round.
+    body = <Table key={view.round?.number} code={code} view={view} state={state} send={send} />
   }
 
   return (
