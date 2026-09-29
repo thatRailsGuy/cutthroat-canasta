@@ -1,0 +1,58 @@
+.card {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.1rem;
+  border: 1px solid #c9c4b8;
+  border-radius: 6px;
+  background: white;
+  box-shadow: var(--shadow);
+  font-weight: 700;
+  padding: 0;
+  min-height: 0;
+  line-height: 1;
+  transition: transform 0.1s;
+}
+
+.normal {
+  width: 3rem;
+  height: 4.25rem;
+  font-size: 1.1rem;
+}
+
+.small {
+  width: 2.1rem;
+  height: 3rem;
+  font-size: 0.85rem;
+}
+
+.red {
+  color: var(--red);
+}
+
+.black {
+  color: var(--ink);
+}
+
+.selected {
+  transform: translateY(-0.5rem);
+  outline: 3px solid var(--gold);
+}
+
+.joker {
+  font-size: 1.4em;
+  color: #6a3fb5;
+}
+
+.row {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.2rem;
+}
+
+@media print {
+  .card {
+    box-shadow: none;
+  }
+}
