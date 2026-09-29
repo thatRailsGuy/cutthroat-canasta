@@ -1,6 +1,7 @@
 import { cloneGame } from './clone'
 import { MAX_PLAYERS, MIN_PLAYERS } from './constants'
 import { ruleError, type RuleErrorCode } from './errors'
+import type { Seed } from './rng'
 import { dealRound } from './round'
 import type { Game, GameResult } from './types'
 
@@ -9,7 +10,7 @@ const fail = (code: RuleErrorCode, message: string): GameResult => ({
   error: ruleError(code, message),
 })
 
-export function createGame(seed: number): Game {
+export function createGame(seed: Seed): Game {
   return { players: [], round: null, history: [], status: 'lobby', seed, log: [], winners: [] }
 }
 

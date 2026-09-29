@@ -1,6 +1,7 @@
 import type { Card, Rank, Suit } from '../src/cards'
 import type { Game, GameResult, Meld, Player, Round } from '../src/types'
 import { addPlayer, createGame } from '../src/game'
+import type { Seed } from '../src/rng'
 
 const SUIT_CODES: Record<string, Suit> = { c: 'clubs', d: 'diamonds', h: 'hearts', s: 'spades' }
 let nextCardId = 10_000
@@ -68,7 +69,7 @@ export function makeGame(opts: {
     },
     history: [],
     status: 'playing',
-    seed: 1,
+    seed: seedOf(1),
     log: [],
     winners: [],
   }
@@ -79,8 +80,13 @@ export function unwrap(result: GameResult): Game {
   return result.game
 }
 
+/** Expands a small test number into a full 128-bit seed. */
+export function seedOf(n: number): Seed {
+  return [n >>> 0, 0x9e3779b9, 0x243f6a88, 0xb7e15162]
+}
+
 export function lobby(players: number, seed = 42): Game {
-  let game = createGame(seed)
+  let game = createGame(seedOf(seed))
   for (let i = 0; i < players; i++) game = unwrap(addPlayer(game, `p${i}`, `Player ${i}`))
   return game
 }

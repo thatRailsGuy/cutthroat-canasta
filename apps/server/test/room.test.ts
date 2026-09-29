@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
+import type { Seed } from '@canasta/engine'
 import type { ClientMessage } from '../src/protocol'
 import { createRoom, handleMessage, stateMessage, type RoomIds, type RoomState } from '../src/room'
+
+const SEED: Seed = [42, 0, 0, 0]
 
 function sequentialIds(): RoomIds {
   let players = 0
@@ -10,7 +13,7 @@ function sequentialIds(): RoomIds {
 
 function roomWith(names: string[]): { state: RoomState; ids: RoomIds } {
   const ids = sequentialIds()
-  let state = createRoom('ABCDEF', 42)
+  let state = createRoom('ABCDEF', SEED)
   for (const name of names) state = handleMessage(state, null, { type: 'join', name }, ids).state
   return { state, ids }
 }
@@ -25,7 +28,7 @@ const errorOf = (outcome: { reply: unknown[] }) => outcome.reply[0]
 describe('join', () => {
   it('seats the first player as host and replies with their token', () => {
     const outcome = handleMessage(
-      createRoom('ABCDEF', 42),
+      createRoom('ABCDEF', SEED),
       null,
       { type: 'join', name: 'Ann' },
       sequentialIds(),

@@ -8,6 +8,7 @@ import {
   type Game,
   type GameResult,
   type RuleError,
+  type Seed,
 } from '@canasta/engine'
 import type { ClientMessage, ProtocolErrorCode, ServerMessage } from './protocol'
 
@@ -36,7 +37,7 @@ export interface Outcome {
   broadcast: boolean
 }
 
-export function createRoom(code: string, seed: number): RoomState {
+export function createRoom(code: string, seed: Seed): RoomState {
   return { code, game: createGame(seed), hostId: null, tokens: {} }
 }
 

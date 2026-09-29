@@ -27,10 +27,13 @@ describe('normalizeCode', () => {
 })
 
 describe('randomSeed', () => {
-  it('returns an unsigned 32-bit integer', () => {
+  it('returns four unsigned 32-bit words', () => {
     const seed = randomSeed()
-    expect(Number.isInteger(seed)).toBe(true)
-    expect(seed).toBeGreaterThanOrEqual(0)
-    expect(seed).toBeLessThan(2 ** 32)
+    expect(seed).toHaveLength(4)
+    for (const word of seed) {
+      expect(Number.isInteger(word)).toBe(true)
+      expect(word).toBeGreaterThanOrEqual(0)
+      expect(word).toBeLessThan(2 ** 32)
+    }
   })
 })

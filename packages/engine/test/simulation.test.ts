@@ -14,7 +14,7 @@ import {
   type Game,
   type Rng,
 } from '../src'
-import { allCardIds, countCards, lobby, unwrap, visibleCardIds } from './fixtures'
+import { allCardIds, countCards, lobby, seedOf, unwrap, visibleCardIds } from './fixtures'
 
 const SEEDS = 30
 const MAX_ROUNDS = 4
@@ -120,7 +120,7 @@ describe('random games', () => {
     (seed) => {
       const players = 2 + (seed % 7)
       const totalCards = deckCount(players) * 54
-      const rng = createRng(seed)
+      const rng = createRng(seedOf(seed))
       let game = unwrap(startGame(lobby(players, seed)))
 
       for (let round = 0; round < MAX_ROUNDS && game.status !== 'gameOver'; round++) {

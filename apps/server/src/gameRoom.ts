@@ -1,4 +1,5 @@
 import { DurableObject } from 'cloudflare:workers'
+import type { Seed } from '@canasta/engine'
 import { parseClientMessage, type ServerMessage } from './protocol'
 import { createRoom, handleMessage, stateMessage, type RoomIds, type RoomState } from './room'
 
@@ -22,7 +23,7 @@ export class GameRoom extends DurableObject<Env> {
   }
 
   /** Called once by the Worker when it allocates a game code. Returns false if the code is taken. */
-  async init(code: string, seed: number): Promise<boolean> {
+  async init(code: string, seed: Seed): Promise<boolean> {
     if (this.room) return false
     this.room = createRoom(code, seed)
     await this.ctx.storage.put('room', this.room)

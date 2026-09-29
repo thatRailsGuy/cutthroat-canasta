@@ -1,5 +1,6 @@
 import type { Card, CardId, NaturalRank } from './cards'
 import type { RuleError } from './errors'
+import type { Seed } from './rng'
 
 export interface Meld {
   id: string
@@ -77,7 +78,7 @@ export interface Game {
   round: Round | null
   history: RoundScore[]
   status: GameStatus
-  seed: number
+  seed: Seed
   log: LogEntry[]
   winners: string[]
 }

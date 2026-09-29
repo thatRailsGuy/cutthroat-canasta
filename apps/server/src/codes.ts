@@ -1,3 +1,5 @@
+import type { Seed } from '@canasta/engine'
+
 /** No I, L, O, 0 or 1, so codes are easy to read aloud and type. */
 export const CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'
 export const CODE_LENGTH = 6
@@ -23,7 +25,7 @@ export function normalizeCode(input: string): string | null {
   return CODE_PATTERN.test(code) ? code : null
 }
 
-export function randomSeed(): number {
-  const [value] = crypto.getRandomValues(new Uint32Array(1))
-  return value
+export function randomSeed(): Seed {
+  const [a, b, c, d] = crypto.getRandomValues(new Uint32Array(4))
+  return [a, b, c, d]
 }

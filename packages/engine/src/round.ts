@@ -1,7 +1,7 @@
 import { isRed3, isWild } from './cards'
 import { WINNING_SCORE, deckCount, handSize } from './constants'
 import { buildDeck } from './deck'
-import { createRng, shuffle } from './rng'
+import { createRng, shuffle, type Seed } from './rng'
 import { scoreRound } from './scoring'
 import type { Game } from './types'
 
@@ -9,7 +9,7 @@ import type { Game } from './types'
 
 export function dealRound(game: Game, number: number, dealer: number): void {
   const n = game.players.length
-  const stock = shuffle(buildDeck(deckCount(n)), createRng(game.seed + number * 7919))
+  const stock = shuffle(buildDeck(deckCount(n)), createRng(roundSeed(game.seed, number)))
   const size = handSize(n)
 
   for (const player of game.players) {
@@ -47,6 +47,11 @@ export function dealRound(game: Game, number: number, dealer: number): void {
   }
   game.status = 'playing'
   beginTurn(game)
+}
+
+/** Mixes the round number into the seed, so no two rounds of a game share a shuffle. */
+function roundSeed([a, b, c, d]: Seed, round: number): Seed {
+  return [(a ^ Math.imul(round, 0x9e3779b9)) >>> 0, b, c, d]
 }
 
 export function beginTurn(game: Game): void {

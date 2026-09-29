@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { addPlayer, createGame, startGame, startNextRound } from '../src/game'
 import { isRed3, isWild } from '../src/cards'
-import { countCards, lobby, makeGame, makePlayer, unwrap } from './fixtures'
+import { countCards, lobby, makeGame, makePlayer, seedOf, unwrap } from './fixtures'
 
 describe('lobby', () => {
   it('starts empty in the lobby', () => {
-    const game = createGame(1)
+    const game = createGame(seedOf(1))
     expect(game.status).toBe('lobby')
     expect(game.players).toEqual([])
   })
@@ -15,13 +15,13 @@ describe('lobby', () => {
   })
 
   it('rejects a duplicate name, ignoring case', () => {
-    const game = unwrap(addPlayer(createGame(1), 'a', 'Ann'))
+    const game = unwrap(addPlayer(createGame(seedOf(1)), 'a', 'Ann'))
     const result = addPlayer(game, 'b', 'ann')
     expect(result.ok ? null : result.error.code).toBe('NAME_TAKEN')
   })
 
   it('rejects a duplicate player id', () => {
-    const game = unwrap(addPlayer(createGame(1), 'a', 'Ann'))
+    const game = unwrap(addPlayer(createGame(seedOf(1)), 'a', 'Ann'))
     const result = addPlayer(game, 'a', 'Bea')
     expect(result.ok ? null : result.error.code).toBe('DUPLICATE_PLAYER')
   })
@@ -92,6 +92,12 @@ describe('dealing', () => {
     const c = unwrap(startGame(lobby(3, 10)))
     expect(a.players[0].hand).toEqual(b.players[0].hand)
     expect(a.players[0].hand).not.toEqual(c.players[0].hand)
+  })
+
+  it('deals a different shuffle each round of the same game', () => {
+    const round1 = unwrap(startGame(lobby(3, 9)))
+    const round2 = unwrap(startNextRound({ ...round1, status: 'roundOver' }))
+    expect(round2.players[0].hand).not.toEqual(round1.players[0].hand)
   })
 })
 
