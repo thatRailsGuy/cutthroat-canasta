@@ -90,7 +90,11 @@ describe('join', () => {
       ids,
       [],
     )
-    expect(errorOf(outcome)).toMatchObject({ type: 'error', code: 'UNKNOWN_TOKEN' })
+    expect(errorOf(outcome)).toEqual({
+      type: 'error',
+      code: 'UNKNOWN_TOKEN',
+      message: 'That seat link is no longer valid. Join again with your name.',
+    })
     expect(outcome.bindPlayerId).toBeUndefined()
     expect(outcome.changed).toBe(false)
   })
@@ -104,7 +108,11 @@ describe('join', () => {
       ids,
       [],
     )
-    expect(errorOf(outcome)).toMatchObject({ type: 'error', code: 'UNKNOWN_TOKEN' })
+    expect(errorOf(outcome)).toEqual({
+      type: 'error',
+      code: 'UNKNOWN_TOKEN',
+      message: 'That seat link is no longer valid. Ask the host for a new rejoin link.',
+    })
   })
 
   it.each(['__proto__', 'constructor', 'toString'])(
@@ -266,7 +274,11 @@ describe('reissue', () => {
     const { state, ids } = started()
     expect(
       errorOf(handleMessage(state, 'p1', { type: 'reissue', playerId: 'p2' }, ids, ['p1', 'p2'])),
-    ).toMatchObject({ code: 'PLAYER_CONNECTED' })
+    ).toEqual({
+      type: 'error',
+      code: 'PLAYER_CONNECTED',
+      message: "Bob is still connected, so they don't need a rejoin link.",
+    })
   })
 
   it('is host only', () => {

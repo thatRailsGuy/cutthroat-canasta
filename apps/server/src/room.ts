@@ -93,12 +93,15 @@ function join(
 
   if (token !== undefined) {
     // A kicked, left or reissued seat's token. Taking a fresh seat instead would leave a ghost
-    // seat in the lobby, so the client drops the token and asks for a name.
+    // seat in the lobby, so the client drops the token. In the lobby the player can join again
+    // by name; once the game has started only a new rejoin link from the host helps.
     if (!Object.hasOwn(state.tokens, token)) {
       return protocolError(
         state,
         'UNKNOWN_TOKEN',
-        'That seat link is no longer valid. Join again with your name.',
+        state.game.status === 'lobby'
+          ? 'That seat link is no longer valid. Join again with your name.'
+          : 'That seat link is no longer valid. Ask the host for a new rejoin link.',
       )
     }
     const playerId = state.tokens[token]
@@ -156,10 +159,12 @@ function reissue(
 ): Outcome {
   if (!isSeated(state, playerId)) return noSuchPlayer(state)
   if (connected.includes(playerId)) {
+    // The host sees this as a toast after pressing "Seat stuck?" for a player who is still live.
+    const name = state.game.players.find((p) => p.id === playerId)?.name ?? 'That player'
     return protocolError(
       state,
       'PLAYER_CONNECTED',
-      "That player is connected, so they don't need a rejoin link.",
+      `${name} is still connected, so they don't need a rejoin link.`,
     )
   }
   const token = ids.newToken()
