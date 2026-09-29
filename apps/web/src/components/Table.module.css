@@ -70,6 +70,17 @@
   color: var(--ink);
 }
 
+.stuck {
+  justify-self: start;
+  min-height: 32px;
+  padding: 0 0.5rem;
+  font-size: 0.8rem;
+  background: none;
+  color: inherit;
+  border: 1px dashed currentColor;
+  opacity: 0.8;
+}
+
 .rejoin {
   display: flex;
   gap: 0.5rem;

@@ -57,9 +57,15 @@ function Game({ code }: { code: string }) {
   const [exists, setExists] = useState<boolean | null | 'checking'>('checking')
 
   useEffect(() => {
-    // Keep the token out of the address bar, history and anything the player shares.
-    if (location.hash) navigate({ pathname: location.pathname, hash: '' }, { replace: true })
-  }, [location.hash, location.pathname, navigate])
+    // Keep the token out of the address bar, history and anything the player shares. Also drop
+    // the home page's pending name (read above), so a reload doesn't join by name again.
+    if (location.hash || location.state) {
+      navigate(
+        { pathname: location.pathname, search: location.search },
+        { replace: true, state: null },
+      )
+    }
+  }, [location.hash, location.state, location.pathname, location.search, navigate])
 
   useEffect(() => {
     let cancelled = false
@@ -115,7 +121,9 @@ function Session({ code, linkToken, autoJoinName, joinsByItself }: SessionProps)
 
   const view = state.view
   let body
-  if (!state.playerId && (state.joining || (joinsByItself && !state.joinError))) {
+  const waitingForSeat = !state.playerId && (state.joining || (joinsByItself && !state.joinError))
+  // Seated but no view yet: the first state is on its way, so don't flash the join form.
+  if (waitingForSeat || (state.playerId && !view)) {
     body = <p className={styles.banner}>Joining…</p>
   } else if (!state.playerId || !view) {
     body = (

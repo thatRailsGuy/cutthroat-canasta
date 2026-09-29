@@ -184,14 +184,17 @@ On `feat-web-client` (Plan 3):
 
 Decided or fixed:
 - **Host can take a disconnected seat (decided: announce).** Every reissue sends `seatReissued` to the whole table, and the client shows it in the feed area for the rest of that round. A player who reconnects later misses it.
-- **Half-open sockets (fixed in Plan 3).** A client heartbeat plus the server's 70 s stale limit unbind a dead phone's socket, so the host can reissue the seat.
+- **Half-open sockets (fixed in Plan 3).** A socket that has been silent for 70 s is unbound and closed, but only when the room next wakes: pings are auto-responded and never wake it. So the host sees **Seat stuck? Make rejoin link** on every connected opponent, as well as the prominent control for a disconnected one. The reissue request wakes the room, the stale drop runs first, and a dead phone's seat is then reissued. A live player's seat is refused with `PLAYER_CONNECTED` ("Bob is still connected…"), shown as a toast. This covers a phone that dies on its own turn, when nobody else can act.
 - **An early `nextRound` wipes the round-end review (decided: history).** The hands are kept in `RoundScore.hands`, and the round's feed resets when the next round is dealt.
 - **Plan 3's three questions (decided 2026-09-28):** minimal presence with no alarm, a 20 s ping with a 70 s stale limit, and `GET /api/games/:code`.
 
 Still open:
-- **Stale dot until the next event.** Nothing wakes the room when a socket goes stale, so others see a dead player's green dot until the next message or close in that room. An alarm would fix it, at the cost of waking the room.
+- **Stale dot until the next event.** Nothing wakes the room when a socket goes stale, so everyone sees a dead player's green dot until the next message, close or error in that room. The host's **Seat stuck?** button is the way out of a stall. A Durable Object alarm would refresh the dots on its own, at the cost of waking the room.
 - **No host after a mid-game token loss.** If the host loses their token, nobody can reissue any token.
 - **Feed payload** grows with the square of the round length, because every broadcast resends the whole feed. Watch it. If it matters, send only the new events (only `gameState.ts` would change).
 - **A rejoin link overwrites a saved token.** Opening `/g/CODE#token=…` on a device that already holds a token for that game replaces it without asking. If the device was seated as someone else, that seat's token is lost from this device.
-- **`UNKNOWN_TOKEN` costs a click.** A player coming from the home page with a stale saved token sees the error, then the join form with their name filled in. There is no silent retry by name.
+- **`UNKNOWN_TOKEN` costs a click.** A player coming from the home page with a stale saved token sees the error, then the join form with their name filled in. There is no silent retry by name. Mid-game, the message says to ask the host for a new rejoin link, but the join form still shows: an unjoined socket gets no state, so the client can't tell the game has started. Joining by name there gets `NOT_IN_LOBBY`.
+- **Ghost-seat race.** If the socket drops after the server accepts a name join but before `joined` arrives, the client has no token. The next open joins by name again and takes a second seat (lobby only). A client-generated join id, or a token sent before the join, would close it.
+- **Two tabs in one browser share a token.** The key is `canasta:token:<CODE>`, so a second tab in the same profile joins as the same seat: both tabs show that player's hand and can act for them. Playtest with separate browser profiles.
+- **Toasts are hidden while the rules drawer is open.** The drawer is a modal `<dialog>` in the top layer, so rule-error toasts and "Not connected" toasts sit behind it until it closes.
 - Any rule change should update spec Section 3 first.

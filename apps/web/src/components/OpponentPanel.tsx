@@ -8,7 +8,11 @@ export interface OpponentPanelProps {
   isTurn: boolean
   isConnected: boolean
   isHost: boolean
-  /** Host only, for a disconnected player: ask the server for a rejoin link. */
+  /**
+   * Host only: ask the server for a rejoin link. Offered for every opponent, because a dead
+   * phone can still count as connected: the server only notices a silent socket when a message
+   * arrives, and the reissue request itself is that message.
+   */
   onReissue?: () => void
   rejoinLink?: string
 }
@@ -33,19 +37,38 @@ export function OpponentPanel(props: OpponentPanelProps) {
         <span>{player.score.toLocaleString('en-US')} pts</span>
       </header>
       <MeldList melds={player.melds} red3s={player.red3s} />
-      {onReissue && !isConnected && (
+      {onReissue && (
         // A new link remounts the control, which clears the last copy result.
-        <RejoinControl key={rejoinLink} onReissue={onReissue} link={rejoinLink} />
+        <RejoinControl
+          key={rejoinLink}
+          onReissue={onReissue}
+          link={rejoinLink}
+          subtle={isConnected}
+        />
       )}
     </section>
   )
 }
 
-export function RejoinControl({ onReissue, link }: { onReissue: () => void; link?: string }) {
+export interface RejoinControlProps {
+  onReissue: () => void
+  link?: string
+  /**
+   * The player still counts as connected: offer a small "Seat stuck?" button. If they really
+   * are live, the server refuses with PLAYER_CONNECTED, which shows as a toast.
+   */
+  subtle?: boolean
+}
+
+export function RejoinControl({ onReissue, link, subtle = false }: RejoinControlProps) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [copyResult, setCopyResult] = useState<'copied' | 'manual' | null>(null)
   if (!link) {
-    return (
+    return subtle ? (
+      <button type="button" className={styles.stuck} onClick={onReissue}>
+        Seat stuck? Make rejoin link
+      </button>
+    ) : (
       <button type="button" onClick={onReissue}>
         Make rejoin link
       </button>
