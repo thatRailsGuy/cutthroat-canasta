@@ -132,7 +132,7 @@ Files modified outside `apps/web`: root `package.json` (`dev:web`, `eslint-plugi
   - A jsdom Vitest harness with jest-dom matchers.
   - Root script `npm run dev:web`.
 
-- [ ] **Step 1: Create the package files**
+- [x] **Step 1: Create the package files**
 
 `apps/web/package.json`:
 ```json
@@ -305,7 +305,7 @@ createRoot(document.getElementById('root')!).render(
 )
 ```
 
-- [ ] **Step 2: Add the root script and the lint plugin**
+- [x] **Step 2: Add the root script and the lint plugin**
 
 In the root `package.json`:
 - `scripts`: add `"dev:web": "npm run dev -w @canasta/web"` after `dev:server`.
@@ -353,7 +353,7 @@ export default tseslint.config(
 )
 ```
 
-- [ ] **Step 3: Install with a clean lockfile**
+- [x] **Step 3: Install with a clean lockfile**
 
 Run the lockfile procedure from Global Constraints. Expected:
 - `grep -c '@rolldown/binding-' package-lock.json` prints a non-zero count.
@@ -363,7 +363,7 @@ Run the lockfile procedure from Global Constraints. Expected:
 
 If npm moves Vitest 4 to the root or nests a second Vitest 5 under `apps/web`, stop and report NEEDS_CONTEXT.
 
-- [ ] **Step 4: Write the smoke test**
+- [x] **Step 4: Write the smoke test**
 
 `apps/web/test/smoke.test.tsx`:
 ```tsx
@@ -377,14 +377,14 @@ it('renders in jsdom with jest-dom matchers', () => {
 })
 ```
 
-- [ ] **Step 5: Run all checks**
+- [x] **Step 5: Run all checks**
 
 Run: `npm run format && npm test && npm run typecheck && npm run lint && npm run format:check && npm run build -w @canasta/web`
 Expected: engine 206, server 86 and web 1 tests pass; typecheck, lint and format are clean; `vite build` writes `apps/web/dist/` (git-ignored by the root `dist/` rule).
 
 Then check that the lint rules are live. Create a scratch file `apps/web/src/probe.tsx` containing `import { HEARTBEAT_PING } from '@canasta/server/protocol'` and a `useState` call inside an `if`. `npx eslint apps/web/src/probe.tsx` must report `@typescript-eslint/no-restricted-imports` and `react-hooks/rules-of-hooks`. Delete the file with `rm -f` (a plain `rm` may prompt).
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add apps/web package.json package-lock.json eslint.config.js
@@ -411,7 +411,7 @@ git commit -m "Scaffold web client package with Vite, React and Vitest"
 
 Why this design: the auto-response costs nothing while the room hibernates, and the runtime records when it last answered each socket, so the server needs no timer and no extra storage writes for pings. The limit (70 s) spans three missed pings plus slack, because browsers may slow timers in background tabs to once a minute. Limitation: nothing wakes the room when a socket goes stale, so other players see the stale dot until the next message or close in that room (any action refreshes it). See Open Questions.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `apps/server/test/presence.test.ts`:
 ```ts
@@ -466,12 +466,12 @@ describe('heartbeat', () => {
 
 The second test fakes a silent socket by backdating its attachment. Without the change, the reissue fails with `PLAYER_CONNECTED`.
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `npm test -w @canasta/server`
 Expected: FAIL. `presence.ts` and `HEARTBEAT_PING` don't exist yet.
 
-- [ ] **Step 3: Add the protocol constants**
+- [x] **Step 3: Add the protocol constants**
 
 In `apps/server/src/protocol.ts`, after `MAX_NAME_LENGTH`:
 ```ts
@@ -499,7 +499,7 @@ Add the last member to `ServerMessage`:
   | { type: 'pong' }
 ```
 
-- [ ] **Step 4: Implement presence and the Durable Object changes**
+- [x] **Step 4: Implement presence and the Durable Object changes**
 
 `apps/server/src/presence.ts`:
 ```ts
@@ -676,12 +676,12 @@ function send(ws: WebSocket, message: ServerMessage): void {
 
 The changes from the current file: the `seenAt` field, the auto-response in the constructor, `seenAt` in every `serializeAttachment`, the `seenAt` update and `dropStaleSockets()` at the top of `webSocketMessage` (before parsing, so even a bad frame counts as a sign of life), and `dropStaleSockets()` before each close/error broadcast.
 
-- [ ] **Step 5: Run all checks**
+- [x] **Step 5: Run all checks**
 
 Run: `npm run format && npm test && npm run typecheck && npm run lint && npm run format:check`
 Expected: 90 server tests pass (86 + 2 presence + 2 heartbeat); engine and web unchanged.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add apps/server
@@ -705,7 +705,7 @@ git commit -m "Answer heartbeat pings and drop silent sockets from presence"
 
 The client can't import the server's constants as values, so `connection.ts` keeps its own copies typed as `typeof HEARTBEAT_PING` and `typeof HEARTBEAT_INTERVAL_MS`. If the server's strings or numbers change, the web typecheck fails (checked while writing this plan: a one-space difference in the ping string gives `TS2322`).
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `apps/web/test/connection.test.ts`:
 ```ts
@@ -861,12 +861,12 @@ describe('GameConnection', () => {
 })
 ```
 
-- [ ] **Step 2: Run it to verify it fails**
+- [x] **Step 2: Run it to verify it fails**
 
 Run: `npm test -w @canasta/web`
 Expected: FAIL, because `../src/connection` can't be resolved.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `apps/web/src/api.ts`:
 ```ts
@@ -1090,12 +1090,12 @@ Notes:
 - `failures` resets on open. The UI uses it to say "Can't reach game …" after 3 closes in a row (there is no HTTP route to check whether a code exists; see Open Questions).
 - The server's stale close (code 4000) needs no special case: every close reconnects, and `onOpen` rejoins with the token.
 
-- [ ] **Step 4: Run all checks**
+- [x] **Step 4: Run all checks**
 
 Run: `npm run format && npm test && npm run typecheck && npm run lint && npm run format:check`
 Expected: 8 web tests pass (smoke + 7).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/web
@@ -1128,7 +1128,7 @@ Join flow:
 - `joined` saves the token. An error that answers a join goes to `joinError` (shown on the join form), not to a toast, and a rejected saved token is deleted.
 - `removed` deletes the token, stops the connection, and the page navigates to `/` with `state: { notice }`, which the home page shows.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `apps/web/test/fixtures.ts`:
 ```ts
@@ -1276,12 +1276,12 @@ describe('sectionFor', () => {
 })
 ```
 
-- [ ] **Step 2: Run it to verify it fails**
+- [x] **Step 2: Run it to verify it fails**
 
 Run: `npm test -w @canasta/web`
 Expected: FAIL, because `../src/gameState` can't be resolved.
 
-- [ ] **Step 3: Implement the state and the hook**
+- [x] **Step 3: Implement the state and the hook**
 
 `apps/web/src/gameState.ts`:
 ```ts
@@ -1514,7 +1514,7 @@ Notes:
 - The effect's dependencies are stable: `GamePage` reads `linkToken` and `autoJoinName` once with `useState` initializers.
 - Status dispatches happen in socket callbacks, never synchronously in the effect body, so `react-hooks/set-state-in-effect` doesn't fire.
 
-- [ ] **Step 4: Implement the pages**
+- [x] **Step 4: Implement the pages**
 
 `apps/web/src/components/WhyLink.tsx`:
 ```tsx
@@ -2006,7 +2006,7 @@ createRoot(document.getElementById('root')!).render(
 
 Delete `apps/web/test/smoke.test.tsx` (it rendered the placeholder `App` without a router).
 
-- [ ] **Step 5: Run all checks**
+- [x] **Step 5: Run all checks**
 
 Run: `npm run format && npm test && npm run typecheck && npm run lint && npm run format:check`
 Expected: 15 web tests pass (7 connection + 8 game state).
@@ -2019,7 +2019,7 @@ Run `npm run dev:server` in one terminal and `npm run dev:web` in another. (Vite
 - Ann presses **Start game** alone: a toast says "You need at least 2 players to start." with a "Why?" link to `/rules#setup`.
 - Reload Ann's tab: she reconnects to her seat without the join form.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add apps/web
@@ -2044,7 +2044,7 @@ git commit -m "Add game state, home page, join flow and lobby"
   - `OpponentPanel({ player, isTurn, isConnected, isHost, onReissue?, rejoinLink? })`: name, presence dot, host badge, card count, score, melds and Red 3s, and a gold outline on their turn. `RejoinControl`: host only, for a disconnected player; **Make rejoin link** sends `reissue`, then a read-only link field with **Copy** (the clipboard write happens on that click, so it has a user gesture).
   - `CenterPile({ view, yourTurn, selected, onToggleTop, onDraw })`: **Draw (n left)** (or **Stock empty: end the round** when `stockCount` is 0, spec 3.3), the top discard (selectable in your draw phase, for a pickup), the pile size, and a *Frozen for you* badge with the reason.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `apps/web/test/cards.test.ts`:
 ```ts
@@ -2073,12 +2073,12 @@ describe('card helpers', () => {
 })
 ```
 
-- [ ] **Step 2: Run it to verify it fails**
+- [x] **Step 2: Run it to verify it fails**
 
 Run: `npm test -w @canasta/web`
 Expected: FAIL, because `../src/cards` can't be resolved.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `apps/web/src/cards.ts`:
 ```ts
@@ -2531,12 +2531,12 @@ export function CenterPile({ view, yourTurn, selected, onToggleTop, onDraw }: Ce
 ```
 Define every class the components use: `table`, `opponents`, `opponent`, `you`, `turn`, `online`, `offline`, `badge`, `rejoin`, `center`, `stock`, `pile`, `empty`, `frozen`, `feed`, `notice`, `melds`, `meld`, `meldLabel`, `hand`, `roundEnd`, `gameOver`, `breakdown`, `totals`. Melds are dashed-outline boxes that inherit the text color (they are buttons for your own melds); `.frozen` is a pale-blue pill; `.roundEnd` and `.gameOver` span the full width on a paper background.
 
-- [ ] **Step 4: Run all checks**
+- [x] **Step 4: Run all checks**
 
 Run: `npm run format && npm test && npm run typecheck && npm run lint && npm run format:check`
 Expected: 17 web tests pass.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/web
@@ -2565,7 +2565,7 @@ How staging works:
 - Pressing an action sends exactly the previewed `Action` and clears the staging.
 - `useStaging` stores raw state and derives the rendered state with `reconcile`, so cards that left your hand (played, discarded, or the top discard after the draw phase) drop out without an effect. Each dispatch reconciles first, so stale ids never come back. The table remounts per round (Task 8), which resets staging, because card ids repeat across rounds.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `apps/web/test/staging.test.ts`:
 ```ts
@@ -2850,12 +2850,12 @@ describe('StagingArea', () => {
 })
 ```
 
-- [ ] **Step 2: Run them to verify they fail**
+- [x] **Step 2: Run them to verify they fail**
 
 Run: `npm test -w @canasta/web`
 Expected: FAIL, because `../src/staging` and `../src/components/StagingArea` can't be resolved.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `apps/web/src/staging.ts`:
 ```ts
@@ -3115,12 +3115,12 @@ function legalText(kind: 'meld' | 'pickUpPile' | 'discard'): string {
 
 `StagingArea.module.css`: `.staging` is a paper-colored panel with dark text above the hand; `.groups` is a wrapping flex row of `.group` boxes (dashed border, a small `.groupLabel` over the cards); `.preview` is one line, `min-height: 1.5em` so the layout doesn't jump, with `.legal` green and `.illegal` red; `.buttons` is a wrapping flex row with `gap: 0.5rem`.
 
-- [ ] **Step 4: Run all checks**
+- [x] **Step 4: Run all checks**
 
 Run: `npm run format && npm test && npm run typecheck && npm run lint && npm run format:check`
 Expected: 33 web tests pass (17 + 10 staging + 6 staging area).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/web
@@ -3144,7 +3144,7 @@ git commit -m "Add the staging area with live legality preview"
   - `RoundEnd({ view, onNextRound? })`: reads `view.history.at(-1)`: how the round ended, every breakdown, each player's cumulative score, and each revealed hand from `hands`. Every player sees **Next round**.
   - `GameOver({ view })`: the winner, or "Ann and Bob share the win!" for a tie, and a table of every round's total from `view.history` plus final totals.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `apps/web/test/feed.test.ts`:
 ```ts
@@ -3181,12 +3181,12 @@ describe('describeEvent', () => {
 })
 ```
 
-- [ ] **Step 2: Run it to verify it fails**
+- [x] **Step 2: Run it to verify it fails**
 
 Run: `npm test -w @canasta/web`
 Expected: FAIL, because `../src/feed` can't be resolved.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `apps/web/src/feed.ts`:
 ```ts
@@ -3405,12 +3405,12 @@ export function GameOver({ view }: { view: PlayerView }) {
 }
 ```
 
-- [ ] **Step 4: Run all checks**
+- [x] **Step 4: Run all checks**
 
 Run: `npm run format && npm test && npm run typecheck && npm run lint && npm run format:check`
 Expected: 39 web tests pass.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/web
@@ -3429,7 +3429,7 @@ git commit -m "Add the action feed, round-end scoreboard and game-over screen"
 - Consumes: everything from Tasks 4–7.
 - Produces: `Table({ code, view, state, send })`, and `GamePage` shows it once the game has started.
 
-- [ ] **Step 1: Implement**
+- [x] **Step 1: Implement**
 
 `apps/web/src/pages/Table.tsx`:
 ```tsx
@@ -3537,7 +3537,7 @@ In `GamePage.tsx`, add `import { Table } from './Table'` and replace the placeho
 ```
 The `key` remounts the table each round, which resets the staging (card ids repeat between rounds).
 
-- [ ] **Step 2: Run all checks and inspect the bundle**
+- [x] **Step 2: Run all checks and inspect the bundle**
 
 Run: `npm run format && npm test && npm run typecheck && npm run lint && npm run format:check && npm run build -w @canasta/web`
 Then: `grep -lE 'zod|parseClientMessage' apps/web/dist/assets/*.js`
@@ -3554,7 +3554,7 @@ With `npm run dev:server` and `npm run dev:web` running, play with two browser p
 - Play to a round end (or leave the stock short in a long game): the scoreboard shows every breakdown and revealed hand; both players press **Next round** together, and no error toast appears.
 - In devtools, set the network to offline for 60 s, then online: the banner says "Reconnecting…", then the table comes back with the same seat.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add apps/web
@@ -3580,7 +3580,7 @@ git commit -m "Assemble the table from its panels"
 
 The examples cover spec Section 7's list: valid and invalid melds (the spec's own 3N+2J+1D and 2N+2D+1J cases), frozen and unfrozen pickups, the canasta-can't-take-the-pile case, a Black 3 blocking the pile, a wild freezing the pile for everyone, a full three-player round breakdown (going out, both canasta bonuses, Red 3 bonus and penalty, hand penalty), and a concealed going-out with a pickup on that turn. Each non-scoring example's `section` must be the section its expected error links to (checked by the test).
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `packages/engine/test/examples.test.ts`:
 ```ts
@@ -3718,12 +3718,12 @@ describe('RuleExample', () => {
 })
 ```
 
-- [ ] **Step 2: Run them to verify they fail**
+- [x] **Step 2: Run them to verify they fail**
 
 Run: `npm test -w @canasta/engine && npm test -w @canasta/web`
 Expected: FAIL, because `../src/examples`, `../src/rules/tables` and `../src/rules/RuleExample` can't be resolved.
 
-- [ ] **Step 3: Add the engine module**
+- [x] **Step 3: Add the engine module**
 
 In `packages/engine/package.json`, change `exports` to:
 ```json
@@ -4132,7 +4132,7 @@ export const RULES_EXAMPLES: RulesExample[] = [
 ]
 ```
 
-- [ ] **Step 4: Add the web rules modules**
+- [x] **Step 4: Add the web rules modules**
 
 `apps/web/src/rules/sections.ts`:
 ```ts
@@ -4516,12 +4516,12 @@ function ScoringBody({ example }: { example: ScoringExample }) {
 }
 ```
 
-- [ ] **Step 5: Run all checks**
+- [x] **Step 5: Run all checks**
 
 Run: `npm run format && npm test && npm run typecheck && npm run lint && npm run format:check`
 Expected: 223 engine tests (206 + 17) and 56 web tests (39 + 3 tables + 14 examples) pass.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add packages/engine apps/web
@@ -4546,7 +4546,7 @@ git commit -m "Add engine-checked rules examples and rules tables"
   - `RulesDrawer({ section, onClose })`: a modal `<dialog>` that slides over from the right, full height, `min(40rem, 100vw)` wide; it renders `RulesContent` and scrolls to the requested section.
   - In a game, **Rules** (fixed top-right) opens the drawer at Overview, and a toast's or the staging area's "Why?" opens it at the rule's section instead of leaving the table. Outside a game, "Why?" is a normal link to `/rules#section`.
 
-- [ ] **Step 1: Implement the content**
+- [x] **Step 1: Implement the content**
 
 `apps/web/src/rules/RulesContent.tsx`:
 ```tsx
@@ -5230,12 +5230,12 @@ function JoinForm({
 }
 ```
 
-- [ ] **Step 2: Run all checks**
+- [x] **Step 2: Run all checks**
 
 Run: `npm run format && npm test && npm run typecheck && npm run lint && npm run format:check && npm run build -w @canasta/web`
 Expected: 223 engine, 90 server and 56 web tests pass, and everything else is clean. The staging-area test still passes: outside the drawer context, "Why?" is a plain link to `/rules#melds`.
 
-- [ ] **Step 3: Check the prose against spec Section 3**
+- [x] **Step 3: Check the prose against spec Section 3**
 
 Read `RulesContent.tsx` beside spec Section 3, item by item, and fix any sentence that disagrees with the spec (never the reverse; a rule change goes into the spec first). In particular confirm:
 - Black 3s: never meldable, and a Black 3 on top blocks the pile for **everyone**, not only the next player.
@@ -5255,7 +5255,7 @@ With `npm run dev:web` running:
 - Print preview: no contents list or print button, examples don't split across pages, and the gold callout backgrounds are gone.
 - In a game: **Rules** opens the drawer; a rule-error toast's "Why?" opens the drawer at that section; Escape or **Close** returns to the table without reconnecting.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/web
@@ -5273,7 +5273,7 @@ git commit -m "Add the rules page and the in-game rules drawer"
 - Consumes: the finished client.
 - Produces: a README that documents the client and the heartbeat, and a handoff that records Plan 3.
 
-- [ ] **Step 1: Update the README**
+- [x] **Step 1: Update the README**
 
 - Project layout: change `apps/web` from `(planned)` to `(implemented)`.
 - Development block: add `npm run dev:web          # Run the web client (Vite, http://localhost:5173; proxies /api to dev:server)` below `dev:server`, keeping the comment alignment, and a sentence that both dev commands run together in two terminals.
@@ -5283,16 +5283,16 @@ git commit -m "Add the rules page and the in-game rules drawer"
 
 Run `npm run format` (the README is Prettier-formatted, including the tables).
 
-- [ ] **Step 2: Update the handoff**
+- [x] **Step 2: Update the handoff**
 
 Add a "Plan 3: web client" status table (task, status, commits), the new test counts, and these decisions: the root Vitest 5 for the web app, jsdom 29 (Node 24.10), the heartbeat constants and the stale-socket rule, examples in `@canasta/engine/examples`. Close the "Half-open sockets" open question, and move this plan's Open Questions there.
 
-- [ ] **Step 3: Run all checks**
+- [x] **Step 3: Run all checks**
 
 Run: `npm run format && npm test && npm run typecheck && npm run lint && npm run format:check`
 Expected: everything passes.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add README.md docs/handoffs

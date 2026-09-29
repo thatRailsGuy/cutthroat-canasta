@@ -1,17 +1,17 @@
 ---
 created: 2026-09-27T19:40:06Z
-updated: 2026-09-28
-branch: main
+updated: 2026-09-29
+branch: feat-web-client
 trigger: manual
 restored: false
 topic: canasta-rules-engine
 ---
 
-# Handoff: Building Cutthroat Canasta (engine and server done; Plan 3 web client ready to execute)
+# Handoff: Building Cutthroat Canasta (engine, server and web client done; playtest and final review next)
 
 ## Goal
 
-Build an online version of our house Cutthroat Canasta rules (V3 sheet) for 2–8 players on separate devices. The stack is a TypeScript npm-workspaces monorepo: a pure rules engine, a Cloudflare Workers server, and a React + Vite client with a rules page. The current work is Plan 1, the rules engine (`packages/engine`).
+Build an online version of our house Cutthroat Canasta rules (V3 sheet) for 2–8 players on separate devices. The stack is a TypeScript npm-workspaces monorepo: a pure rules engine, a Cloudflare Workers server, and a React + Vite client with a rules page. Plans 1 (engine), 2 and 2.5 (server) are merged. Plan 3 (web client, `apps/web`) is implemented on `feat-web-client`, and waits for a manual playtest and the final review.
 
 ## Current State
 
@@ -66,18 +66,46 @@ The user settled the four open questions on 2026-09-28, choosing the recommended
 
 206 engine and 86 server tests pass. A whole-branch review found no critical bugs and no leaks. The simulation's leak check now counts any card that was face up this round as public. A planted leak still fails all 30 seeds.
 
-### Plan 3: web client and rules page (planned, not started)
+### Plan 3: web client and rules page (`feat-web-client`, not merged)
 
-- The plan is `docs/superpowers/plans/2026-09-28-web-client.md`: 11 tasks, about 5,300 lines.
-  - A drafting agent ran all its code in a scratch copy of the repo. 223 engine, 90 server and 56 web tests passed, the build was clean, and a live socket through the Vite proxy to `wrangler dev` worked.
-- Read its **Amendments** section first. It records the user's decisions of 2026-09-28, and it overrides the task text:
-  - Presence is minimal, with no alarm.
-  - The heartbeat pings every 20 s, and a socket is stale after 70 s.
-  - Add `GET /api/games/:code` (200 or 404). This is in Task 2, with the client side in Tasks 3 and 4.
-- **Execution mode (user's choice):** task by task, as in Plans 1 and 2, on a new branch `feat-web-client`. A fresh implementer per task, a spec and quality review after each, and a final whole-branch review. No code has been written yet.
-- **Stack:** React 19.3, React Router 8.4, Vite 8.3, CSS modules, and the root Vitest 5 with jsdom 29. Use jsdom 29, not 30, because jsdom 30 needs Node 24.15 and this machine has 24.10.
-- The worked examples live in the engine (`@canasta/engine/examples`), because an engine test can't import from `apps/web`.
-- The "Standard Canasta" column of the house-rules table was checked against the classic partnership rules. The concealed-bonus row was made explicit: standard pays 200 instead of 100.
+The plan is `docs/superpowers/plans/2026-09-28-web-client.md`. Its Amendments (decided 2026-09-28) override the task text: minimal presence with no alarm, a 20 s ping with a 70 s stale limit, and `GET /api/games/:code`. It was executed task by task: a fresh implementer per task and a review after each. Review fixes went in as separate commits.
+
+| Task | Status | Commits |
+| --- | --- | --- |
+| 1. Web package scaffold and tooling | Done, reviewed | `75b915a` |
+| 2. Server heartbeat, stale sockets, `GET /api/games/:code` | Done, reviewed | `efc74c7`, fixes `1fb78b0`, `628517d` |
+| 3. Protocol client (connection, api, storage) | Done, reviewed | `70018f1`, fixes `289b404`, `7a3fbe8` |
+| 4. Game state, routing, home, join, lobby | Done, reviewed | `fec7476`, fixes `628517d`, `7a3fbe8` |
+| 5. Cards and table panels | Done, reviewed | `48a211e`, fixes `af336e4` |
+| 6. Staging area | Done, reviewed | `615ce0e`, fixes `af23d67` |
+| 7. Feed, round-end scoreboard, game over | Done, reviewed | `7cf22c1`, fixes `af23d67` |
+| 8. Assemble the table | Done (manual playtest pending) | `a7d7f25`, fixes `af23d67` |
+| 9. Engine-checked rules examples and tables | Done, reviewed | `b2668d8`, fixes (G) `15d7127` |
+| 10. Rules page and in-game drawer | Done (by-hand page check pending) | `4ca58ef`, fixes `ec0480d` |
+| 11. Documentation | Done | this commit |
+
+- **Tests:** 224 engine, 97 server and 78 web tests pass. Typecheck, lint and `format:check` are clean. `vite build` gives about 312 kB of JS (99 kB gzipped), and the bundle has no `zod` and no `parseClientMessage`.
+- **Smoke runs:** scripted runs through the Vite proxy to `wrangler dev` passed. They covered create, lookup (200 and 404), join, start, hidden hands, an out-of-turn refusal, draw, discard, the feed, reissue and rejoin, a stale token refused, and ping and pong. Nobody has played it in a browser yet.
+
+**Deviations from the plan's text:**
+- `GamePage` is split into `Game` and `Session`. `Game` reads the link token, clears the hash at once and calls `gameExists`. On false it shows "There's no game with the code …" and never connects. `Session` owns `useGame`. The rules drawer lives in `Session`, so opening it never unmounts the connection. Task 10's "final form" of `GamePage` was not used, because it predates the amendment.
+- **Client heartbeat.** Liveness comes from an unanswered ping, not from silence: a ping unanswered for `PONG_TIMEOUT_MS` (10 s) drops the socket. The plan's 45 s silence limit would have killed healthy background tabs, whose timers run about once a minute. When the page is shown, the client pings at once. A ping that is already waiting keeps its deadline.
+- **Server presence.** The room also broadcasts when a stale socket is dropped during a rejected or malformed message.
+- **`UNKNOWN_TOKEN`.** A `join` with a token that belongs to no seat is refused at any status. Before, in the lobby, it silently took a second seat. Spec Section 5 and the README were updated. The client deletes the token and shows the join form with the error. A failed join also clears the old `playerId` and view.
+- **Staging.**
+  - An action that can't be sent (the socket is down) keeps the staging and shows a "Not connected" toast. Action buttons are disabled while the socket isn't open.
+  - The stored staging is pruned whenever the view prunes it.
+  - A staged top discard is marked in the pile.
+- **Rules examples.** Pickup examples are checked with the full `validatePlay`, in realistic states: prior melds whenever the pile was already picked up, a score, a pile size and a kept hand. There is a new example for the initial meld on a pickup, where only the top card counts toward the minimum. The Black 3 example uses a natural pair under the Black 3.
+- **Rules page.** The quick reference "Goal" now says the highest total wins after someone reaches 5,000 (it said "first to 5,000"). The freeze note is hidden when the top card itself blocks the pile.
+- **Smaller fixes:**
+  - Melds are sorted and named by rank ("Aces", "Kings").
+  - Presence dots have text labels.
+  - Copying a rejoin link works without the Clipboard API.
+  - The table header shows "Round over" or "Game over", and the final round's scoreboard stays up at game over.
+  - Seat notices clear each round.
+  - Modified clicks on **Why?** navigate normally.
+  - The README's "House rules at a glance" had three wrong lines: Black 3s blocked only "the next player", "first to 5,000 wins", and a vague concealed bonus. All three were corrected against spec Section 3.
 
 ## Key Decisions
 
@@ -101,6 +129,15 @@ The user settled the four open questions on 2026-09-28, choosing the recommended
   - Server tests use `SELF` from `cloudflare:test`, because typing `exports` from `cloudflare:workers` failed.
 - **Lockfile gotcha:** an incremental `npm install` on this tree strips platform-specific optional entries (rolldown and esbuild bindings; npm/cli#4828). To change dependencies, regenerate cleanly: `rm -rf package-lock.json node_modules apps/*/node_modules packages/*/node_modules && npm install --package-lock-only --ignore-scripts && npm ci`. Then check that `grep -c '@rolldown/binding-' package-lock.json` is non-zero.
 - **Prettier ignores** `docs/`, `.superpowers/` and `package-lock.json`. README.md is formatted.
+- **Web tooling (Plan 3):**
+  - `apps/web` uses the root Vitest 5 and doesn't declare its own. Only `apps/server` needs Vitest 4.
+  - Tests run in jsdom 29, because jsdom 30 needs Node 24.15 and this machine runs 24.10.
+  - The web app may import only types from `@canasta/server`, and an ESLint rule enforces it.
+- **Heartbeat constants** (`apps/server/src/protocol.ts`):
+  - `HEARTBEAT_PING` and `HEARTBEAT_PONG` are answered by a Durable Object auto-response, which doesn't wake the room.
+  - The client pings every `HEARTBEAT_INTERVAL_MS` (20 s). Its copies of the ping string and interval are typed against the server's literal types, so a mismatch fails the typecheck.
+  - A socket that has sent nothing for `STALE_AFTER_MS` (70 s) is unbound and closed with `STALE_CLOSE_CODE` (4000) before the room handles the next message or close.
+- **Rules examples** live in the engine as `@canasta/engine/examples`, a separate package export that isn't in the main index. An engine test checks each one with `validatePlay` or `scoreRound`.
 
 ## Modified Files
 
@@ -111,7 +148,18 @@ Committed on `main` since `6abf692` (via `feat-initial-game`):
 - `packages/engine/src/`: `cards.ts`, `constants.ts`, `rng.ts`, `deck.ts`, `errors.ts`, `types.ts`, `meldRules.ts`, `pileRules.ts`, `turnRules.ts`, `play.ts`, `scoring.ts`, `clone.ts`, `round.ts`, `game.ts`, `actions.ts`, `view.ts`, `preview.ts`, `index.ts`
 - `packages/engine/test/`: `fixtures.ts`, `cards.test.ts`, `constants.test.ts`, `rng.test.ts`, `deck.test.ts`, `meldRules.test.ts`, `pileRules.test.ts`, `turnRules.test.ts`, `play.test.ts`, `scoring.test.ts`, `game.test.ts`, `actions.test.ts`, `view.test.ts`, `preview.test.ts`, `simulation.test.ts`
 
+On `feat-web-client` (Plan 3):
+
+- Root: `package.json` (`dev:web`, `eslint-plugin-react-hooks`), `package-lock.json`, `eslint.config.js`, `README.md`
+- `apps/web/`: the whole package (`src/` with `pages/`, `components/` and `rules/`, plus `test/`)
+- `apps/server/src/`: `presence.ts` (new), `protocol.ts`, `gameRoom.ts`, `room.ts`, `index.ts`; `apps/server/test/`: `presence.test.ts` (new), `worker.test.ts`, `room.test.ts`
+- `packages/engine/`: `package.json` (the `./examples` export), `src/examples.ts` and `test/examples.test.ts` (new)
+- `docs/superpowers/specs/2026-09-27-cutthroat-canasta-design.md` (Section 5, `UNKNOWN_TOKEN`)
+
 ## Failed Approaches
+
+- **Plan 3, silence-based client liveness.** The plan's first design dropped a socket after 45 s of silence. Background tabs, whose timers run about once a minute, would have reconnected every minute. It was replaced by a pong timeout on each ping (`289b404`).
+- **Plan 3, examples checked with partial rules.** The pickup examples were first checked only with `checkPickupShape` and `checkMeldCards`, which missed an illegal initial meld shown as Legal. They now run the full `validatePlay` (`15d7127`).
 
 - **Task 1 initially skipped `format:check`.** The plan's code was not Prettier-formatted, so implementers now run `npm run format` and `format:check` before every commit.
 - **The first README draft misstated three rules** (Black 3s, personal freeze, concealed bonus). It was corrected in `f619980`. Check any rules prose against spec Section 3.
@@ -120,23 +168,30 @@ Committed on `main` since `6abf692` (via `feat-initial-game`):
 
 - `docs/superpowers/specs/2026-09-27-cutthroat-canasta-design.md`: the spec. Section 3 is the rules authority.
 - `docs/superpowers/plans/2026-09-27-engine.md`: the engine plan (10 tasks, with full code). Complete.
+- `docs/superpowers/plans/2026-09-28-web-client.md`: the web client plan (11 tasks). Read its Amendments first. The by-hand checks are Task 4 Step 6, Task 8 Step 3 and Task 10 Step 4.
 - `docs/superpowers/plans/2026-09-27-server.md`: the server plan (6 tasks). Note: `apps/server` needs its own Vitest 4, because `@cloudflare/vitest-pool-workers@0.22` requires `vitest ^4.1`, while the root and engine use Vitest 5.
 - `Cutthroat_Canasta_House_Rule_Sheet_V3.docx.pdf`: the original house rule sheet (provided in chat, not in the repo).
 
 ## Next Steps
 
-1. `git checkout -b feat-web-client` from `main`, then execute Plan 3 task by task. Apply the Amendments section. Run `npm run format` and the full checks before each commit.
-2. After Task 8 there is a manual playtest with 2 or more browser windows (`npm run dev:server` plus `npm run dev:web`).
-3. When all 11 tasks are done, run a final whole-branch review, fix what it finds, fast-forward merge to `main`, push, and delete the branch.
+1. **Manual playtest** with two browser profiles and a 375 px window. The checklist is in Plan 3, Task 4 Step 6, Task 8 Step 3 and Task 10 Step 4. Note that Bob's stale token now shows "That seat link is no longer valid. Join again with your name.", not the plan's `NOT_IN_LOBBY` text. Also read the "Standard Canasta" column of the house-rules table once.
+2. **Final whole-branch review** of `feat-web-client` on the most capable model. Fix what it finds.
+3. **Merge:** fast-forward `feat-web-client` into `main`, push (with the noreply email), and delete the branch.
 4. Deployment is deferred: Workers static assets, and `wrangler deploy` needs the user's Cloudflare account.
 5. Optional engine polish: make the simulation bot prefer going out, and tighten the test fixture `meld()` so it excludes 3s.
 
 ## Open Questions
 
-These came from the Plan 2.5 review. The first two are decided; the rest are open:
-- **Host can take a disconnected seat (decided: announce).** Every reissue now sends `seatReissued` to the whole table. A player who reconnects later misses the notice. The client should show it in the table feed.
-- **Half-open sockets.** A dead phone's socket still counts as connected until Cloudflare notices, so `reissue` is refused with `PLAYER_CONNECTED`. Fix with a client heartbeat plus a last-seen time (Plan 3).
-- **An early `nextRound` wipes the round-end review (decided: history).** The hands are now kept in `RoundScore.hands`. The round's feed still resets when the next round is dealt.
+Decided or fixed:
+- **Host can take a disconnected seat (decided: announce).** Every reissue sends `seatReissued` to the whole table, and the client shows it in the feed area for the rest of that round. A player who reconnects later misses it.
+- **Half-open sockets (fixed in Plan 3).** A client heartbeat plus the server's 70 s stale limit unbind a dead phone's socket, so the host can reissue the seat.
+- **An early `nextRound` wipes the round-end review (decided: history).** The hands are kept in `RoundScore.hands`, and the round's feed resets when the next round is dealt.
+- **Plan 3's three questions (decided 2026-09-28):** minimal presence with no alarm, a 20 s ping with a 70 s stale limit, and `GET /api/games/:code`.
+
+Still open:
+- **Stale dot until the next event.** Nothing wakes the room when a socket goes stale, so others see a dead player's green dot until the next message or close in that room. An alarm would fix it, at the cost of waking the room.
 - **No host after a mid-game token loss.** If the host loses their token, nobody can reissue any token.
-- **Feed payload** grows with the square of the round length, because every broadcast resends the whole feed. Watch it. If it matters, send only the new events.
+- **Feed payload** grows with the square of the round length, because every broadcast resends the whole feed. Watch it. If it matters, send only the new events (only `gameState.ts` would change).
+- **A rejoin link overwrites a saved token.** Opening `/g/CODE#token=…` on a device that already holds a token for that game replaces it without asking. If the device was seated as someone else, that seat's token is lost from this device.
+- **`UNKNOWN_TOKEN` costs a click.** A player coming from the home page with a stale saved token sees the error, then the join form with their name filled in. There is no silent retry by name.
 - Any rule change should update spec Section 3 first.
