@@ -48,6 +48,22 @@ Plan 1 is complete. It was executed with subagent-driven development: a fresh im
 
 Plan 2 is complete: 62 server tests plus 187 engine tests pass, and the Worker bundles (795 KiB, 127 KiB gzipped). The final review added presence (`connected` in `state`), normalized player names, and pinned the test pool to exactly `0.22.0`.
 
+### Plan 2.5: pre-client changes (`feat-pre-client`, not merged)
+
+The user settled the four open questions on 2026-09-28, choosing the recommended option each time. Plan: `docs/superpowers/plans/2026-09-28-pre-client.md`. The spec (Sections 4–6) was updated first.
+
+| Change | Commits |
+| --- | --- |
+| Spec and plan | first commit on branch |
+| sfc32 and a 128-bit `Seed` tuple | `a2f0554` |
+| Public per-round feed (`Round.feed`, `RoundView.feed`) | `0d2e0e8` |
+| `revealedHand` at round end, `removePlayer` | `b3d9649` |
+| `leave`, `kick`, `reissue`; any player deals the next round | `12a0389` |
+| README | `2e7d579` |
+| Review fixes (empty-stock draw event, kick text) | `5e1b771` |
+
+209 engine and 86 server tests pass. A whole-branch review found no critical bugs and no leaks. The simulation's leak check now counts any card that was face up this round as public. A planted leak still fails all 30 seeds.
+
 ## Key Decisions
 
 - **Stack:** Cloudflare Workers with one Durable Object per game; React + Vite; one engine shared by server and client. boardgame.io was rejected because its server needs Node and it is barely maintained.
@@ -93,14 +109,16 @@ Committed on `main` since `6abf692` (via `feat-initial-game`):
 
 ## Next Steps
 
-1. Plan 2 (server) is complete and merged to `main` (branch `feat-server` deleted). Before Plan 3, the user must decide the open questions below.
-2. Write Plan 3 (web client and rules page). The rules page renders from the engine constants and uses `RULE_ERROR_SECTIONS` for its "Why?" links. Decide on revealing hands at round end and on an action feed (engine additions).
-3. Optional engine polish (all non-blocking): make the simulation bot prefer going out, since only about 11% of rounds end that way; add a shuffle test for 0- and 1-card inputs; tighten the test fixture `meld()` so it excludes 3s.
+1. Get the user's decisions on the Plan 2.5 review questions below, then merge `feat-pre-client`.
+2. Write Plan 3 (web client and rules page). The rules page renders from the engine constants and uses `RULE_ERROR_SECTIONS` for its "Why?" links. The client needs a heartbeat, so half-open sockets don't show as connected.
+3. Optional engine polish: make the simulation bot prefer going out, and tighten the test fixture `meld()` so it excludes 3s.
 
 ## Open Questions
 
-These came from the Plan 2 final review. They need a user decision before Plan 3, because they change the spec or the protocol:
-- **Seat lifecycle.** A lost token or a second browser leaves a ghost seat that can stall a game for good, and there's no leave, kick or token reissue. Options: a lobby `leave` plus a host `kick`; a host-issued "rejoin link" (token reissue) for a player who isn't connected; or both.
-- **Host absence.** Only the host can send `nextRound` (spec Section 5). If the host disappears, the table is stuck at the round boundary. Options: hand the host role to the longest-seated connected player, or let any seated player start the next round.
-- **Shuffle seed strength.** The engine's mulberry32 has a 32-bit seed, so a player could brute-force it from their own hand and learn every hand and the stock order. Fix: a PRNG with at least 128 bits of state (sfc32 or xoshiro128**) seeded from 4 crypto u32 values, with `Game.seed` changed to a tuple. This is an engine change.
+These came from the Plan 2.5 review:
+- **Host can take a disconnected seat.** The host can `reissue` a seat for a player who is away and join with it, which shows them that player's hand. Nobody else is told. Options: announce every reissue to the table, require the player to have been gone for N minutes, or both.
+- **Half-open sockets.** A dead phone's socket still counts as connected until Cloudflare notices, so `reissue` is refused with `PLAYER_CONNECTED`. Fix with a client heartbeat plus a last-seen time (Plan 3).
+- **An early `nextRound` wipes the round-end review.** Any player can deal as soon as a round ends, which clears the feed and the revealed hands before others have read them. Options: store revealed hands in `history`, or wait until every connected player is ready.
+- **No host after a mid-game token loss.** If the host loses their token, nobody can reissue any token.
+- **Feed payload** grows with the square of the round length, because every broadcast resends the whole feed. Watch it. If it matters, send only the new events.
 - Any rule change should update spec Section 3 first.
