@@ -367,7 +367,7 @@ const HOUSE_DIFFERENCES: [string, string][] = [
     'Going out concealed earns 200 instead of 100',
   ],
   [
-    'An empty stock ends the round when a player must draw',
+    "An empty stock ends the round when a player must draw and can't legally pick up the pile",
     'Play continues while players can take the discard',
   ],
 ]

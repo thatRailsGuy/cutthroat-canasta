@@ -1,10 +1,10 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router'
 import { gameExists, normalizeCode } from '../api'
 import type { ConnectionStatus } from '../connection'
 import { RulesDrawer } from '../components/RulesDrawer'
 import { Toasts } from '../components/Toasts'
-import { RulesDrawerContext } from '../rules/drawer'
+import { RulesDrawerContext, type DrawerRequest } from '../rules/drawer'
 import type { PageSection } from '../rules/sections'
 import { loadName, loadToken, tokenFromHash } from '../storage'
 import { useGame } from '../useGame'
@@ -100,7 +100,11 @@ function Session({ code, linkToken, autoJoinName, joinsByItself }: SessionProps)
   const navigate = useNavigate()
   const { state, join, send, dismissToast } = useGame(code, { linkToken, autoJoinName })
   // The drawer lives here, inside the session, so opening it never unmounts the connection.
-  const [drawer, setDrawer] = useState<PageSection | null>(null)
+  const [drawer, setDrawer] = useState<DrawerRequest | null>(null)
+  const openRules = useCallback(
+    (section: PageSection) => setDrawer((d) => ({ section, id: (d?.id ?? 0) + 1 })),
+    [],
+  )
 
   useEffect(() => {
     if (!state.removed) return
@@ -139,14 +143,14 @@ function Session({ code, linkToken, autoJoinName, joinsByItself }: SessionProps)
   }
 
   return (
-    <RulesDrawerContext.Provider value={setDrawer}>
+    <RulesDrawerContext.Provider value={openRules}>
       <ConnectionBanner connection={state.connection} failures={state.failures} code={code} />
       {body}
-      <button type="button" className={styles.rulesButton} onClick={() => setDrawer('overview')}>
+      <button type="button" className={styles.rulesButton} onClick={() => openRules('overview')}>
         Rules
       </button>
       <Toasts toasts={state.toasts} onDismiss={dismissToast} />
-      <RulesDrawer section={drawer} onClose={() => setDrawer(null)} />
+      <RulesDrawer request={drawer} onClose={() => setDrawer(null)} />
     </RulesDrawerContext.Provider>
   )
 }
