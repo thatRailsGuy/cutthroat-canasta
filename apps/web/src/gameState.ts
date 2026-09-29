@@ -101,7 +101,8 @@ function onMessage(state: GameState, message: ServerMessage, joinFailed: boolean
     case 'joined':
       return { ...state, playerId: message.playerId, joining: false, removed: null }
     case 'state': {
-      // Seat notices belong to the round they happened in.
+      // Seat notices belong to the round they happened in. This is also true on the first state
+      // after joining (no view yet), which is harmless: there are no notices to lose then.
       const newRound = message.view.round?.number !== state.view?.round?.number
       return {
         ...state,

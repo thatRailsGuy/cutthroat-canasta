@@ -10,7 +10,7 @@ import {
 } from '../src/examples'
 import { RULE_ERROR_SECTIONS } from '../src/errors'
 import { checkMeldCards, isCanasta, isNaturalCanasta } from '../src/meldRules'
-import { checkPickupShape } from '../src/pileRules'
+import { validatePlay } from '../src/play'
 import { scoreRound } from '../src/scoring'
 
 const byKind = <K extends RulesKind>(kind: K) =>
@@ -45,9 +45,10 @@ describe('rules page examples', () => {
   it.each(byKind('pickup').map((e) => [e.id, e] as const))(
     'pickup %s',
     (_, example: PickupExample) => {
-      const { player, pile, batch, meldCards } = buildPickup(example)
-      const error = checkPickupShape(player, pile, batch) ?? checkMeldCards(meldCards)
-      expect(error?.code ?? null).toBe(example.expected)
+      // The full check the server and the table preview run, including the initial meld minimum.
+      const { player, pile, pileSize, batch } = buildPickup(example)
+      const result = validatePlay({ player, pile, pileSize, takesPile: true }, batch)
+      expect(result.ok ? null : result.error.code).toBe(example.expected)
     },
   )
 

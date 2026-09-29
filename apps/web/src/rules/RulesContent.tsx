@@ -241,6 +241,7 @@ export function RulesContent() {
           your initial meld while picking up the pile, the top discard counts, but the rest of the
           pile does not.
         </House>
+        <Examples section="initial-meld" />
       </Section>
 
       <Section id="pickup" title="Picking up the pile">

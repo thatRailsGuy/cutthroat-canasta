@@ -30,6 +30,12 @@ export interface PickupExample extends ExampleBase {
   top: string
   /** The cards from hand that go into the play with the top discard. */
   hand: string
+  /** Other cards the player keeps in hand. Defaults to a few low cards, as in a real hand. */
+  rest?: string
+  /** The player's score at the start of the round, which sets the initial meld minimum. */
+  score: number
+  /** Cards in the discard pile, including the top card. */
+  pileSize: number
   /** The player's melds before the pickup. */
   melds: string[]
   hasPickedUpPile: boolean
@@ -101,37 +107,36 @@ export function buildMeld(example: MeldExample): { before: Card[]; added: Card[]
   return { before, added, after: [...before, ...added] }
 }
 
-/** A pickup example as engine values, ready for `checkPickupShape` and `checkMeldCards`. */
+/** Cards a pickup example's player keeps in hand when the example doesn't say. */
+const DEFAULT_REST = '4c 6d 7s'
+
+/** A pickup example as engine values, ready for `validatePlay`. */
 export function buildPickup(example: PickupExample): {
   player: Player
   pile: PileState
+  pileSize: number
   top: Card
+  /** The cards from hand that go into the play (the player's hand also holds `rest`). */
+  played: Card[]
   batch: MeldBatch
-  /** The meld that holds the top discard after the play. */
-  meldCards: Card[]
 } {
   const [top] = exampleCards(example.top, 0)
-  const hand = exampleCards(example.hand, 100)
+  const played = exampleCards(example.hand, 100)
+  const rest = exampleCards(example.rest ?? DEFAULT_REST, 200)
   const melds = example.melds.map(exampleMeld)
-  const player = examplePlayer({ hand, melds, hasPickedUpPile: example.hasPickedUpPile })
-  const cardIds = [top.id, ...hand.map((c) => c.id)]
-  if (example.target === 'new') {
-    return {
-      player,
-      pile: { top, pileFrozenForAll: example.wildInPile },
-      top,
-      batch: { newMelds: [cardIds], additions: [] },
-      meldCards: [top, ...hand],
-    }
-  }
-  const target = melds[example.target]
-  return {
-    player,
-    pile: { top, pileFrozenForAll: example.wildInPile },
-    top,
-    batch: { newMelds: [], additions: [{ meldId: target.id, cardIds }] },
-    meldCards: [...target.cards, top, ...hand],
-  }
+  const player = examplePlayer({
+    hand: [...played, ...rest],
+    melds,
+    score: example.score,
+    hasPickedUpPile: example.hasPickedUpPile,
+  })
+  const pile = { top, pileFrozenForAll: example.wildInPile }
+  const cardIds = [top.id, ...played.map((c) => c.id)]
+  const batch: MeldBatch =
+    example.target === 'new'
+      ? { newMelds: [cardIds], additions: [] }
+      : { newMelds: [], additions: [{ meldId: melds[example.target].id, cardIds }] }
+  return { player, pile, pileSize: example.pileSize, top, played, batch }
 }
 
 /** A scoring example's players as engine players; each player's id is their name. */
@@ -211,10 +216,12 @@ export const RULES_EXAMPLES: RulesExample[] = [
     section: 'pickup',
     title: 'Frozen: a natural pair takes it',
     caption:
-      'You have not picked up the pile yet this round, so it is frozen for you. A natural pair of 8s from your hand takes the 8.',
+      'You melded Kings earlier this round but have not picked up the pile yet, so it is frozen for you. A natural pair of 8s from your hand takes the 8.',
     top: '8h',
     hand: '8s 8d',
-    melds: [],
+    score: 0,
+    pileSize: 6,
+    melds: ['Kh Kd Ks'],
     hasPickedUpPile: false,
     wildInPile: false,
     target: 'new',
@@ -228,7 +235,9 @@ export const RULES_EXAMPLES: RulesExample[] = [
     caption: 'While the pile is frozen for you, the pair from your hand must be natural.',
     top: '8h',
     hand: '8s JK',
-    melds: [],
+    score: 0,
+    pileSize: 6,
+    melds: ['Kh Kd Ks'],
     hasPickedUpPile: false,
     wildInPile: false,
     target: 'new',
@@ -243,7 +252,9 @@ export const RULES_EXAMPLES: RulesExample[] = [
       'You picked up the pile earlier this round and no wild is in it, so a natural plus a wild takes the 8.',
     top: '8h',
     hand: '8s JK',
-    melds: [],
+    score: 0,
+    pileSize: 6,
+    melds: ['Kh Kd Ks Kc'],
     hasPickedUpPile: true,
     wildInPile: false,
     target: 'new',
@@ -258,6 +269,8 @@ export const RULES_EXAMPLES: RulesExample[] = [
       'When the pile is not frozen for you, the top card can join your unfinished meld of 8s.',
     top: '8h',
     hand: '',
+    score: 0,
+    pileSize: 6,
     melds: ['8c 8d 8s'],
     hasPickedUpPile: true,
     wildInPile: false,
@@ -273,6 +286,8 @@ export const RULES_EXAMPLES: RulesExample[] = [
       'Your 5s are a finished canasta, so the discarded 5 cannot join them. Start a new meld of 5s from your hand instead.',
     top: '5h',
     hand: '',
+    score: 0,
+    pileSize: 6,
     melds: ['5c 5d 5s 5h 5c 5d 5s'],
     hasPickedUpPile: true,
     wildInPile: false,
@@ -288,6 +303,8 @@ export const RULES_EXAMPLES: RulesExample[] = [
       'Even after your first pickup, a wild anywhere in the pile means you need a natural pair from your hand.',
     top: '8h',
     hand: '',
+    score: 0,
+    pileSize: 6,
     melds: ['8c 8d 8s'],
     hasPickedUpPile: true,
     wildInPile: true,
@@ -299,14 +316,34 @@ export const RULES_EXAMPLES: RulesExample[] = [
     id: 'pickup-black-3',
     section: 'pickup',
     title: 'A Black 3 on top blocks the pile',
-    caption: 'Nobody can pick up the pile while a Black 3 or a wild is on top.',
+    caption:
+      'Nobody can pick up the pile while a Black 3 or a wild is on top, whatever cards they hold.',
     top: '3s',
-    hand: '3c 3c',
-    melds: [],
+    hand: '8s 8d',
+    score: 0,
+    pileSize: 6,
+    melds: ['Kh Kd Ks'],
     hasPickedUpPile: true,
     wildInPile: false,
     target: 'new',
     expected: 'PILE_BLOCKED',
+  },
+  {
+    kind: 'pickup',
+    id: 'pickup-initial-too-low',
+    section: 'initial-meld',
+    title: 'A pickup can be your initial meld, but only the top card counts',
+    caption:
+      'With a score of 0 your first meld must reach 50. The 8 you take counts toward it, but the other cards in the pile do not: 8 + 8 + 8 is only 30.',
+    top: '8h',
+    hand: '8s 8d',
+    score: 0,
+    pileSize: 9,
+    melds: [],
+    hasPickedUpPile: false,
+    wildInPile: false,
+    target: 'new',
+    expected: 'INITIAL_MELD_TOO_LOW',
   },
   {
     kind: 'scoring',

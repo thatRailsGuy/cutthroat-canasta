@@ -54,7 +54,7 @@ function MeldBody({ example }: { example: MeldExample }) {
 }
 
 function PickupBody({ example }: { example: PickupExample }) {
-  const { top, player } = buildPickup(example)
+  const { top, played, player } = buildPickup(example)
   // A Black 3 or a wild on top blocks the pile for everyone, so the freeze doesn't matter.
   const blocked = isBlack3(top) || isWild(top)
   const frozen = !example.hasPickedUpPile || example.wildInPile
@@ -66,7 +66,7 @@ function PickupBody({ example }: { example: PickupExample }) {
   return (
     <>
       <Labeled label="Top of the pile" cards={[top]} />
-      {player.hand.length > 0 && <Labeled label="From your hand" cards={player.hand} />}
+      {played.length > 0 && <Labeled label="From your hand" cards={played} />}
       {player.melds.map((m, i) => (
         <Labeled
           key={m.id}
@@ -74,6 +74,12 @@ function PickupBody({ example }: { example: PickupExample }) {
           cards={m.cards}
         />
       ))}
+      {player.melds.length === 0 && (
+        <p className={styles.note}>
+          No melds yet this round, so this is your initial meld. Your score:{' '}
+          {example.score.toLocaleString('en-US')}.
+        </p>
+      )}
       {!blocked && (
         <p className={styles.note}>
           {frozen ? `Frozen for you: ${reason}.` : 'Not frozen for you.'}
