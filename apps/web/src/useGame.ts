@@ -15,7 +15,8 @@ export interface GameOptions {
 export interface GameControls {
   state: GameState
   join(name: string): void
-  send(message: ClientMessage): void
+  /** Returns false, and shows a toast, if the socket isn't open, so the message was not sent. */
+  send(message: ClientMessage): boolean
   dismissToast(id: number): void
 }
 
@@ -88,7 +89,9 @@ export function useGame(code: string, { linkToken, autoJoinName }: GameOptions):
   }, [])
 
   const send = useCallback((message: ClientMessage) => {
-    connectionRef.current?.send(message)
+    const sent = connectionRef.current?.send(message) ?? false
+    if (!sent) dispatch({ type: 'notSent' })
+    return sent
   }, [])
 
   const dismissToast = useCallback((id: number) => dispatch({ type: 'dismissToast', id }), [])

@@ -1,5 +1,4 @@
-import type { PublicPlayer } from '@canasta/engine'
-import type { FeedEvent } from '@canasta/engine'
+import type { FeedEvent, PublicPlayer } from '@canasta/engine'
 import { describeEvent } from '../feed'
 import type { SeatNotice } from '../gameState'
 import styles from './Table.module.css'
@@ -18,19 +17,23 @@ export function Feed({
   const nameOf = (id: string) => players.find((p) => p.id === id)?.name ?? 'a player'
   return (
     <section className={styles.feed} aria-label="What happened">
-      {notices.map((n) => (
-        <p key={n.id} className={styles.notice} role="status">
-          The host made a rejoin link for {nameOf(n.playerId)}'s seat.
-        </p>
-      ))}
-      <ol reversed>
+      {/* One live region, always present, so screen readers announce each new notice once. */}
+      <div role="status">
+        {notices.map((n) => (
+          <p key={n.id} className={styles.notice}>
+            The host made a rejoin link for {nameOf(n.playerId)}'s seat.
+          </p>
+        ))}
+      </div>
+      {/* Newest first. */}
+      <ul>
         {events
           .slice(-SHOWN)
           .reverse()
           .map((event, i) => (
             <li key={events.length - i}>{describeEvent(event, players)}</li>
           ))}
-      </ol>
+      </ul>
     </section>
   )
 }

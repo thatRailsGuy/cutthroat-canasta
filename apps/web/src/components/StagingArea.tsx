@@ -8,11 +8,20 @@ import styles from './StagingArea.module.css'
 export interface StagingAreaProps {
   view: PlayerView
   staging: Staging
+  /** The socket isn't open: actions can't be sent, so their buttons are disabled. */
+  offline?: boolean
   dispatch: (action: StagingAction) => void
-  onAction: (action: Action) => void
+  /** Returns false if the action was not sent; the staging then stays for a retry. */
+  onAction: (action: Action) => boolean
 }
 
-export function StagingArea({ view, staging, dispatch, onAction }: StagingAreaProps) {
+export function StagingArea({
+  view,
+  staging,
+  offline = false,
+  dispatch,
+  onAction,
+}: StagingAreaProps) {
   const preview = stagingPreview(view, staging)
   const you = view.you
   const top = view.round?.discardTop
@@ -22,11 +31,10 @@ export function StagingArea({ view, staging, dispatch, onAction }: StagingAreaPr
     return meld ? `Add to your ${rankPlural(meld.rank)}` : 'Add to meld'
   }
   const ready = (kind: 'meld' | 'pickUpPile' | 'discard') =>
-    preview.kind === kind && preview.error === null
+    !offline && preview.kind === kind && preview.error === null
   const run = () => {
     if (preview.kind === 'none') return
-    onAction(preview.action)
-    dispatch({ type: 'clear' })
+    if (onAction(preview.action)) dispatch({ type: 'clear' })
   }
   const nothingStaged = staging.selected.length === 0 && staging.groups.length === 0
 

@@ -9,7 +9,10 @@ export interface Toast {
   section: RuleSection | null
 }
 
-/** A seat got a new rejoin link. Kept only in memory: a player who reconnects misses it. */
+/**
+ * A seat got a new rejoin link. Kept only in memory, and only for the current round: a player
+ * who reconnects misses it.
+ */
 export interface SeatNotice {
   id: number
   playerId: string
@@ -39,6 +42,8 @@ export type GameEvent =
   /** `joinFailed`: this error answers a join that was in flight. */
   | { type: 'message'; message: ServerMessage; joinFailed: boolean }
   | { type: 'dismissToast'; id: number }
+  /** A message the client couldn't send, because the socket isn't open. */
+  | { type: 'notSent' }
   | { type: 'joining' }
 
 export const initialGameState: GameState = {
@@ -58,6 +63,7 @@ export const initialGameState: GameState = {
 }
 
 const MAX_TOASTS = 3
+export const NOT_SENT_MESSAGE = 'Not connected. Try again in a moment.'
 const MAX_NOTICES = 5
 
 export function sectionFor(code: ServerErrorCode): RuleSection | null {
@@ -74,8 +80,19 @@ export function gameReducer(state: GameState, event: GameEvent): GameState {
       return { ...state, joining: true, joinError: null }
     case 'dismissToast':
       return { ...state, toasts: state.toasts.filter((t) => t.id !== event.id) }
+    case 'notSent':
+      return addToast(state, NOT_SENT_MESSAGE, null)
     case 'message':
       return onMessage(state, event.message, event.joinFailed)
+  }
+}
+
+function addToast(state: GameState, message: string, section: RuleSection | null): GameState {
+  const toast = { id: state.nextId, message, section }
+  return {
+    ...state,
+    toasts: [...state.toasts, toast].slice(-MAX_TOASTS),
+    nextId: state.nextId + 1,
   }
 }
 
@@ -83,8 +100,17 @@ function onMessage(state: GameState, message: ServerMessage, joinFailed: boolean
   switch (message.type) {
     case 'joined':
       return { ...state, playerId: message.playerId, joining: false, removed: null }
-    case 'state':
-      return { ...state, view: message.view, hostId: message.hostId, connected: message.connected }
+    case 'state': {
+      // Seat notices belong to the round they happened in.
+      const newRound = message.view.round?.number !== state.view?.round?.number
+      return {
+        ...state,
+        view: message.view,
+        hostId: message.hostId,
+        connected: message.connected,
+        notices: newRound ? [] : state.notices,
+      }
+    }
     case 'error': {
       if (joinFailed) {
         // This socket has no seat, so anything left from an earlier seat (say a reissued one)
@@ -101,16 +127,7 @@ function onMessage(state: GameState, message: ServerMessage, joinFailed: boolean
       }
       // Two players can press Next round together; the second one's ROUND_NOT_OVER is noise.
       if (message.code === 'ROUND_NOT_OVER') return state
-      const toast = {
-        id: state.nextId,
-        message: message.message,
-        section: sectionFor(message.code),
-      }
-      return {
-        ...state,
-        toasts: [...state.toasts, toast].slice(-MAX_TOASTS),
-        nextId: state.nextId + 1,
-      }
+      return addToast(state, message.message, sectionFor(message.code))
     }
     case 'removed':
       return { ...state, removed: message.reason, playerId: null }

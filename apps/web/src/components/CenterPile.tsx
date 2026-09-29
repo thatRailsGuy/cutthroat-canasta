@@ -6,14 +6,20 @@ export interface CenterPileProps {
   view: PlayerView
   yourTurn: boolean
   selected: readonly CardId[]
+  /** Cards in the staging area. A staged top discard is marked in the pile. */
+  staged: ReadonlySet<CardId>
+  /** The socket isn't open, so drawing is disabled. */
+  offline?: boolean
   onToggleTop: (cardId: CardId) => void
   onDraw: () => void
 }
 
-export function CenterPile({ view, yourTurn, selected, onToggleTop, onDraw }: CenterPileProps) {
+export function CenterPile(props: CenterPileProps) {
+  const { view, yourTurn, selected, staged, offline = false, onToggleTop, onDraw } = props
   const round = view.round!
   const top = round.discardTop
   const canDraw = yourTurn && round.phase === 'draw'
+  const topStaged = top !== null && staged.has(top.id)
   const frozenReason = view.you
     ? round.pileFrozenForAll
       ? 'a wild is in the pile'
@@ -26,16 +32,24 @@ export function CenterPile({ view, yourTurn, selected, onToggleTop, onDraw }: Ce
     isPileFrozenFor(view.you, { top, pileFrozenForAll: round.pileFrozenForAll })
   return (
     <section className={styles.center} aria-label="Stock and discard pile">
-      <button type="button" className={styles.stock} disabled={!canDraw} onClick={onDraw}>
+      <button
+        type="button"
+        className={styles.stock}
+        disabled={!canDraw || offline}
+        onClick={onDraw}
+      >
         {round.stockCount > 0 ? `Draw (${round.stockCount} left)` : 'Stock empty: end the round'}
       </button>
       <div className={styles.pile}>
         {top ? (
-          <Card
-            card={top}
-            selected={selected.includes(top.id)}
-            onClick={canDraw ? () => onToggleTop(top.id) : undefined}
-          />
+          <>
+            <Card
+              card={top}
+              selected={selected.includes(top.id) || topStaged}
+              onClick={canDraw && !topStaged ? () => onToggleTop(top.id) : undefined}
+            />
+            {topStaged && <span className={styles.stagedNote}>In the staging area</span>}
+          </>
         ) : (
           <span className={styles.empty}>Empty pile</span>
         )}

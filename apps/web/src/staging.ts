@@ -140,11 +140,17 @@ export function stagingPreview(view: PlayerView, staging: Staging): StagingPrevi
   }
 }
 
-/** Staging state that stays in step with the view: cards that left your hand drop out. */
+/**
+ * Staging state that stays in step with the view: cards that left your hand drop out. When the
+ * view prunes something, the stored state is pruned too (a guarded update during render), so a
+ * card that comes back later, such as the same top discard in a later draw phase, doesn't
+ * reappear in its old group.
+ */
 export function useStaging(view: PlayerView): [Staging, (action: StagingAction) => void] {
   const [raw, setRaw] = useState(emptyStaging)
   const available = availableIn(view)
   const staging = reconcile(raw, available)
+  if (staging !== raw) setRaw(staging)
   const dispatch = (action: StagingAction) =>
     setRaw((current) => stagingReducer(reconcile(current, available), action))
   return [staging, dispatch]

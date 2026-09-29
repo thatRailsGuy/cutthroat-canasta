@@ -114,6 +114,11 @@
   text-align: center;
 }
 
+.stagedNote {
+  font-size: 0.85rem;
+  color: var(--gold);
+}
+
 .frozen {
   padding: 0.2rem 0.6rem;
   border-radius: 999px;
@@ -132,7 +137,7 @@
   font-size: 0.9rem;
 }
 
-.feed ol {
+.feed ul {
   margin: 0;
   padding-left: 1.25rem;
 }

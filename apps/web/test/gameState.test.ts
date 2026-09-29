@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { gameReducer, initialGameState, sectionFor, type GameState } from '../src/gameState'
+import {
+  NOT_SENT_MESSAGE,
+  gameReducer,
+  initialGameState,
+  sectionFor,
+  type GameState,
+} from '../src/gameState'
 import { makeView } from './fixtures'
 import type { ServerMessage } from '@canasta/server/protocol'
 
@@ -70,6 +76,22 @@ describe('gameReducer', () => {
       hostId: null,
       connected: [],
     })
+  })
+
+  it('clears seat notices when a new round starts', () => {
+    const view = makeView({ hand: [], phase: 'draw' })
+    let state = receive(initialGameState, { type: 'state', view, hostId: 'you', connected: [] })
+    state = receive(state, { type: 'seatReissued', playerId: 'bob' })
+    state = receive(state, { type: 'state', view, hostId: 'you', connected: [] })
+    expect(state.notices).toHaveLength(1)
+    const nextRound = { ...view, round: { ...view.round!, number: 2 } }
+    state = receive(state, { type: 'state', view: nextRound, hostId: 'you', connected: [] })
+    expect(state.notices).toEqual([])
+  })
+
+  it('toasts a message that could not be sent', () => {
+    const state = gameReducer(initialGameState, { type: 'notSent' })
+    expect(state.toasts).toEqual([{ id: 1, message: NOT_SENT_MESSAGE, section: null }])
   })
 
   it('keeps rejoin tokens for the host and seat notices for everyone', () => {

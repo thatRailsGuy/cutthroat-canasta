@@ -11,7 +11,7 @@ import { stagedIds, useStaging } from '../src/staging'
 import { card, makeView } from './fixtures'
 
 /** The table's staging wiring: hand, your melds, the pile, and the staging area. */
-function Harness({ view, onAction }: { view: PlayerView; onAction: (action: Action) => void }) {
+function Harness({ view, onAction }: { view: PlayerView; onAction: (action: Action) => boolean }) {
   const [staging, dispatch] = useStaging(view)
   return (
     <MemoryRouter>
@@ -19,6 +19,7 @@ function Harness({ view, onAction }: { view: PlayerView; onAction: (action: Acti
         view={view}
         yourTurn
         selected={staging.selected}
+        staged={stagedIds(staging)}
         onToggleTop={(cardId) => dispatch({ type: 'toggle', cardId })}
         onDraw={() => {}}
       />
@@ -38,8 +39,9 @@ function Harness({ view, onAction }: { view: PlayerView; onAction: (action: Acti
   )
 }
 
-function setup(view: PlayerView) {
-  const onAction = vi.fn()
+/** `sent`: what sending an action returns (false while the socket is down). */
+function setup(view: PlayerView, sent = true) {
+  const onAction = vi.fn<(action: Action) => boolean>(() => sent)
   render(<Harness view={view} onAction={onAction} />)
   const user = userEvent.setup()
   const click = (name: string | RegExp) => user.click(screen.getByRole('button', { name }))
@@ -148,7 +150,7 @@ describe('StagingArea', () => {
   it('drops staged cards that leave your hand, and the top discard after the draw phase', async () => {
     const hand = [card('Qs', 2), card('Qd', 3), card('4c', 4), card('5c', 5)]
     const drawView = makeView({ phase: 'draw', top: card('Qh', 1), score: -100, hand })
-    const onAction = vi.fn()
+    const onAction = vi.fn<(action: Action) => boolean>(() => true)
     const { rerender } = render(<Harness view={drawView} onAction={onAction} />)
     const user = userEvent.setup()
     await user.click(button('Queen of hearts'))
@@ -169,6 +171,66 @@ describe('StagingArea', () => {
     expect(staged.getByRole('button', { name: 'Queen of spades' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: '4 of clubs' })).toBeNull()
     expect(button('Clear')).toBeEnabled()
+  })
+
+  it('keeps the staging when the action could not be sent', async () => {
+    const view = makeView({ phase: 'play', hand: [card('4c', 1), card('5c', 2), card('6c', 3)] })
+    const { click, onAction } = setup(view, false)
+    await click('5 of clubs')
+    await click('Discard')
+    expect(onAction).toHaveBeenCalledWith({ type: 'discard', cardId: 2 })
+    expect(button('5 of clubs')).toHaveAttribute('aria-pressed', 'true')
+    expect(button('Discard')).toBeEnabled()
+  })
+
+  it('disables the action buttons while offline', () => {
+    const view = makeView({ phase: 'play', hand: [card('4c', 1), card('5c', 2)] })
+    render(
+      <MemoryRouter>
+        <StagingArea
+          view={view}
+          staging={{ selected: [2], groups: [] }}
+          offline
+          dispatch={() => {}}
+          onAction={() => true}
+        />
+      </MemoryRouter>,
+    )
+    expect(screen.getByRole('status')).toHaveTextContent('You can discard this card.')
+    expect(button('Discard')).toBeDisabled()
+  })
+
+  it('marks a staged top discard in the pile', async () => {
+    const view = makeView({
+      phase: 'draw',
+      top: card('Qh', 1),
+      hand: [card('Qs', 2), card('4c', 4)],
+    })
+    const { click } = setup(view)
+    await click('Queen of hearts')
+    await click('New meld')
+    const pile = within(screen.getByRole('region', { name: 'Stock and discard pile' }))
+    expect(pile.getByText('In the staging area')).toBeInTheDocument()
+    expect(pile.getByRole('img', { name: 'Queen of hearts' })).toBeInTheDocument()
+  })
+
+  it('forgets a staged top discard for good once the draw phase ends', async () => {
+    const hand = [card('Qs', 2), card('4c', 4), card('5c', 5)]
+    const drawView = makeView({ phase: 'draw', top: card('Qh', 1), hand })
+    const onAction = vi.fn<(action: Action) => boolean>(() => true)
+    const { rerender } = render(<Harness view={drawView} onAction={onAction} />)
+    const user = userEvent.setup()
+    await user.click(button('Queen of hearts'))
+    await user.click(button('New meld'))
+
+    // You drew instead; the same Queen is still on top during your play phase, then again later.
+    rerender(
+      <Harness view={makeView({ phase: 'play', top: card('Qh', 1), hand })} onAction={onAction} />,
+    )
+    rerender(<Harness view={drawView} onAction={onAction} />)
+    const staged = within(screen.getByRole('region', { name: 'Staging area' }))
+    expect(staged.queryByRole('button', { name: 'Queen of hearts' })).toBeNull()
+    expect(button('Queen of hearts')).toHaveAttribute('aria-pressed', 'false')
   })
 
   it('clears the selection', async () => {

@@ -3,8 +3,10 @@ import { Link } from 'react-router'
 import styles from './Table.module.css'
 
 export function GameOver({ view }: { view: PlayerView }) {
-  const names = view.winners.map((id) => view.players.find((p) => p.id === id)?.name ?? '?')
   const ranked = [...view.players].sort((a, b) => b.score - a.score)
+  const winnerNames = view.winners.map((id) => view.players.find((p) => p.id === id)?.name ?? '?')
+  // The engine always names winners at game end; the top score is a fallback, never a blank.
+  const names = winnerNames.length > 0 ? winnerNames : ranked.slice(0, 1).map((p) => p.name)
   return (
     <section className={styles.gameOver} aria-label="Game over">
       <h2>{names.length > 1 ? `${names.join(' and ')} share the win!` : `${names[0]} wins!`}</h2>

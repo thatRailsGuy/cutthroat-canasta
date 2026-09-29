@@ -33,7 +33,10 @@ export function OpponentPanel(props: OpponentPanelProps) {
         <span>{player.score.toLocaleString('en-US')} pts</span>
       </header>
       <MeldList melds={player.melds} red3s={player.red3s} />
-      {onReissue && !isConnected && <RejoinControl onReissue={onReissue} link={rejoinLink} />}
+      {onReissue && !isConnected && (
+        // A new link remounts the control, which clears the last copy result.
+        <RejoinControl key={rejoinLink} onReissue={onReissue} link={rejoinLink} />
+      )}
     </section>
   )
 }

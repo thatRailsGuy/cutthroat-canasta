@@ -17,7 +17,7 @@ export interface TableProps {
   code: string
   view: PlayerView
   state: GameState
-  send: (message: ClientMessage) => void
+  send: (message: ClientMessage) => boolean
 }
 
 export function Table({ code, view, state, send }: TableProps) {
@@ -28,6 +28,7 @@ export function Table({ code, view, state, send }: TableProps) {
   const yourTurn = view.status === 'playing' && currentId === you.id
   const isHost = state.playerId === state.hostId
   const act = (action: Action) => send({ type: 'action', action })
+  const offline = state.connection !== 'open'
 
   return (
     <main className={styles.table}>
@@ -54,6 +55,8 @@ export function Table({ code, view, state, send }: TableProps) {
         view={view}
         yourTurn={yourTurn}
         selected={staging.selected}
+        staged={stagedIds(staging)}
+        offline={offline}
         onToggleTop={(cardId) => dispatch({ type: 'toggle', cardId })}
         onDraw={() => act({ type: 'drawStock' })}
       />
@@ -63,16 +66,18 @@ export function Table({ code, view, state, send }: TableProps) {
       {view.status === 'roundOver' && (
         <RoundEnd view={view} onNextRound={() => send({ type: 'nextRound' })} />
       )}
-      {view.status === 'gameOver' && <GameOver view={view} />}
+      {view.status === 'gameOver' && (
+        <>
+          {/* The final round's breakdown and hands stay visible, with no Next round. */}
+          <RoundEnd view={view} />
+          <GameOver view={view} />
+        </>
+      )}
 
       <section className={`${styles.you} ${yourTurn ? styles.turn : ''}`} aria-label="You">
         <header>
           <strong>{you.name}</strong> · {you.score.toLocaleString('en-US')} pts ·{' '}
-          {yourTurn
-            ? round.phase === 'draw'
-              ? 'Your turn: draw or pick up the pile'
-              : 'Your turn: meld, then discard'
-            : `Waiting for ${view.players[round.current]?.name ?? '…'}`}
+          {turnText(view, yourTurn)}
         </header>
         <MeldList
           melds={you.melds}
@@ -80,7 +85,13 @@ export function Table({ code, view, state, send }: TableProps) {
           onPick={(meldId) => dispatch({ type: 'stageAdd', meldId })}
         />
         {view.status === 'playing' && (
-          <StagingArea view={view} staging={staging} dispatch={dispatch} onAction={act} />
+          <StagingArea
+            view={view}
+            staging={staging}
+            offline={offline}
+            dispatch={dispatch}
+            onAction={act}
+          />
         )}
         <Hand
           cards={you.hand}
@@ -91,4 +102,16 @@ export function Table({ code, view, state, send }: TableProps) {
       </section>
     </main>
   )
+}
+
+function turnText(view: PlayerView, yourTurn: boolean): string {
+  if (view.status === 'roundOver') return 'Round over'
+  if (view.status === 'gameOver') return 'Game over'
+  const round = view.round!
+  if (yourTurn) {
+    return round.phase === 'draw'
+      ? 'Your turn: draw or pick up the pile'
+      : 'Your turn: meld, then discard'
+  }
+  return `Waiting for ${view.players[round.current]?.name ?? '…'}`
 }
