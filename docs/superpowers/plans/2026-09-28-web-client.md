@@ -41,6 +41,18 @@ The rules page renders its tables from the engine constants. Its worked examples
 - **Commands:** from the root, `npm test`, `npm run typecheck`, `npm run lint`, `npm run format:check`. For one workspace, `npm test -w @canasta/web`.
 - **Commits:** plain imperative sentences, with no attribution lines (a hook rejects them). Never sign commits.
 
+## Amendments (decided 2026-09-28, after drafting)
+
+These override the task text below where they differ.
+
+- **Presence refresh:** keep it minimal. No Durable Object alarm (Open Question 1).
+- **Heartbeat timing:** ping every 20 s, stale after 70 s, as written (Open Question 2).
+- **Unknown game codes:** add `GET /api/games/:code` (Open Question 3).
+  - **Task 2 (server):** add an RPC method `GameRoom.exists(): boolean` that returns `this.room !== null` and never writes storage. The Worker route returns `200 { "code": "<CODE>" }` when the room exists, and 404 for an unknown or malformed code. Codes are normalized as in the WebSocket route. Worker tests cover a created game (200, with the normalized code), a lowercase code (200), an unknown code (404) and a malformed code (404).
+  - **Task 3 (`api.ts`):** add `gameExists(code): Promise<boolean | null>`. It returns `true` on 200, `false` on 404, and `null` on a network error or any other status, and it has a unit test with a stubbed `fetch`.
+  - **Task 4 (`GamePage`):** before opening the connection, call `gameExists`. On `false`, show "There's no game with the code <CODE>." with a link home, and don't connect. On `true` or `null`, connect as written. The "Can't reach game…" message stays as the fallback for `null`.
+  - **README (Task 11):** document the route.
+
 ## Review Focus
 
 - **No server code in the bundle.** Expected: `apps/web/dist/assets/*.js` contains no `zod` and no `parseClientMessage`. Pinned in: Task 1 (lint rule) and Task 8 (Step 2 checks the bundle).
@@ -5296,6 +5308,8 @@ git commit -m "Document the web client and heartbeat"
 - **No host after a mid-game token loss** (handoff open question): unchanged by this plan.
 
 ## Open Questions
+
+All three were decided on 2026-09-28; see Amendments.
 
 1. **Presence refresh for a stale socket.** With the minimal server change, a dead phone stops counting as connected, but other players only see its dot turn grey at the next message or close in the room (any turn action). A Durable Object alarm every ~30 s while sockets are open would refresh presence on its own, at the cost of waking the room. Keep it minimal (recommended), or add the alarm?
 2. **Heartbeat timing.** Ping every 20 s, and a socket is stale after 70 s. So a host waits up to about 70 s before they can reissue a dead phone's seat. A shorter limit risks marking background tabs as disconnected. Are these numbers acceptable?
