@@ -4,6 +4,22 @@ import type { Action, PlayerView, RuleErrorCode } from '@canasta/engine'
 export const MAX_MESSAGE_LENGTH = 16_384
 export const MAX_NAME_LENGTH = 20
 
+/**
+ * Heartbeat. The Durable Object answers `HEARTBEAT_PING` with `HEARTBEAT_PONG` through a
+ * WebSocket auto-response, so a ping never wakes it. The strings must match exactly.
+ */
+export const HEARTBEAT_PING = '{"type":"ping"}'
+export const HEARTBEAT_PONG = '{"type":"pong"}'
+/** How often the client pings. */
+export const HEARTBEAT_INTERVAL_MS = 20_000
+/**
+ * A socket that has sent nothing for this long no longer counts as connected. It spans more
+ * than three pings, because browsers may slow timers in background tabs to once a minute.
+ */
+export const STALE_AFTER_MS = 70_000
+/** Close code for a socket the server dropped as stale. The client reconnects with its token. */
+export const STALE_CLOSE_CODE = 4000
+
 const cardId = z.number().int().nonnegative()
 const cardIds = z.array(cardId).max(60)
 const meldBatch = z.object({
@@ -67,6 +83,8 @@ export type ServerMessage =
   | { type: 'removed'; reason: RemovedReason }
   | { type: 'reissued'; playerId: string; token: string }
   | { type: 'seatReissued'; playerId: string }
+  /** The heartbeat reply. The runtime's auto-response sends it, never the room handler. */
+  | { type: 'pong' }
 
 /** Why a socket's seat went away: it left, or the host kicked it. */
 export type RemovedReason = 'left' | 'kicked'

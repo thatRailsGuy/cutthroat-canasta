@@ -1,6 +1,6 @@
 import { SELF, env, runInDurableObject } from 'cloudflare:test'
 import { describe, expect, it } from 'vitest'
-import type { ServerMessage } from '../src/protocol'
+import { HEARTBEAT_PING, type ServerMessage } from '../src/protocol'
 import type { RoomState } from '../src/room'
 
 type Joined = Extract<ServerMessage, { type: 'joined' }>
@@ -126,6 +126,32 @@ describe('routes', () => {
     const code = await createGame()
     const client = await connect(code.toLowerCase())
     expect((await join(client, 'Ann')).code).toBe(code)
+  })
+
+  it('looks up a created game by code', async () => {
+    const code = await createGame()
+    const response = await SELF.fetch(`http://example.com/api/games/${code}`)
+    expect(response.status).toBe(200)
+    expect(await response.json()).toEqual({ code })
+  })
+
+  it('looks up a game by a lowercase code', async () => {
+    const code = await createGame()
+    const response = await SELF.fetch(`http://example.com/api/games/${code.toLowerCase()}`)
+    expect(response.status).toBe(200)
+    expect(await response.json()).toEqual({ code })
+  })
+
+  it('returns 404 when looking up an unknown code', async () => {
+    const response = await SELF.fetch('http://example.com/api/games/QQQQQQ')
+    expect(response.status).toBe(404)
+    await response.body?.cancel()
+  })
+
+  it('returns 404 when looking up a malformed code', async () => {
+    const response = await SELF.fetch('http://example.com/api/games/abc')
+    expect(response.status).toBe(404)
+    await response.body?.cancel()
   })
 })
 
@@ -284,5 +310,33 @@ describe('seats', () => {
     const { ann, bobJoined } = await startedGame()
     ann.send({ type: 'reissue', playerId: bobJoined.playerId })
     expect(await ann.next()).toMatchObject({ type: 'error', code: 'PLAYER_CONNECTED' })
+  })
+})
+
+describe('heartbeat', () => {
+  it('answers a ping with a pong and tells nobody else', async () => {
+    const { ann, bob } = await startedGame()
+    ann.sendRaw(HEARTBEAT_PING)
+    expect(await ann.next()).toEqual({ type: 'pong' })
+    await ann.expectQuiet()
+    await bob.expectQuiet()
+  })
+
+  it('drops a silent socket, so its seat can be reissued', async () => {
+    const { code, ann, bob, bobJoined } = await startedGame()
+    const stub = env.GAME_ROOM.get(env.GAME_ROOM.idFromName(code))
+    await runInDurableObject(stub, async (_instance, state) => {
+      for (const ws of state.getWebSockets()) {
+        const attachment = ws.deserializeAttachment() as { playerId: string | null }
+        if (attachment.playerId === bobJoined.playerId) {
+          ws.serializeAttachment({ ...attachment, seenAt: 0 })
+        }
+      }
+    })
+
+    ann.send({ type: 'reissue', playerId: bobJoined.playerId })
+    expect(await ann.next()).toMatchObject({ type: 'reissued', playerId: bobJoined.playerId })
+    expect(await ann.next()).toEqual({ type: 'seatReissued', playerId: bobJoined.playerId })
+    await bob.expectQuiet()
   })
 })

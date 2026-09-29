@@ -4,6 +4,7 @@ export { GameRoom } from './gameRoom'
 
 const MAX_CODE_ATTEMPTS = 5
 const WS_ROUTE = /^\/api\/games\/([^/]+)\/ws$/
+const GAME_ROUTE = /^\/api\/games\/([^/]+)$/
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -16,6 +17,9 @@ export default {
       if (!code) return notFound()
       return roomFor(env, code).fetch(request)
     }
+
+    const game = GAME_ROUTE.exec(url.pathname)
+    if (game && request.method === 'GET') return gameExistsRoute(env, game[1])
     return notFound()
   },
 } satisfies ExportedHandler<Env>
@@ -32,6 +36,13 @@ async function createGameRoute(env: Env): Promise<Response> {
     }
   }
   return new Response('Could not allocate a game code', { status: 503 })
+}
+
+/** Lets the client tell an unknown code apart from a network failure before it connects. */
+async function gameExistsRoute(env: Env, input: string): Promise<Response> {
+  const code = normalizeCode(input)
+  if (!code || !(await roomFor(env, code).exists())) return notFound()
+  return Response.json({ code })
 }
 
 function notFound(): Response {
