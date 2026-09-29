@@ -1,0 +1,75 @@
+.home,
+.lobby {
+  max-width: 28rem;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+  display: grid;
+  gap: 1rem;
+}
+
+.home label,
+.join label {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.home input {
+  font: inherit;
+  min-height: 44px;
+  padding: 0 0.5rem;
+}
+
+.join {
+  display: flex;
+  align-items: end;
+  gap: 0.5rem;
+}
+
+.seats {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.seats li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.online,
+.offline {
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 50%;
+  background: var(--ok);
+}
+
+.offline {
+  background: #9aa0a6;
+}
+
+.error {
+  color: var(--bad);
+}
+
+.notice {
+  background: #fdf3d8;
+  border-radius: var(--radius);
+  padding: 0.5rem;
+}
+
+.banner {
+  text-align: center;
+  padding: 0.5rem;
+  margin: 0;
+  background: #fdf3d8;
+}
+
+.rulesButton {
+  position: fixed;
+  top: 0.5rem;
+  right: 0.5rem;
+  z-index: 5;
+}

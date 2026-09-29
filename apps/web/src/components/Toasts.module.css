@@ -1,0 +1,31 @@
+.toasts {
+  position: fixed;
+  inset: auto 1rem 1rem auto;
+  display: grid;
+  gap: 0.5rem;
+  z-index: 10;
+  max-width: min(24rem, calc(100vw - 2rem));
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--ink);
+  color: white;
+  border-radius: var(--radius);
+  padding: 0.5rem 0.75rem;
+  box-shadow: var(--shadow);
+}
+
+.toast a {
+  color: var(--gold);
+}
+
+.toast button {
+  margin-left: auto;
+  min-height: 32px;
+  background: none;
+  color: inherit;
+  border: none;
+}
