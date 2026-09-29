@@ -54,14 +54,14 @@ The user settled the four open questions on 2026-09-28, choosing the recommended
 
 | Change | Commits |
 | --- | --- |
-| Spec and plan | first commit on branch |
-| sfc32 and a 128-bit `Seed` tuple | `a2f0554` |
-| Public per-round feed (`Round.feed`, `RoundView.feed`) | `0d2e0e8` |
-| `revealedHand` at round end (later replaced by `RoundScore.hands`), `removePlayer` | `b3d9649` |
-| `leave`, `kick`, `reissue`; any player deals the next round | `12a0389` |
-| README | `2e7d579` |
-| Review fixes (empty-stock draw event, kick text) | `5e1b771` |
-| Hands kept in `RoundScore.hands`; reissues announced to the table | last commit on branch |
+| Spec and plan | `b0f9c5b` |
+| sfc32 and a 128-bit `Seed` tuple | `dcbb1bf` |
+| Public per-round feed (`Round.feed`, `RoundView.feed`) | `73065a5` |
+| `revealedHand` at round end (later replaced by `RoundScore.hands`), `removePlayer` | `c67831d` |
+| `leave`, `kick`, `reissue`; any player deals the next round | `6930a54` |
+| README | `59c2a61` |
+| Review fixes (empty-stock draw event, kick text) | `bd10829` |
+| Hands kept in `RoundScore.hands`; reissues announced to the table | `4ca647a` |
 
 209 engine and 86 server tests pass. A whole-branch review found no critical bugs and no leaks. The simulation's leak check now counts any card that was face up this round as public. A planted leak still fails all 30 seeds.
 
