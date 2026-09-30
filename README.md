@@ -44,6 +44,14 @@ npm run dev:web          # Run the web client (Vite, http://localhost:5173; prox
 
 To play locally, run `npm run dev:server` and `npm run dev:web` together in two terminals, then open `http://localhost:5173`.
 
+To play from phones on the same Wi-Fi, start the web client with `--host` instead of `npm run dev:web`, then open the Network address Vite prints (such as `http://192.168.1.20:5173`) on each phone:
+
+```sh
+npm run dev -w @canasta/web -- --host
+```
+
+See [docs/playtest.md](docs/playtest.md) for the full playtest setup.
+
 ## Server
 
 `apps/server` is a Cloudflare Worker. Each game is one `GameRoom` Durable Object, holding the game state and every player's WebSocket.
