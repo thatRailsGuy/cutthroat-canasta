@@ -15,7 +15,7 @@ export interface HandProps {
 
 export function Hand({ cards, selected, hidden, fresh = null, onToggle }: HandProps) {
   return (
-    <section className={styles.hand} aria-label="Your hand">
+    <section className={styles.hand} aria-label="Your hand" data-hand="">
       {sortHand(cards)
         .filter((c) => !hidden.has(c.id))
         .map((c) => (

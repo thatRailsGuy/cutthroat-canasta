@@ -95,13 +95,18 @@ export function StagingArea({
         >
           New meld
         </button>
-        <button type="button" disabled={!ready('meld')} onClick={run}>
+        <button type="button" className={styles.primary} disabled={!ready('meld')} onClick={run}>
           Meld
         </button>
-        <button type="button" disabled={!ready('pickUpPile')} onClick={run}>
+        <button
+          type="button"
+          className={styles.primary}
+          disabled={!ready('pickUpPile')}
+          onClick={run}
+        >
           Pick up pile
         </button>
-        <button type="button" disabled={!ready('discard')} onClick={run}>
+        <button type="button" className={styles.primary} disabled={!ready('discard')} onClick={run}>
           Discard
         </button>
         <button type="button" disabled={nothingStaged} onClick={() => dispatch({ type: 'clear' })}>

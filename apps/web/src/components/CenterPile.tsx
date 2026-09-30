@@ -1,7 +1,7 @@
-import { isPileFrozenFor, isRed3, type CardId, type PlayerView } from '@canasta/engine'
+import { isBlack3, isPileFrozenFor, isRed3, type CardId, type PlayerView } from '@canasta/engine'
 import { cardLabel } from '../cards'
-import { Card } from './Card'
-import styles from './Table.module.css'
+import { Card, CardBack } from './Card'
+import styles from './CenterPile.module.css'
 
 export interface CenterPileProps {
   view: PlayerView
@@ -35,21 +35,43 @@ export function CenterPile(props: CenterPileProps) {
   const frozen =
     view.you !== null &&
     isPileFrozenFor(view.you, { top, pileFrozenForAll: round.pileFrozenForAll })
+  // Cards under the top one peek out, face down to the eye, so the pile reads as a pile.
+  const under = Math.min(Math.max(round.discardCount - 1, 0), 2)
   return (
     <section className={styles.center} aria-label="Stock and discard pile">
-      <button
-        type="button"
-        className={styles.stock}
-        disabled={!canDraw || offline}
-        onClick={onDraw}
-      >
-        {round.stockCount > 0 ? `Draw (${round.stockCount} left)` : 'Stock empty: end the round'}
-      </button>
-      <div className={styles.pile}>
-        {top ? (
-          <>
-            {/* The card that froze the pile lies sideways under it, sticking out so it shows. */}
+      <div className={styles.spot}>
+        <button
+          type="button"
+          className={styles.stock}
+          disabled={!canDraw || offline}
+          onClick={onDraw}
+          data-stock=""
+        >
+          <span className={styles.stack} aria-hidden="true">
+            {round.stockCount > 2 && <CardBack />}
+            {round.stockCount > 1 && <CardBack />}
+            {round.stockCount > 0 ? <CardBack /> : <span className={styles.empty} />}
+          </span>
+          <span className={styles.label}>
+            {round.stockCount > 0 ? (
+              <>
+                Draw a card <span className={styles.count}>({round.stockCount} left)</span>
+              </>
+            ) : (
+              'Stock empty: end the round'
+            )}
+          </span>
+        </button>
+      </div>
+
+      <div className={styles.spot}>
+        <div className={`${styles.pile} ${frozen ? styles.frozen : ''}`} data-pile="">
+          {top ? (
             <span className={styles.pileStack}>
+              {Array.from({ length: under }, (_, i) => (
+                <span key={i} className={`${styles.under} ${styles[`under${i}`]}`} />
+              ))}
+              {/* The card that froze the pile lies sideways under it, sticking out so it shows. */}
               {frozenBy && frozenBy.id !== top.id && (
                 <span className={styles.sideways}>
                   <Card card={frozenBy} />
@@ -61,20 +83,34 @@ export function CenterPile(props: CenterPileProps) {
                   selected={selected.includes(top.id) || topStaged}
                   onClick={canDraw && !topStaged ? () => onToggleTop(top.id) : undefined}
                 />
+                {isBlack3(top) && (
+                  <span className={styles.stop} title="A black 3 on top: nobody can take the pile">
+                    Stop
+                  </span>
+                )}
               </span>
+              {frozen && (
+                <span className={styles.snowflake} aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" strokeWidth="2.4" strokeLinecap="round">
+                    <path d="M12 2v20M4.9 6.5l14.2 11M19.1 6.5 4.9 17.5M9.5 3.5 12 6l2.5-2.5M9.5 20.5 12 18l2.5 2.5" />
+                  </svg>
+                </span>
+              )}
             </span>
-            {topStaged && <span className={styles.stagedNote}>In the staging area</span>}
-          </>
-        ) : (
-          <span className={styles.empty}>Empty pile</span>
-        )}
-        <span>{round.discardCount} in pile</span>
-        {top && frozen && frozenReason && (
-          <span className={styles.frozen} title={`Frozen because ${frozenReason}`}>
-            Frozen for you: {frozenReason}
-          </span>
-        )}
+          ) : (
+            <span className={styles.empty}>Empty pile</span>
+          )}
+        </div>
+        <span className={styles.label}>{round.discardCount} in pile</span>
+        {topStaged && <span className={styles.stagedNote}>In the staging area</span>}
       </div>
+
+      {top && frozen && frozenReason && (
+        <p className={styles.bubble} title={`Frozen because ${frozenReason}`}>
+          <strong>Frozen for you</strong>
+          <span>{frozenReason}</span>
+        </p>
+      )}
     </section>
   )
 }

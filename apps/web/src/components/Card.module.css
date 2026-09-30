@@ -1,30 +1,91 @@
 .card {
-  display: inline-flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.1rem;
-  border: 1px solid #c9c4b8;
-  border-radius: 6px;
-  background: white;
-  box-shadow: var(--shadow);
-  font-weight: 700;
+  position: relative;
+  display: inline-block;
+  flex-shrink: 0;
+  border: 2px solid var(--ink);
+  border-radius: 10px;
+  background: var(--paper);
+  box-shadow: 0 3px 0 rgb(43 35 32 / 0.3);
   padding: 0;
   min-height: 0;
   line-height: 1;
-  transition: transform 0.1s;
+  font-weight: 400;
+  transition:
+    transform 0.12s,
+    box-shadow 0.12s;
+}
+
+button.card:active:not(:disabled) {
+  transform: none;
+  box-shadow: 0 3px 0 rgb(43 35 32 / 0.3);
 }
 
 .normal {
-  width: 3rem;
-  height: 4.25rem;
-  font-size: 1.1rem;
+  width: 4.4rem;
+  height: 6.25rem;
 }
 
 .small {
-  width: 2.1rem;
-  height: 3rem;
-  font-size: 0.85rem;
+  width: 2.5rem;
+  height: 3.5rem;
+  border-radius: 8px;
+}
+
+.tiny {
+  width: 1.6rem;
+  height: 2.25rem;
+  border-radius: 5px;
+}
+
+.corner {
+  position: absolute;
+  top: 0.3rem;
+  left: 0.4rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.05rem;
+}
+
+.rank {
+  font-family: var(--display);
+  font-size: 1.15rem;
+}
+
+.suit {
+  font-size: 0.95rem;
+}
+
+.pip {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-top: 0.6rem;
+  font-size: 2.1rem;
+}
+
+/* A small card is mostly seen in an overlapping meld column, so its corner reads as one
+   line, "K♥", and the centre pip is dropped. */
+.small .corner {
+  top: 0.2rem;
+  left: 0.25rem;
+  flex-direction: row;
+  gap: 0;
+}
+
+.small .rank {
+  font-size: 0.8rem;
+}
+
+.small .suit {
+  font-size: 0.75rem;
+}
+
+.small .pip {
+  font-size: 1.25rem;
+  padding-top: 0.9rem;
 }
 
 .red {
@@ -35,15 +96,30 @@
   color: var(--ink);
 }
 
-.selected {
-  transform: translateY(-0.5rem);
-  outline: 3px solid var(--gold);
+.joker {
+  color: var(--teal-dark);
+}
+
+.joker .rank {
+  font-size: 0.85rem;
+}
+
+.small.joker .rank {
+  font-size: 0.6rem;
+}
+
+.selected,
+button.selected:active:not(:disabled) {
+  transform: translateY(-1.1rem);
+  box-shadow:
+    0 6px 0 var(--gold),
+    0 6px 0 2px var(--ink);
 }
 
 .fresh {
   box-shadow:
-    0 0 0 3px #7fd3ff,
-    var(--shadow);
+    0 0 0 4px var(--teal),
+    0 3px 0 4px var(--ink);
   animation: arrive 0.6s ease-out;
 }
 
@@ -54,21 +130,51 @@
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .fresh {
-    animation: none;
-  }
+.back {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 2px solid var(--ink);
+  border-radius: 10px;
+  background: var(--teal);
+  overflow: hidden;
 }
 
-.joker {
-  font-size: 1.4em;
-  color: #6a3fb5;
+.back::before {
+  content: '';
+  position: absolute;
+  inset: 5px;
+  border: 2px solid var(--paper);
+  border-radius: 6px;
+}
+
+.back svg {
+  width: 60%;
+  stroke: var(--paper);
+}
+
+.back circle {
+  fill: var(--gold);
+  stroke: var(--ink);
+}
+
+.back.small::before {
+  inset: 3px;
+  border-radius: 4px;
+}
+
+.back.tiny::before {
+  inset: 2px;
+  border-width: 1px;
+  border-radius: 3px;
 }
 
 .row {
   display: inline-flex;
   flex-wrap: wrap;
-  gap: 0.2rem;
+  gap: 0.25rem;
 }
 
 @media print {

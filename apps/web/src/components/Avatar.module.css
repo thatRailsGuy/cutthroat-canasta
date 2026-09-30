@@ -1,0 +1,74 @@
+.avatar {
+  position: relative;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 50%;
+  border: 2px solid var(--ink);
+  color: var(--paper);
+}
+
+.initial {
+  position: relative;
+  font-family: var(--display);
+  font-size: 1.3rem;
+  line-height: 1;
+}
+
+.teal {
+  background: var(--teal-dark);
+}
+
+.gold {
+  background: var(--gold);
+  color: var(--ink);
+}
+
+.red {
+  background: var(--red);
+}
+
+.blue {
+  background: var(--ice-ink);
+}
+
+.active {
+  box-shadow:
+    0 0 0 3px var(--gold),
+    0 0 0 5px var(--ink);
+}
+
+/* Mustard rings ripple out from the seat that's up. */
+.ring {
+  position: absolute;
+  inset: -2px;
+  border-radius: 50%;
+  border: 3px solid var(--gold);
+  animation: ripple 1.8s ease-out infinite;
+  pointer-events: none;
+}
+
+.late {
+  animation-delay: 0.9s;
+}
+
+@keyframes ripple {
+  from {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+
+  to {
+    transform: scale(1.9);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ring {
+    display: none;
+  }
+}

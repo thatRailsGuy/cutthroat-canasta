@@ -5,6 +5,11 @@
   gap: 0 2.5rem;
   justify-content: center;
   padding: 1rem;
+  min-height: 100dvh;
+  max-width: 68rem;
+  margin: 0 auto;
+  background: var(--paper);
+  border-inline: 2px solid var(--ink);
 }
 
 .header {

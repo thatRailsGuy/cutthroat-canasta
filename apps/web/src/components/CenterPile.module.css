@@ -1,0 +1,270 @@
+.center {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem 4rem;
+  padding: 1rem 0;
+}
+
+.spot {
+  display: grid;
+  justify-items: center;
+  gap: 0.6rem;
+}
+
+.label {
+  font-weight: 800;
+  font-size: 0.95rem;
+}
+
+.count {
+  font-weight: 400;
+  color: var(--muted);
+}
+
+/* The stock is a button that looks like the deck: a few backs, stepped up and to the left. */
+.stock,
+.stock:active:not(:disabled) {
+  display: grid;
+  justify-items: center;
+  gap: 0.6rem;
+  padding: 0;
+  border: none;
+  background: none;
+  box-shadow: none;
+  border-radius: 12px;
+  transform: none;
+}
+
+.stock:disabled {
+  opacity: 1;
+}
+
+.stock:disabled .stack {
+  filter: saturate(0.55);
+}
+
+.stack {
+  position: relative;
+  display: block;
+  width: calc(4.4rem + 8px);
+  height: calc(6.25rem + 8px);
+}
+
+.stack > * {
+  position: absolute;
+}
+
+.stack > :nth-last-child(3) {
+  left: 8px;
+  top: 8px;
+  filter: brightness(0.75);
+}
+
+.stack > :nth-last-child(2) {
+  left: 4px;
+  top: 4px;
+  filter: brightness(0.87);
+}
+
+.stack > :last-child {
+  left: 0;
+  top: 0;
+  box-shadow: var(--shadow);
+  transition: transform 0.12s;
+}
+
+.stock:not(:disabled):hover .stack > :last-child {
+  transform: translate(-3px, -5px) rotate(-3deg);
+}
+
+.pile {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 7rem;
+  min-height: 7rem;
+  border-radius: 14px;
+}
+
+/* Until your first pickup the pile sits in a thick ice-blue ring that swells slowly. */
+.frozen .topCard,
+.frozen .sidewaysTop {
+  border-radius: 10px;
+  animation: frost 2.6s ease-in-out infinite;
+}
+
+@keyframes frost {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 4px var(--ice),
+      0 3px 0 6px var(--ink);
+  }
+
+  50% {
+    box-shadow:
+      0 0 0 9px var(--ice),
+      0 3px 0 11px var(--ink);
+  }
+}
+
+.pileStack {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.under {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 4.4rem;
+  height: 6.25rem;
+  border: 2px solid var(--ink);
+  border-radius: 10px;
+  background: var(--paper);
+}
+
+.under0 {
+  transform: rotate(-11deg) translate(-6px, 4px);
+}
+
+.under1 {
+  transform: rotate(8deg) translate(8px, 2px);
+}
+
+.topCard {
+  position: relative;
+  line-height: 0;
+}
+
+/* A normal card is 4.4rem × 6.25rem. Turned sideways it is 6.25rem wide, and it sits
+   under the top card with 2.25rem sticking out to the right. */
+.sideways {
+  position: absolute;
+  left: 1.2rem;
+  top: 50%;
+  line-height: 0;
+  transform: translateY(-50%) rotate(90deg);
+}
+
+.pileStack:has(.sideways) {
+  padding-right: 2.25rem;
+}
+
+.sidewaysTop {
+  position: relative;
+  display: inline-block;
+  line-height: 0;
+  margin: 0 0.9rem;
+  transform: rotate(90deg);
+}
+
+/* A little red road sign on a black 3. */
+.stop {
+  position: absolute;
+  right: -1.1rem;
+  bottom: -0.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  background: var(--red);
+  color: var(--paper);
+  font-size: 0.68rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  clip-path: polygon(30% 0, 70% 0, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0 70%, 0 30%);
+  animation: wobble 2.4s ease-in-out infinite;
+}
+
+.snowflake {
+  position: absolute;
+  right: -0.9rem;
+  top: -0.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+  background: var(--ice);
+  animation: wobble 2.6s ease-in-out infinite;
+}
+
+.snowflake svg {
+  width: 1.1rem;
+  stroke: var(--ice-ink);
+}
+
+@keyframes wobble {
+  0%,
+  100% {
+    transform: rotate(-4deg);
+  }
+
+  50% {
+    transform: rotate(4deg);
+  }
+}
+
+.empty {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 4.4rem;
+  height: 6.25rem;
+  border: 2px dashed var(--ink);
+  border-radius: 10px;
+  font-size: 0.75rem;
+  text-align: center;
+  opacity: 0.6;
+}
+
+.stagedNote {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: var(--red);
+}
+
+/* A speech bubble pointing left at the pile. */
+.bubble {
+  position: relative;
+  display: grid;
+  gap: 0.1rem;
+  max-width: 12rem;
+  margin: 0;
+  padding: 0.6rem 0.9rem;
+  border: 2px solid var(--ink);
+  border-radius: 16px;
+  background: var(--ice);
+  color: var(--ice-ink);
+  font-size: 0.9rem;
+  box-shadow: var(--shadow);
+}
+
+.bubble strong {
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 1rem;
+}
+
+.bubble::before {
+  content: '';
+  position: absolute;
+  left: -9px;
+  top: 1.4rem;
+  width: 14px;
+  height: 14px;
+  background: var(--ice);
+  border-left: 2px solid var(--ink);
+  border-bottom: 2px solid var(--ink);
+  transform: rotate(45deg);
+}

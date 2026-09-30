@@ -1,6 +1,7 @@
 import type { PlayerView } from '@canasta/engine'
 import { BreakdownTable } from './BreakdownTable'
 import { CardRow } from './Card'
+import { CountUp } from './CountUp'
 import styles from './Table.module.css'
 
 export interface RoundEndProps {
@@ -27,10 +28,17 @@ export function RoundEnd({ view, onNextRound }: RoundEndProps) {
       />
       <table className={styles.totals}>
         <tbody>
-          {view.players.map((p) => (
+          {view.players.map((p, i) => (
             <tr key={p.id}>
               <th scope="row">{p.name}</th>
-              <td>{p.score.toLocaleString('en-US')}</td>
+              <td className={styles.rollTotal}>
+                {/* The new total rolls up from last round's, one player after another. */}
+                <CountUp
+                  from={p.score - (last.breakdown[p.id]?.total ?? 0)}
+                  to={p.score}
+                  delay={i * 350}
+                />
+              </td>
               <td>
                 <CardRow cards={last.hands[p.id] ?? []} />
               </td>

@@ -22,21 +22,25 @@ export function Card({
   const className = [
     styles.card,
     styles[size],
-    isRed(card) ? styles.red : styles.black,
+    card.suit ? (isRed(card) ? styles.red : styles.black) : styles.joker,
     selected ? styles.selected : '',
     fresh ? styles.fresh : '',
   ].join(' ')
-  const face = card.suit ? (
+  const suit = card.suit ? SUIT_SYMBOLS[card.suit] : '★'
+  const face = (
     <>
-      <span>{card.rank}</span>
-      <span>{SUIT_SYMBOLS[card.suit]}</span>
+      <span className={styles.corner} aria-hidden="true">
+        <span className={styles.rank}>{card.suit ? card.rank : 'JK'}</span>
+        <span className={styles.suit}>{suit}</span>
+      </span>
+      <span className={styles.pip} aria-hidden="true">
+        {suit}
+      </span>
     </>
-  ) : (
-    <span className={styles.joker}>★</span>
   )
   if (!onClick) {
     return (
-      <span className={className} role="img" aria-label={cardName(card)}>
+      <span className={className} role="img" aria-label={cardName(card)} data-card-id={card.id}>
         {face}
       </span>
     )
@@ -48,9 +52,22 @@ export function Card({
       aria-label={fresh ? `${cardName(card)}, just drawn` : cardName(card)}
       aria-pressed={selected}
       onClick={onClick}
+      data-card-id={card.id}
     >
       {face}
     </button>
+  )
+}
+
+/** The back of a card: teal, with a starburst. */
+export function CardBack({ size = 'normal' }: { size?: 'normal' | 'small' | 'tiny' }) {
+  return (
+    <span className={`${styles.back} ${styles[size]}`} aria-hidden="true" data-back="">
+      <svg viewBox="0 0 54 54" fill="none" strokeWidth="2.5" strokeLinecap="round">
+        <path d="M27 4v46M4 27h46M10.7 10.7l32.6 32.6M43.3 10.7 10.7 43.3" />
+        <circle cx="27" cy="27" r="6" />
+      </svg>
+    </span>
   )
 }
 

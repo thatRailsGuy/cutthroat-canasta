@@ -1,5 +1,7 @@
 import type { PublicPlayer } from '@canasta/engine'
 import { useRef, useState } from 'react'
+import { Avatar } from './Avatar'
+import { CardBack } from './Card'
 import { MeldList } from './MeldList'
 import { RoundPoints } from './RoundPoints'
 import styles from './Table.module.css'
@@ -9,6 +11,8 @@ export interface OpponentPanelProps {
   isTurn: boolean
   isConnected: boolean
   isHost: boolean
+  /** Seat number, which picks the avatar colour. */
+  seat: number
   /** The round is in play. */
   playing: boolean
   /**
@@ -21,26 +25,39 @@ export interface OpponentPanelProps {
 }
 
 export function OpponentPanel(props: OpponentPanelProps) {
-  const { player, isTurn, isConnected, isHost, playing, onReissue, rejoinLink } = props
+  const { player, isTurn, isConnected, isHost, seat, playing, onReissue, rejoinLink } = props
   return (
     <section
       className={`${styles.opponent} ${isTurn ? styles.turn : ''}`}
       aria-label={`${player.name}${isTurn ? ', playing now' : ''}`}
+      data-player-id={player.id}
     >
       <header>
-        <span
-          className={isConnected ? styles.online : styles.offline}
-          role="img"
-          aria-label={isConnected ? 'Online' : 'Offline'}
-          title={isConnected ? 'Online' : 'Offline'}
-        />
-        <strong>{player.name}</strong>
-        {isHost && <span className={styles.badge}>Host</span>}
-        <span>{player.handCount} cards</span>
-        <span>{player.score.toLocaleString('en-US')} pts</span>
-        <RoundPoints player={player} playing={playing} />
+        <Avatar name={player.name} seat={seat} active={isTurn} />
+        <div className={styles.who}>
+          <span className={styles.nameLine}>
+            <strong>{player.name}</strong>
+            <span
+              className={isConnected ? styles.online : styles.offline}
+              role="img"
+              aria-label={isConnected ? 'Online' : 'Offline'}
+              title={isConnected ? 'Online' : 'Offline'}
+            />
+            {isHost && <span className={styles.badge}>Host</span>}
+          </span>
+          <span className={styles.score}>{player.score.toLocaleString('en-US')} pts</span>
+          <RoundPoints player={player} playing={playing} />
+        </div>
+        <span className={styles.handCount} data-hand-target="">
+          <span className={styles.backs} aria-hidden="true">
+            {Array.from({ length: Math.min(player.handCount, 5) }, (_, i) => (
+              <CardBack key={i} size="tiny" />
+            ))}
+          </span>
+          {player.handCount} cards
+        </span>
       </header>
-      <MeldList melds={player.melds} red3s={player.red3s} />
+      <MeldList melds={player.melds} red3s={player.red3s} compact />
       {onReissue && (
         // A new link remounts the control, which clears the last copy result.
         <RejoinControl

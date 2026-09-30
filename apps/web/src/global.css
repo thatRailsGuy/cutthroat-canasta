@@ -1,16 +1,72 @@
+/* 1950s card night: a gingham tablecloth, cream cards with thick ink outlines, and a
+   hard offset shadow under everything that sits on the table. */
+
+@font-face {
+  font-family: Shrikhand;
+  font-weight: 400;
+  font-display: swap;
+  src: url('./fonts/shrikhand-latin-400-normal.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: Karla;
+  font-weight: 400;
+  font-display: swap;
+  src: url('./fonts/karla-latin-400-normal.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: Karla;
+  font-weight: 600;
+  font-display: swap;
+  src: url('./fonts/karla-latin-600-normal.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: Karla;
+  font-weight: 800;
+  font-display: swap;
+  src: url('./fonts/karla-latin-800-normal.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: Caveat;
+  font-weight: 500;
+  font-display: swap;
+  src: url('./fonts/caveat-latin-500-normal.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: Caveat;
+  font-weight: 700;
+  font-display: swap;
+  src: url('./fonts/caveat-latin-700-normal.woff2') format('woff2');
+}
+
 :root {
-  --felt: #1f5f3f;
-  --felt-dark: #174a31;
-  --paper: #fbf8f1;
-  --ink: #1d1d1f;
-  --muted: #5f6368;
-  --red: #c0262d;
-  --gold: #e0b341;
-  --ok: #1e7b34;
-  --bad: #b3261e;
-  --radius: 8px;
-  --shadow: 0 1px 3px rgb(0 0 0 / 0.25);
-  --font: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --cloth: #f3e7cf;
+  --check: rgb(47 155 146 / 0.16);
+  --paper: #fffaf0;
+  --ink: #2b2320;
+  --muted: #5d4f47;
+  --red: #c2412d;
+  --red-dark: #8f2c1d;
+  --teal: #2f9b92;
+  --teal-dark: #1f6f69;
+  --gold: #f2b233;
+  --ice: #bfe3f5;
+  --ice-ink: #1f3a78;
+  --pad: #fffef7;
+  --pad-rule: #b9d4e6;
+  --pad-margin: #e5877a;
+  --pad-ink: #1f3a78;
+  --ok: #1e6b2e;
+  --bad: #a3261b;
+  --radius: 12px;
+  --shadow: 0 3px 0 var(--ink);
+  --font: Karla, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --display: Shrikhand, Georgia, serif;
+  --hand: Caveat, 'Bradley Hand', cursive;
   --serif: 'Iowan Old Style', 'Palatino Linotype', Georgia, serif;
   color-scheme: light;
 }
@@ -25,18 +81,39 @@ body {
   margin: 0;
   font-family: var(--font);
   color: var(--ink);
-  background: var(--paper);
+  background-color: var(--cloth);
+  background-image:
+    repeating-linear-gradient(0deg, var(--check) 0 28px, transparent 28px 56px),
+    repeating-linear-gradient(90deg, var(--check) 0 28px, transparent 28px 56px);
   line-height: 1.5;
+}
+
+h1,
+h2 {
+  font-family: var(--display);
+  font-weight: 400;
+  color: var(--red);
 }
 
 button {
   font: inherit;
+  font-weight: 800;
   min-height: 44px;
-  padding: 0 1rem;
-  border-radius: var(--radius);
-  border: 1px solid var(--ink);
-  background: white;
+  padding: 0 1.1rem;
+  border-radius: 999px;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: var(--shadow);
   cursor: pointer;
+  transition:
+    transform 0.08s,
+    box-shadow 0.08s;
+}
+
+button:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 var(--ink);
 }
 
 button:disabled {
@@ -44,7 +121,33 @@ button:disabled {
   cursor: not-allowed;
 }
 
+input {
+  font: inherit;
+  border: 2px solid var(--ink);
+  border-radius: 8px;
+  background: var(--paper);
+  color: var(--ink);
+}
+
+a {
+  color: var(--red);
+}
+
+a:hover {
+  color: var(--red-dark);
+}
+
 :focus-visible {
-  outline: 3px solid var(--gold);
+  outline: 3px solid var(--teal);
   outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

@@ -1,0 +1,143 @@
+.layer {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  pointer-events: none;
+}
+
+.flight {
+  position: fixed;
+  perspective: 600px;
+}
+
+.turner {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+}
+
+.front,
+.backSide {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+}
+
+.backSide {
+  transform: rotateY(180deg);
+}
+
+/* The copied card or back fills its side, whatever size it had on the table. */
+.flight .front > *,
+.flight .backSide > * {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  transform: none;
+  box-shadow: 0 6px 0 rgb(43 35 32 / 0.3);
+}
+
+.mark {
+  position: fixed;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* A butter-yellow gleam passes over the new canasta. */
+.gleam {
+  position: absolute;
+  inset: 0;
+  border-radius: 10px;
+  background: linear-gradient(100deg, transparent 30%, rgb(242 178 51 / 0.8) 48%, transparent 66%)
+    no-repeat;
+  background-size: 200% 100%;
+  animation: gleam 0.9s ease-in-out var(--delay) both;
+}
+
+@keyframes gleam {
+  from {
+    background-position: 150% 0;
+  }
+
+  to {
+    background-position: -50% 0;
+  }
+}
+
+/* A red, double-bordered rubber stamp thumps down on it. */
+.stamp {
+  position: relative;
+  padding: 0.2rem 0.8rem 0.35rem;
+  border: 4px double var(--red);
+  border-radius: 10px;
+  background: rgb(255 250 240 / 0.88);
+  color: var(--red);
+  font-family: var(--display);
+  font-size: 1.35rem;
+  line-height: 1.1;
+  white-space: nowrap;
+  animation: stamp 2s ease-out var(--delay) both;
+}
+
+@keyframes stamp {
+  0% {
+    opacity: 0;
+    transform: rotate(-9deg) scale(2.2);
+  }
+
+  14% {
+    opacity: 0.92;
+    transform: rotate(-9deg) scale(0.92);
+  }
+
+  22%,
+  80% {
+    opacity: 0.92;
+    transform: rotate(-9deg) scale(1);
+  }
+
+  100% {
+    opacity: 0;
+    transform: rotate(-9deg) scale(1);
+  }
+}
+
+/* A mustard pill pops up like a cartoon caption. */
+.pop {
+  position: relative;
+  padding: 0.1rem 0.7rem;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  background: var(--gold);
+  box-shadow: var(--shadow);
+  font-family: var(--display);
+  font-size: 1.25rem;
+  white-space: nowrap;
+  animation: pop 1.6s ease-out var(--delay) both;
+}
+
+@keyframes pop {
+  0% {
+    opacity: 0;
+    transform: translateY(10px) rotate(-6deg) scale(0.6);
+  }
+
+  18% {
+    opacity: 1;
+    transform: translateY(-18px) rotate(-6deg) scale(1.12);
+  }
+
+  30%,
+  75% {
+    opacity: 1;
+    transform: translateY(-24px) rotate(-6deg) scale(1);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateY(-40px) rotate(-6deg) scale(1);
+  }
+}

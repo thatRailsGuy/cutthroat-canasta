@@ -1,0 +1,101 @@
+.melds {
+  --step: 1.15rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0.75rem 1rem;
+  min-height: 3.5rem;
+}
+
+.compact {
+  --step: 0.85rem;
+}
+
+/* A meld is a picture on an opponent's panel and a button on yours, so reset the button look. */
+.meld,
+button.meld:active:not(:disabled) {
+  display: grid;
+  justify-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem;
+  min-height: 0;
+  border: 2px solid transparent;
+  border-radius: 10px;
+  background: none;
+  box-shadow: none;
+  color: inherit;
+  font-weight: 400;
+  transform: none;
+}
+
+button.meld:hover {
+  border-color: var(--ink);
+  border-style: dashed;
+}
+
+/* Cards overlap down the column: each shows its top-left corner above the next. */
+.column {
+  position: relative;
+  display: block;
+  width: 2.5rem;
+  height: calc(3.5rem + (var(--n) - 1) * var(--step));
+}
+
+.slot {
+  position: absolute;
+  left: 0;
+  top: calc(var(--i) * var(--step));
+  line-height: 0;
+}
+
+/* A squared-up canasta: the edges of the cards beneath show under the top card. */
+.canasta {
+  position: relative;
+  display: block;
+  padding-bottom: 0.4rem;
+}
+
+.squared {
+  display: block;
+  line-height: 0;
+  border-radius: 8px;
+  box-shadow:
+    2px 2px 0 var(--paper),
+    3px 3px 0 var(--ink),
+    5px 5px 0 var(--paper),
+    6px 6px 0 var(--ink);
+  margin: 0 6px 6px 0;
+}
+
+.ribbon {
+  position: absolute;
+  left: -0.45rem;
+  right: -0.2rem;
+  bottom: 0;
+  padding: 0.1rem 0;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  color: var(--paper);
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  line-height: 1.2;
+  text-align: center;
+  text-transform: uppercase;
+  transform: rotate(-4deg);
+}
+
+.natural {
+  background: var(--red);
+}
+
+.mixed {
+  background: var(--teal-dark);
+}
+
+.caption {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--muted);
+  white-space: nowrap;
+}

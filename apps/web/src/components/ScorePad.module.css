@@ -1,0 +1,83 @@
+/* A ruled notepad, tilted a little, with a red header strip and a pink margin line. */
+.pad {
+  position: relative;
+  padding: 2.9rem 1rem 1rem 2.4rem;
+  border: 1px solid #d9d0bc;
+  background-color: var(--pad);
+  background-image: repeating-linear-gradient(
+    180deg,
+    transparent 0 31px,
+    var(--pad-rule) 31px 32px
+  );
+  background-position: 0 2.9rem;
+  box-shadow: 0 10px 24px rgb(43 35 32 / 0.25);
+  transform: rotate(1.2deg);
+  font-family: var(--hand);
+  color: var(--pad-ink);
+}
+
+.pad::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 1.9rem;
+  background: var(--red);
+}
+
+.pad::after {
+  content: '';
+  position: absolute;
+  top: 1.9rem;
+  bottom: 0;
+  left: 1.7rem;
+  width: 1px;
+  background: var(--pad-margin);
+}
+
+.table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  font-size: 1.45rem;
+  line-height: 32px;
+}
+
+.table th,
+.table td {
+  padding: 0 0.2rem 0 0;
+  text-align: left;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.table th {
+  font-weight: 700;
+  font-size: 1.55rem;
+}
+
+.table tfoot td {
+  overflow: visible;
+  padding-bottom: 6px;
+  border-top: 2px solid var(--pad-ink);
+  font-weight: 700;
+  font-size: 1.65rem;
+}
+
+.leader {
+  text-decoration: underline wavy var(--red);
+  text-underline-offset: 4px;
+}
+
+.none {
+  color: var(--muted);
+}
+
+.sheet {
+  position: relative;
+  margin-top: 0.75rem;
+  font-family: var(--font);
+  min-height: 36px;
+  font-size: 0.85rem;
+}
