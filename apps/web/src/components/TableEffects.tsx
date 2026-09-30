@@ -17,6 +17,8 @@ interface Seen {
   feedLength: number
   top: Card | null
   hand: ReadonlySet<CardId>
+  /** Where each card in your hand was, since a discarded card is gone by the next view. */
+  handRects: ReadonlyMap<CardId, DOMRect>
 }
 
 const FLIGHT_MS = 750
@@ -45,6 +47,7 @@ export function TableEffects({ view }: { view: PlayerView }) {
       feedLength: round.feed.length,
       top: round.discardTop,
       hand,
+      handRects: handRects(),
     }
     if (!previous || previous.round !== round.number) return
     if (round.feed.length <= previous.feedLength || !canAnimate()) return
@@ -60,11 +63,25 @@ export function TableEffects({ view }: { view: PlayerView }) {
     let delay = 0
     for (const effect of effects) {
       const hasMelds = view.players.find((p) => p.id === effect.playerId)?.melds.length !== 0
-      delay = play(root, effect, { isYou: effect.playerId === you?.id, arrived, hasMelds, delay })
+      delay = play(root, effect, {
+        isYou: effect.playerId === you?.id,
+        arrived,
+        handRects: previous.handRects,
+        hasMelds,
+        delay,
+      })
     }
   }, [view])
 
   return <div ref={layer} className={styles.layer} aria-hidden="true" />
+}
+
+function handRects(): Map<CardId, DOMRect> {
+  const rects = new Map<CardId, DOMRect>()
+  for (const card of document.querySelectorAll<HTMLElement>('[data-hand] [data-card-id]')) {
+    rects.set(Number(card.dataset.cardId), card.getBoundingClientRect())
+  }
+  return rects
 }
 
 function canAnimate(): boolean {
@@ -78,6 +95,8 @@ interface PlayContext {
   isYou: boolean
   /** Cards that are new in your hand since the last view. */
   arrived: CardId[]
+  /** Where your hand's cards were in the last view. */
+  handRects: ReadonlyMap<CardId, DOMRect>
   /** The player has melded, so a red 3 counts for them rather than against. */
   hasMelds: boolean
   /** When this effect may start, in ms, so effects play one after another. */
@@ -121,6 +140,22 @@ function play(root: HTMLElement, effect: TableEffect, ctx: PlayContext): number 
         }
       }
       return ctx.delay + FLIGHT_MS + Math.max(flights - 1, 0) * STAGGER_MS
+    }
+    case 'discard': {
+      const to = document.querySelector(`[data-pile] [data-card-id="${effect.card.id}"]`)
+      const from = ctx.isYou ? ctx.handRects.get(effect.card.id) : handTarget(seat)
+      if (!to || !from) return ctx.delay
+      // A discarded wild freezes the pile and lies sideways on it.
+      const turn = to.closest('[data-sideways]') ? 90 : 0
+      const back = ctx.isYou ? undefined : document.querySelector('[data-back]')
+      fly(root, from, to, {
+        delay: ctx.delay,
+        face: faceOf(to),
+        back: back ? backOf(back) : undefined,
+        fromScale: true,
+        turn,
+      })
+      return ctx.delay + FLIGHT_MS
     }
     case 'canasta': {
       const melds = seat?.querySelectorAll(`[data-rank="${effect.rank}"][data-canasta]`)
@@ -173,16 +208,24 @@ function blank(): HTMLElement {
 
 /**
  * Flies a card from `from` to `to` along an arc, laid out at a normal card's size and scaled
- * to fit `to` as it lands. A card in your hand is hidden until its copy lands on it. With a
- * back, the card starts face down and turns over in the air.
+ * to fit `to` as it lands. The card it lands on is hidden until its copy gets there. With a
+ * back, the card starts face down and turns over in the air. `fromScale` starts it at the
+ * size of `from` (a small back in an opponent's fan), and `turn` lands it rotated that many
+ * degrees.
  */
 function fly(
   root: HTMLElement,
-  from: Element,
+  from: Element | DOMRect,
   to: Element,
-  opts: { delay: number; face?: HTMLElement; back?: HTMLElement },
+  opts: {
+    delay: number
+    face?: HTMLElement
+    back?: HTMLElement
+    fromScale?: boolean
+    turn?: number
+  },
 ) {
-  const a = from.getBoundingClientRect()
+  const a = from instanceof Element ? from.getBoundingClientRect() : from
   const b = to.getBoundingClientRect()
   if (b.width === 0 || a.width === 0) return
   const size = cardSize() ?? b
@@ -211,8 +254,11 @@ function fly(
 
   const dx = a.left + a.width / 2 - (b.left + b.width / 2)
   const dy = a.top + a.height / 2 - (b.top + b.height / 2)
-  const end = b.width / size.width
-  const mid = (1 + end) / 2
+  const turn = opts.turn ?? 0
+  // A card turned sideways fits its box the other way round.
+  const end = (turn % 180 === 0 ? b.width : b.height) / size.width
+  const start = opts.fromScale ? a.width / size.width : 1
+  const mid = (start + end) / 2
   const hideTarget = opts.face !== undefined && to.hasAttribute('data-card-id')
   const target = to as HTMLElement
   if (hideTarget) target.style.visibility = 'hidden'
@@ -224,15 +270,15 @@ function fly(
   }
   const move = flight.animate(
     [
-      { transform: `translate(${dx}px, ${dy}px)`, easing: 'ease-out' },
+      { transform: `translate(${dx}px, ${dy}px) scale(${start})`, easing: 'ease-out' },
       {
-        transform: `translate(${dx * 0.45}px, ${dy * 0.45 - 70}px) scale(${mid}) rotate(7deg)`,
+        transform: `translate(${dx * 0.45}px, ${dy * 0.45 - 70}px) scale(${mid}) rotate(${turn / 2 + 7}deg)`,
         offset: 0.5,
         easing: 'ease-in',
       },
-      { transform: `scale(${end}) rotate(-2deg)`, offset: 0.82, easing: 'ease-out' },
-      { transform: `translateY(-8px) scale(${end}) rotate(-1deg)`, offset: 0.91 },
-      { transform: `scale(${end})` },
+      { transform: `scale(${end}) rotate(${turn - 2}deg)`, offset: 0.82, easing: 'ease-out' },
+      { transform: `translateY(-8px) scale(${end}) rotate(${turn - 1}deg)`, offset: 0.91 },
+      { transform: `scale(${end}) rotate(${turn}deg)` },
     ],
     timing,
   )

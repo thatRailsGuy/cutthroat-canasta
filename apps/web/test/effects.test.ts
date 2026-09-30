@@ -42,13 +42,15 @@ describe('effectsFor', () => {
     ])
   })
 
-  it('stamps a canasta completed by a meld, and ignores discards', () => {
+  it('stamps a canasta completed by a meld, then flies the discard', () => {
+    const discard = card('4c', 3)
     const events: FeedEvent[] = [
       { type: 'melded', playerId: 'a', played: noPlay, canastas: [{ rank: '7', natural: false }] },
-      { type: 'discarded', playerId: 'a', card: card('4c', 3) },
+      { type: 'discarded', playerId: 'a', card: discard },
     ]
     expect(effectsFor(events, ctx)).toEqual([
       { kind: 'canasta', playerId: 'a', rank: '7', natural: false },
+      { kind: 'discard', playerId: 'a', card: discard },
     ])
   })
 

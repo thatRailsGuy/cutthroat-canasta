@@ -6,6 +6,8 @@ export type TableEffect =
   | { kind: 'draw'; playerId: string; card: Card | null }
   /** The pile goes into a player's hand. `top` is the card that was on top. */
   | { kind: 'pickup'; playerId: string; count: number; top: Card | null }
+  /** A card goes from a player's hand to the top of the pile. */
+  | { kind: 'discard'; playerId: string; card: Card }
   | { kind: 'canasta'; playerId: string; rank: NaturalRank; natural: boolean }
   | { kind: 'red3'; playerId: string; count: number }
 
@@ -58,6 +60,9 @@ export function effectsFor(events: readonly FeedEvent[], ctx: EffectContext): Ta
         for (const c of event.canastas ?? []) {
           effects.push({ kind: 'canasta', playerId: event.playerId, ...c })
         }
+        break
+      case 'discarded':
+        effects.push({ kind: 'discard', playerId: event.playerId, card: event.card })
         break
     }
   }

@@ -57,6 +57,30 @@ export default function PreviewPage() {
         }),
     ],
     [
+      'Ben discards',
+      () =>
+        change((d) => {
+          d.players[1].handCount--
+          const c = nextCard()
+          d.round!.discardTop = c
+          d.round!.discardCount++
+          feed(d, { type: 'discarded', playerId: 'ben', card: c })
+        }),
+    ],
+    [
+      'Ben discards a wild',
+      () =>
+        change((d) => {
+          d.players[1].handCount--
+          const c = card('2s')
+          d.round!.discardTop = c
+          d.round!.discardCount++
+          d.round!.pileFrozenForAll = true
+          d.round!.frozenBy = c
+          feed(d, { type: 'discarded', playerId: 'ben', card: c })
+        }),
+    ],
+    [
       'Cara picks up the pile',
       () =>
         change((d) => {

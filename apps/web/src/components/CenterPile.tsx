@@ -77,7 +77,10 @@ export function CenterPile(props: CenterPileProps) {
                   <Card card={frozenBy} />
                 </span>
               )}
-              <span className={frozenBy?.id === top.id ? styles.sidewaysTop : styles.topCard}>
+              <span
+                className={frozenBy?.id === top.id ? styles.sidewaysTop : styles.topCard}
+                data-sideways={frozenBy?.id === top.id ? '' : undefined}
+              >
                 <Card
                   card={top}
                   selected={selected.includes(top.id) || topStaged}
