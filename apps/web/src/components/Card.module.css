@@ -40,6 +40,26 @@
   outline: 3px solid var(--gold);
 }
 
+.fresh {
+  box-shadow:
+    0 0 0 3px #7fd3ff,
+    var(--shadow);
+  animation: arrive 0.6s ease-out;
+}
+
+@keyframes arrive {
+  from {
+    transform: translateY(-1.5rem);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fresh {
+    animation: none;
+  }
+}
+
 .joker {
   font-size: 1.4em;
   color: #6a3fb5;

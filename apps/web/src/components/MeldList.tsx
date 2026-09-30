@@ -1,6 +1,12 @@
-import { isCanasta, isNaturalCanasta, type Card as CardValue, type Meld } from '@canasta/engine'
-import { rankIndex, rankPlural } from '../cards'
-import { CardRow } from './Card'
+import {
+  isCanasta,
+  isNatural,
+  isNaturalCanasta,
+  type Card as CardValue,
+  type Meld,
+} from '@canasta/engine'
+import { isRed, rankIndex, rankPlural } from '../cards'
+import { Card, CardRow } from './Card'
 import styles from './Table.module.css'
 
 export interface MeldListProps {
@@ -10,7 +16,18 @@ export interface MeldListProps {
   onPick?: (meldId: string) => void
 }
 
-/** Melds grouped by rank, with finished canastas marked natural or mixed. */
+/**
+ * The card shown on top of a finished canasta, in the traditional way: a red card of its rank
+ * for a natural canasta, a black one for a mixed canasta. If the meld has no natural card of
+ * that colour, a stand-in of that colour is shown.
+ */
+export function canastaTopCard(meld: Meld): CardValue {
+  const red = isNaturalCanasta(meld)
+  const match = meld.cards.find((c) => isNatural(c) && isRed(c) === red)
+  return match ?? { id: -1, rank: meld.rank, suit: red ? 'hearts' : 'spades' }
+}
+
+/** Melds grouped by rank. A finished canasta is squared up, with one card on top. */
 export function MeldList({ melds, red3s, onPick }: MeldListProps) {
   const ordered = [...melds].sort(
     (a, b) => rankIndex(a.rank) - rankIndex(b.rank) || a.id.localeCompare(b.id),
@@ -23,12 +40,26 @@ export function MeldList({ melds, red3s, onPick }: MeldListProps) {
             ? 'Natural canasta'
             : 'Mixed canasta'
           : `${meld.cards.length} cards`
+        const count = isCanasta(meld) ? ` · ${meld.cards.length} cards` : ''
         const body = (
           <>
             <span className={styles.meldLabel}>
               {rankPlural(meld.rank)} · {label}
+              {count}
             </span>
-            <CardRow cards={meld.cards} />
+            {isCanasta(meld) ? (
+              <span
+                className={styles.canastaPile}
+                role="img"
+                aria-label={`${meld.cards.length} cards squared up`}
+              >
+                <span aria-hidden="true">
+                  <Card card={canastaTopCard(meld)} size="small" />
+                </span>
+              </span>
+            ) : (
+              <CardRow cards={meld.cards} />
+            )}
           </>
         )
         return onPick ? (

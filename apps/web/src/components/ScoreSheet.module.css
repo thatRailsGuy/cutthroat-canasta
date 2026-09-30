@@ -1,0 +1,54 @@
+.sheet {
+  width: min(48rem, calc(100vw - 2rem));
+  max-height: calc(100dvh - 2rem);
+  border: none;
+  border-radius: var(--radius);
+  padding: 1rem 1.25rem;
+  overflow-y: auto;
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.sheet::backdrop {
+  background: rgb(0 0 0 / 0.4);
+}
+
+.sheet h2,
+.sheet h3 {
+  margin: 0 0 0.5rem;
+}
+
+.close {
+  position: sticky;
+  top: 0;
+  float: right;
+}
+
+.round {
+  margin-top: 1.25rem;
+  overflow-x: auto;
+}
+
+.round p {
+  margin: 0 0 0.5rem;
+}
+
+.totals {
+  border-collapse: collapse;
+  display: block;
+  overflow-x: auto;
+}
+
+.totals caption {
+  text-align: left;
+  font-weight: 700;
+  padding-bottom: 0.25rem;
+}
+
+.totals th,
+.totals td {
+  padding: 0.25rem 0.75rem;
+  border-bottom: 1px solid #ddd6c8;
+  text-align: left;
+  font-variant-numeric: tabular-nums;
+}

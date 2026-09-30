@@ -125,9 +125,10 @@ export function RulesContent() {
           seat to the left each round, and the player on the dealer's left goes first.
         </p>
         <House>
-          If the first upcard is a Red 3 or a wild, it is buried in the stock and another card is
-          turned up. A wild buried this way freezes the pile for everyone, as if it were in the
-          pile.
+          If the first upcard is a Red 3 or a wild, it stays in the pile and freezes it for
+          everyone. It lies sideways under the pile, so everyone can see why the pile is frozen.
+          Nobody can pick up the pile while it is on top. A Red 3 picked up with the pile is laid
+          face up like any other Red 3.
         </House>
         <House>The sheet's Perfect Cut Bonus is not used online.</House>
       </Section>
@@ -208,8 +209,9 @@ export function RulesContent() {
           Jokers and 2s together may not outnumber the natural cards in a meld: wilds ≤ naturals.
         </House>
         <House>
-          You may have more than one meld of the same rank. A new one needs at least {MIN_MELD_SIZE}{' '}
-          cards that make a legal meld on their own.
+          You may have only one unfinished meld of each rank. Once your meld of a rank is a canasta,
+          you may start another meld of that rank with at least {MIN_MELD_SIZE} cards that make a
+          legal meld on their own.
         </House>
         <House>Adding a wild to a natural canasta makes it mixed.</House>
         <Examples section="melds" />
@@ -248,16 +250,18 @@ export function RulesContent() {
         <ul>
           <li>
             The pile is <strong>frozen for you</strong> until you have picked it up once this round.
-            It is also frozen for everyone while a wild is anywhere in it.
+            It is also frozen for everyone while a wild is anywhere in it, or when a wild or Red 3
+            started it. The card that froze it lies sideways under the pile.
           </li>
-          <li>Nobody can pick up the pile while a Black 3 or a wild is on top.</li>
+          <li>Nobody can pick up the pile while a Black 3, a Red 3 or a wild is on top.</li>
           <li>
             To pick up the pile, you meld the top card at once, in the same play. Then the rest of
             the pile goes into your hand.
           </li>
           <li>
-            <strong>Frozen for you:</strong> the top card must start a new meld with a natural pair
-            of its rank from your hand.
+            <strong>Frozen for you:</strong> the top card must be melded with a natural pair of its
+            rank from your hand. The three start a new meld, or join your unfinished meld of that
+            rank.
           </li>
           <li>
             <strong>Not frozen for you:</strong> the top card can start a new meld with a natural
@@ -270,7 +274,7 @@ export function RulesContent() {
           </li>
           <li>
             Once you pick up the pile, it stays unfrozen for you for the rest of the round, unless a
-            wild is in it.
+            wild freezes it again.
           </li>
         </ul>
         <House>
@@ -359,7 +363,11 @@ const HOUSE_DIFFERENCES: [string, string][] = [
     'The pile is frozen for you until your first pickup of the round',
     'The pile is frozen for a side until it has made its initial meld',
   ],
-  ['You may have several melds of one rank', 'One meld per rank'],
+  ['You may start another meld of a rank once your first one is a canasta', 'One meld per rank'],
+  [
+    'A wild or Red 3 upcard stays in the pile and freezes it',
+    'The same, but a further card is turned up on top of it',
+  ],
   ['A finished canasta cannot take the top discard', 'The top discard can join a canasta'],
   ["You can't go out on your first turn", 'You may go out on any turn'],
   [

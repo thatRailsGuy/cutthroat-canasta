@@ -55,6 +55,7 @@ function drawStock(game: Game, round: Round, player: Player): null {
     return null
   }
   player.hand.push(card)
+  player.drawnCard = card.id
   round.phase = 'play'
   return null
 }
@@ -66,17 +67,24 @@ function pickUpPile(game: Game, round: Round, player: Player, batch: MeldBatch):
   )
   if (!result.ok) return result.error
   const rest = round.discard.slice(0, -1)
+  // Only a Red 3 upcard can be in the pile. It is laid down, like any Red 3 a player gets.
+  const red3s = rest.filter(isRed3)
+  const count = round.discard.length
+  round.discard = []
+  const canastas = applyPlay(round, player, result.play)
   round.feed.push({
     type: 'pickedUpPile',
     playerId: player.id,
-    count: round.discard.length,
+    count,
     played: played(result.play),
+    canastas,
+    red3s,
   })
-  round.discard = []
-  applyPlay(round, player, result.play)
-  player.hand.push(...rest)
+  player.hand.push(...rest.filter((c) => !isRed3(c)))
+  player.red3s.push(...red3s)
   player.hasPickedUpPile = true
   round.pileFrozenForAll = false
+  round.frozenBy = null
   round.phase = 'play'
   if (result.play.goesOut) goOut(game, round, player)
   return null
@@ -88,8 +96,9 @@ function meld(game: Game, round: Round, player: Player, batch: MeldBatch): RuleE
     batch,
   )
   if (!result.ok) return result.error
-  round.feed.push({ type: 'melded', playerId: player.id, played: played(result.play) })
-  applyPlay(round, player, result.play)
+  const record = played(result.play)
+  const canastas = applyPlay(round, player, result.play)
+  round.feed.push({ type: 'melded', playerId: player.id, played: record, canastas })
   if (result.play.goesOut) goOut(game, round, player)
   return null
 }
@@ -103,7 +112,10 @@ function discard(game: Game, round: Round, player: Player, cardId: CardId): Rule
   )
   round.discard.push(card)
   round.feed.push({ type: 'discarded', playerId: player.id, card })
-  if (isWild(card)) round.pileFrozenForAll = true
+  if (isWild(card)) {
+    round.pileFrozenForAll = true
+    round.frozenBy ??= card
+  }
   if (player.hand.length === 0) goOut(game, round, player)
   else advanceTurn(game)
   return null

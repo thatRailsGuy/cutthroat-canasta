@@ -1,5 +1,5 @@
-import type { FeedEvent, Played, PublicPlayer } from '@canasta/engine'
-import { cardLabel } from './cards'
+import type { CompletedCanasta, FeedEvent, Played, PublicPlayer, QuitPlayer } from '@canasta/engine'
+import { cardLabel, rankPlural } from './cards'
 
 function playedCards(played: Played): string {
   return [...played.newMelds.flat(), ...played.additions.flatMap((a) => a.cards)]
@@ -7,10 +7,27 @@ function playedCards(played: Played): string {
     .join(' ')
 }
 
-/** One line for the action feed, such as "Ann picked up 9 cards". */
-export function describeEvent(event: FeedEvent, players: readonly PublicPlayer[]): string {
+/** ", completing a clean canasta of Queens", or nothing. */
+function completed(canastas: readonly CompletedCanasta[] | undefined): string {
+  if (!canastas || canastas.length === 0) return ''
+  const list = canastas.map(
+    (c) => `a ${c.natural ? 'clean' : 'mixed'} canasta of ${rankPlural(c.rank)}`,
+  )
+  return `, completing ${list.join(' and ')}`
+}
+
+/**
+ * One line for the action feed, such as "Ann picked up 9 cards". `quit` supplies the names of
+ * players who have left, so their earlier events still read correctly.
+ */
+export function describeEvent(
+  event: FeedEvent,
+  players: readonly PublicPlayer[],
+  quit: readonly QuitPlayer[] = [],
+): string {
   if (event.type === 'stockOut') return 'The stock ran out. The round is over.'
-  const name = players.find((p) => p.id === event.playerId)?.name ?? 'Someone'
+  if (event.type === 'quit') return `${event.name} quit the game`
+  const name = [...players, ...quit].find((p) => p.id === event.playerId)?.name ?? 'Someone'
   switch (event.type) {
     case 'drewStock':
       return event.red3s.length === 0
@@ -18,9 +35,13 @@ export function describeEvent(event: FeedEvent, players: readonly PublicPlayer[]
         : `${name} drew and laid down ${event.red3s.map(cardLabel).join(' ')}`
     case 'pickedUpPile':
       // `count` includes the top card, which went straight into a meld.
-      return `${name} picked up ${event.count} cards, melding ${playedCards(event.played)}`
+      return (
+        `${name} picked up ${event.count} cards, melding ${playedCards(event.played)}` +
+        completed(event.canastas) +
+        (event.red3s?.length ? `, and laid down ${event.red3s.map(cardLabel).join(' ')}` : '')
+      )
     case 'melded':
-      return `${name} melded ${playedCards(event.played)}`
+      return `${name} melded ${playedCards(event.played)}${completed(event.canastas)}`
     case 'discarded':
       return `${name} discarded ${cardLabel(event.card)}`
     case 'wentOut':

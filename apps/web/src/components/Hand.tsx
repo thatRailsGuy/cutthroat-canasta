@@ -8,10 +8,12 @@ export interface HandProps {
   selected: readonly CardId[]
   /** Staged cards stay in the staging area, so the hand hides them. */
   hidden: ReadonlySet<CardId>
+  /** The card just drawn from the stock, marked so it stands out in the sorted hand. */
+  fresh?: CardId | null
   onToggle: (cardId: CardId) => void
 }
 
-export function Hand({ cards, selected, hidden, onToggle }: HandProps) {
+export function Hand({ cards, selected, hidden, fresh = null, onToggle }: HandProps) {
   return (
     <section className={styles.hand} aria-label="Your hand">
       {sortHand(cards)
@@ -21,6 +23,7 @@ export function Hand({ cards, selected, hidden, onToggle }: HandProps) {
             key={c.id}
             card={c}
             selected={selected.includes(c.id)}
+            fresh={c.id === fresh}
             onClick={() => onToggle(c.id)}
           />
         ))}

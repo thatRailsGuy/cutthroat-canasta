@@ -23,6 +23,7 @@ export const RULE_ERROR_SECTIONS = {
   MELD_NEEDS_TWO_NATURALS: 'melds',
   WILDS_EXCEED_NATURALS: 'melds',
   THREES_NOT_MELDABLE: 'melds',
+  RANK_ALREADY_MELDED: 'melds',
   INITIAL_MELD_TOO_LOW: 'initial-meld',
   PILE_EMPTY: 'pickup',
   PILE_BLOCKED: 'pickup',

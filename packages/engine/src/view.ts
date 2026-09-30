@@ -1,5 +1,14 @@
 import type { Card } from './cards'
-import type { FeedEvent, Game, GameStatus, Meld, Phase, Player, RoundScore } from './types'
+import type {
+  FeedEvent,
+  Game,
+  GameStatus,
+  Meld,
+  Phase,
+  Player,
+  QuitPlayer,
+  RoundScore,
+} from './types'
 
 export interface PublicPlayer {
   id: string
@@ -20,6 +29,8 @@ export interface RoundView {
   discardTop: Card | null
   discardCount: number
   pileFrozenForAll: boolean
+  /** The card that froze the pile for everyone. It is face up, sideways under the pile. */
+  frozenBy: Card | null
   feed: FeedEvent[]
 }
 
@@ -30,6 +41,7 @@ export interface PlayerView {
   history: RoundScore[]
   status: GameStatus
   winners: string[]
+  quit: QuitPlayer[]
 }
 
 /**
@@ -60,11 +72,15 @@ export function viewFor(game: Game, playerId: string): PlayerView {
           discardTop: round.discard.at(-1) ?? null,
           discardCount: round.discard.length,
           pileFrozenForAll: round.pileFrozenForAll,
+          // `?? null`: rounds saved before `frozenBy` existed.
+          frozenBy: round.frozenBy ?? null,
           feed: round.feed,
         }
       : null,
     history: game.history,
     status: game.status,
     winners: game.winners,
+    // `?? []`: games saved before quitting existed.
+    quit: game.quit ?? [],
   }
 }

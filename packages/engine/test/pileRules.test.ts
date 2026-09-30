@@ -29,7 +29,7 @@ describe('checkPickupShape', () => {
     expect(checkPickupShape(player, pile(null), newMeld([]))?.code).toBe('PILE_EMPTY')
   })
 
-  it.each(['JK', '2c', '3s', '3c'])('blocks pickup while %s is on top', (code) => {
+  it.each(['JK', '2c', '3s', '3c', '3h', '3d'])('blocks pickup while %s is on top', (code) => {
     const top = card(code)
     const player = makePlayer({ id: 'a', hand: cards('9s 9d'), hasPickedUpPile: true })
     expect(checkPickupShape(player, pile(top), newMeld([top, ...player.hand]))?.code).toBe(
@@ -51,6 +51,28 @@ describe('checkPickupShape', () => {
       const player = makePlayer({ id: 'a', hand: cards('9s 9d Kc'), hasPickedUpPile: false })
       const [a, b] = player.hand
       expect(checkPickupShape(player, pile(top), newMeld([top, a, b]))).toBeNull()
+    })
+
+    it('accepts a natural pair from hand added with the top card to a meld of its rank', () => {
+      const top = card('9h')
+      const nines = meld('9c 9d 9s')
+      const player = makePlayer({
+        id: 'a',
+        hand: cards('9s 9d Kc'),
+        melds: [nines],
+        hasPickedUpPile: false,
+      })
+      const [a, b] = player.hand
+      const batch = { newMelds: [], additions: [{ meldId: nines.id, cardIds: ids([top, a, b]) }] }
+      expect(checkPickupShape(player, pile(top), batch)).toBeNull()
+    })
+
+    it('rejects the top card alone added to a meld', () => {
+      const top = card('9h')
+      const nines = meld('9c 9d 9s')
+      const player = makePlayer({ id: 'a', hand: cards('9s Kc'), melds: [nines] })
+      const batch = { newMelds: [], additions: [{ meldId: nines.id, cardIds: ids([top]) }] }
+      expect(checkPickupShape(player, pile(top), batch)?.code).toBe('FROZEN_NEEDS_NATURAL_PAIR')
     })
 
     it('rejects a natural plus a wild', () => {

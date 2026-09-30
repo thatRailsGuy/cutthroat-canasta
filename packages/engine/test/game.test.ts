@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { addPlayer, createGame, removePlayer, startGame, startNextRound } from '../src/game'
+import {
+  addPlayer,
+  createGame,
+  quitGame,
+  removePlayer,
+  startGame,
+  startNextRound,
+} from '../src/game'
 import { isRed3, isWild } from '../src/cards'
 import { countCards, lobby, makeGame, makePlayer, seedOf, unwrap } from './fixtures'
 
@@ -68,13 +75,18 @@ describe('dealing', () => {
     }
   })
 
-  it('never starts the discard pile with a red 3 or a wild', () => {
+  it('keeps a red 3 or wild upcard in the pile, where it freezes the pile for everyone', () => {
+    let freezes = 0
     for (let seed = 1; seed <= 50; seed++) {
-      const game = unwrap(startGame(lobby(4, seed)))
-      const [upcard] = game.round!.discard
-      expect(game.round!.discard).toHaveLength(1)
-      expect(isRed3(upcard) || isWild(upcard)).toBe(false)
+      const round = unwrap(startGame(lobby(4, seed))).round!
+      const [upcard] = round.discard
+      expect(round.discard).toHaveLength(1)
+      const freezing = isRed3(upcard) || isWild(upcard)
+      expect(round.pileFrozenForAll).toBe(freezing)
+      expect(round.frozenBy).toEqual(freezing ? upcard : null)
+      if (freezing) freezes++
     }
+    expect(freezes).toBeGreaterThan(0)
   })
 
   it('lets the player left of the dealer go first', () => {
@@ -154,5 +166,80 @@ describe('startNextRound', () => {
     expect(next.players.map((p) => p.score)).toEqual([100, -50])
     expect(next.players.every((p) => p.hand.length === 15 && p.melds.length === 0)).toBe(true)
     expect(countCards(next)).toBe(108)
+  })
+})
+
+describe('quitGame', () => {
+  const started = (players: number) => unwrap(startGame(lobby(players)))
+
+  it('refuses in the lobby', () => {
+    const result = quitGame(lobby(2), 'p0')
+    expect(result.ok ? null : result.error.code).toBe('GAME_NOT_PLAYING')
+  })
+
+  it('throws for a player who is not seated', () => {
+    expect(() => quitGame(started(3), 'stranger')).toThrow('Unknown player')
+  })
+
+  it('takes the player, their hand and their melds out of play, and records it', () => {
+    const game = started(3)
+    const next = unwrap(quitGame(game, 'p2'))
+    expect(next.players.map((p) => p.id)).toEqual(['p0', 'p1'])
+    expect(next.quit).toEqual([{ id: 'p2', name: 'Player 2', score: 0, round: 1 }])
+    expect(next.round!.feed.at(-1)).toEqual({ type: 'quit', playerId: 'p2', name: 'Player 2' })
+    expect(next.log.at(-1)).toEqual({ event: 'quit', playerId: 'p2' })
+    expect(next.status).toBe('playing')
+  })
+
+  it('passes the turn to the next player, who starts at the draw', () => {
+    // Dealer p0, so p1 is playing.
+    const game = started(3)
+    game.round!.phase = 'play'
+    const next = unwrap(quitGame(game, 'p1'))
+    expect(next.players[next.round!.current].id).toBe('p2')
+    expect(next.round!.phase).toBe('draw')
+    expect(next.players[next.round!.current].turnsThisRound).toBe(1)
+  })
+
+  it('wraps the turn to the first seat when the last seat quits on their turn', () => {
+    const game = started(3)
+    game.round!.current = 2
+    const next = unwrap(quitGame(game, 'p2'))
+    expect(next.players[next.round!.current].id).toBe('p0')
+  })
+
+  it('keeps the same player on turn when an earlier seat quits', () => {
+    const game = started(4)
+    game.round!.current = 2
+    const next = unwrap(quitGame(game, 'p0'))
+    expect(next.players[next.round!.current].id).toBe('p2')
+  })
+
+  it('passes the deal to the seat after a quitting dealer', () => {
+    // Dealer p0 quits: p1 should deal next round, as if p0 had dealt this one.
+    const game = started(3)
+    const next = unwrap(quitGame(game, 'p0'))
+    const nextDealer = (next.round!.dealer + 1) % next.players.length
+    expect(next.players[nextDealer].id).toBe('p1')
+  })
+
+  it('can quit between rounds, and the next round deals to the players left', () => {
+    const game = started(3)
+    game.status = 'roundOver'
+    const next = unwrap(startNextRound(unwrap(quitGame(game, 'p1'))))
+    expect(next.players.map((p) => p.id)).toEqual(['p0', 'p2'])
+    expect(next.players.every((p) => p.hand.length === 15)).toBe(true)
+  })
+
+  it('ends the game when only one player is left, and that player wins', () => {
+    const next = unwrap(quitGame(started(2), 'p0'))
+    expect(next.status).toBe('gameOver')
+    expect(next.winners).toEqual(['p1'])
+  })
+
+  it('refuses once the game is over', () => {
+    const over = unwrap(quitGame(started(2), 'p0'))
+    const result = quitGame(over, 'p1')
+    expect(result.ok ? null : result.error.code).toBe('GAME_NOT_PLAYING')
   })
 })

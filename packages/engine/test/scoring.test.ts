@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { scorePlayer, scoreRound } from '../src/scoring'
+import { scorePlayer, scoreRound, tableScore } from '../src/scoring'
 import { cards, makePlayer, meld } from './fixtures'
 
 describe('scorePlayer', () => {
@@ -61,5 +61,26 @@ describe('scoreRound', () => {
     const scores = scoreRound(players, null)
     expect(scores.a.total).toBe(-5)
     expect(scores.b.total).toBe(-10)
+  })
+})
+
+describe('tableScore', () => {
+  it('counts melds, canasta bonuses and Red 3s, but not the hand', () => {
+    const player = makePlayer({
+      id: 'a',
+      melds: [meld('Kh Kd Ks Kc Kh Kd 2s'), meld('5h 5d 5s')],
+      red3s: cards('3h 3d'),
+      hand: cards('Ah 4c'),
+    })
+    expect(tableScore(player)).toEqual({
+      meldPoints: 95,
+      canastaBonus: 300,
+      red3Points: 200,
+      total: 595,
+    })
+  })
+
+  it('counts Red 3s against a player with no melds', () => {
+    expect(tableScore({ melds: [], red3s: cards('3h') }).total).toBe(-100)
   })
 })

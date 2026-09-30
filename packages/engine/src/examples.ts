@@ -96,6 +96,7 @@ function examplePlayer(overrides: Partial<Player>): Player {
     hasPickedUpPile: false,
     turnsThisRound: 2,
     meldedBeforeThisTurn: true,
+    drawnCard: null,
     ...overrides,
   }
 }
@@ -310,6 +311,23 @@ export const RULES_EXAMPLES: RulesExample[] = [
     wildInPile: true,
     target: 0,
     expected: 'FROZEN_NEEDS_NATURAL_PAIR',
+  },
+  {
+    kind: 'pickup',
+    id: 'pickup-frozen-pair-to-meld',
+    section: 'pickup',
+    title: 'Frozen: the pair can join your meld',
+    caption:
+      'The pile is frozen for you and you already have an unfinished meld of 8s. The top 8 and a natural pair of 8s from your hand go onto that meld.',
+    top: '8h',
+    hand: '8s 8d',
+    score: 0,
+    pileSize: 6,
+    melds: ['8c 8d 8s'],
+    hasPickedUpPile: true,
+    wildInPile: true,
+    target: 0,
+    expected: null,
   },
   {
     kind: 'pickup',

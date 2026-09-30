@@ -10,6 +10,7 @@ export function GameOver({ view }: { view: PlayerView }) {
   return (
     <section className={styles.gameOver} aria-label="Game over">
       <h2>{names.length > 1 ? `${names.join(' and ')} share the win!` : `${names[0]} wins!`}</h2>
+      {view.players.length === 1 && view.quit.length > 0 && <p>Everyone else quit the game.</p>}
       <table className={styles.totals}>
         <thead>
           <tr>

@@ -6,16 +6,25 @@ export interface CardProps {
   card: CardValue
   selected?: boolean
   size?: 'normal' | 'small'
+  /** Just drawn: highlighted so it stands out. */
+  fresh?: boolean
   /** Makes the card a toggle button. Without it the card is a picture. */
   onClick?: () => void
 }
 
-export function Card({ card, selected = false, size = 'normal', onClick }: CardProps) {
+export function Card({
+  card,
+  selected = false,
+  size = 'normal',
+  fresh = false,
+  onClick,
+}: CardProps) {
   const className = [
     styles.card,
     styles[size],
     isRed(card) ? styles.red : styles.black,
     selected ? styles.selected : '',
+    fresh ? styles.fresh : '',
   ].join(' ')
   const face = card.suit ? (
     <>
@@ -36,7 +45,7 @@ export function Card({ card, selected = false, size = 'normal', onClick }: CardP
     <button
       type="button"
       className={className}
-      aria-label={cardName(card)}
+      aria-label={fresh ? `${cardName(card)}, just drawn` : cardName(card)}
       aria-pressed={selected}
       onClick={onClick}
     >

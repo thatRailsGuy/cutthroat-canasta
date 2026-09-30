@@ -145,6 +145,10 @@ function onMessage(state: GameState, message: ServerMessage, joinFailed: boolean
         nextId: state.nextId + 1,
       }
     }
+    case 'playerQuit':
+      // The one who quit is on their way out; everyone else gets a toast.
+      if (message.playerId === state.playerId) return state
+      return addToast(state, `${message.name} quit the game.`, null)
     case 'pong':
       return state
   }

@@ -2,6 +2,7 @@ import {
   addPlayer,
   applyAction,
   createGame,
+  quitGame,
   removePlayer,
   startGame,
   startNextRound,
@@ -74,7 +75,9 @@ export function handleMessage(
     case 'action':
       return fromResult(state, applyAction(state.game, senderId, message.action))
     case 'leave':
-      return removeSeat(state, senderId, 'left')
+      return state.game.status === 'lobby'
+        ? removeSeat(state, senderId, 'left')
+        : quit(state, senderId)
     case 'kick':
       return hostOnly(state, senderId, () => removeSeat(state, message.playerId, 'kicked'))
     case 'reissue':
@@ -145,6 +148,33 @@ function removeSeat(state: RoomState, playerId: string, reason: RemovedReason): 
     tokens: tokensWithout(state.tokens, playerId),
   }
   return { state: next, reply: [], detach: { playerId, reason }, changed: true, broadcast: true }
+}
+
+/**
+ * A player quits a started game. The others play on without them. If the host quits, the next
+ * seat after them becomes host at once.
+ */
+function quit(state: RoomState, playerId: string): Outcome {
+  if (!isSeated(state, playerId)) return noSuchPlayer(state)
+  const result = quitGame(state.game, playerId)
+  if (!result.ok) return ruleErrorOutcome(state, result.error)
+  const seat = state.game.players.findIndex((p) => p.id === playerId)
+  const players = result.game.players
+  const next: RoomState = {
+    ...state,
+    game: result.game,
+    hostId: state.hostId === playerId ? (players[seat % players.length]?.id ?? null) : state.hostId,
+    tokens: tokensWithout(state.tokens, playerId),
+  }
+  const name = state.game.players[seat].name
+  return {
+    state: next,
+    reply: [],
+    detach: { playerId, reason: 'quit' },
+    announce: { type: 'playerQuit', playerId, name },
+    changed: true,
+    broadcast: true,
+  }
 }
 
 /**

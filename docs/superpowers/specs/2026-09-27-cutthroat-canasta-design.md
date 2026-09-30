@@ -48,7 +48,7 @@ This section combines the V3 sheet with the decisions from the design discussion
 - Hand size: 15 for 2 players, 13 for 3–8 players.
 - Supported player counts: 2–8.
 - After the deal, each player lays out any Red 3s face up and draws replacements from the stock. Repeat until nobody holds a Red 3.
-- One card is turned up to start the discard pile. **[clarified]** If it is a Red 3 or a wild, it is buried in the stock and another card is turned up; repeat as needed. A wild buried this way freezes the pile for everyone, as if a wild were in the pile.
+- One card is turned up to start the discard pile. **[clarified]** If it is a Red 3 or a wild, it stays in the pile and freezes it for everyone. The client shows it sideways under the pile. A Red 3 picked up with the pile goes to the player's Red 3s, not their hand. (Changed 2026-09-30 after playtesting; it used to be buried in the stock.)
 - The dealer rotates to the left each round. The player to the dealer's left goes first.
 - **[clarified]** The Perfect Cut Bonus is not implemented in the online version.
 
@@ -79,7 +79,7 @@ This section combines the V3 sheet with the decisions from the design discussion
 - A meld is 3 or more cards of one natural rank (4 through A), with at least 2 natural cards.
 - **Wild ratio [clarified]:** Jokers and 2s together may not outnumber the naturals in a meld (`wilds ≤ naturals`). For example, 3N+2J+1D is legal, and 2N+2D+1J is not.
 - 3s can never be melded, Black or Red, even when going out.
-- **[clarified] Multiple melds of the same rank are allowed.** A player can start a new meld of a rank they already have, using at least 3 cards that form a valid meld on their own.
+- **[clarified] One unfinished meld per rank.** A player can start another meld of a rank only once their meld of that rank is a canasta (after the play's additions), using at least 3 cards that form a valid meld on their own. Otherwise the play fails with `RANK_ALREADY_MELDED`. (Changed 2026-09-30 after playtesting; any number of melds per rank used to be allowed.)
 - Cards can be added from hand to any of your own melds, including a finished canasta. The meld must still be valid after the addition.
 - Melds belong to individual players. You can only add to your own melds.
 - **Canasta:** a meld of 7 or more cards. It is *natural* if it contains no wilds (500 bonus) and *mixed* if it contains any wild (300 bonus). **[clarified]** Adding a wild to a natural canasta makes it mixed.
@@ -100,10 +100,10 @@ This section combines the V3 sheet with the decisions from the design discussion
 
 ### 3.6 Picking up the discard pile
 
-- The pile is **frozen for a player** if they have not picked it up yet this round (the personal freeze), **or** if a wild is anywhere in the pile (including one buried at the start, per 3.1).
-- Nobody can pick up the pile while a **Black 3 or a wild is on top**.
+- The pile is **frozen for a player** if they have not picked it up yet this round (the personal freeze), **or** if a wild is anywhere in the pile, or a wild or Red 3 started it (per 3.1).
+- Nobody can pick up the pile while a **Black 3, a Red 3 or a wild is on top**.
 - **Taking the top card:** the top card must be melded immediately, as part of the same play as the pickup. Then the player takes the rest of the pile into their hand.
-  - **Frozen for you:** the top card must start a **new** meld with a **natural pair** of the same rank from your hand.
+  - **Frozen for you:** the top card must be melded with a **natural pair** of the same rank from your hand. The three start a new meld, or join the player's unfinished meld of that rank (needed now that a player has at most one).
   - **Not frozen for you:** the top card may either (a) start a new meld with a natural pair or a natural plus a wild from your hand, or (b) be added to one of your existing melds of that rank that is **not yet a canasta**.
   - **[clarified] A finished canasta can never take the top card.** For example, a player with a canasta of 5s and no unfinished 5s meld can take a discarded 5 only by starting a new meld of 5s from their hand.
 - The pickup play can include other new melds and additions from hand. If this is the player's initial meld, the whole play must meet the minimum from 3.5.
@@ -155,7 +155,8 @@ type Player = {
 type Round = {
   number: number; dealer: number; current: number
   stock: Card[]; discard: Card[]
-  pileFrozenForAll: boolean      // a wild was buried as the upcard or discarded; cleared when the pile is picked up
+  pileFrozenForAll: boolean      // a wild or Red 3 upcard, or a discarded wild; cleared when the pile is picked up
+  frozenBy: Card | null          // the first card that froze the pile, shown sideways under it
   phase: 'draw' | 'play'
   nextMeldId: number
   feed: FeedEvent[]              // public events this round, oldest first; reset at each deal

@@ -60,6 +60,18 @@ describe('drawStock', () => {
     expect(ids(next.players[0].hand)).toContain(stock[1].id)
     expect(next.round!.stock).toHaveLength(1)
     expect(next.round!.phase).toBe('play')
+    expect(next.players[0].drawnCard).toBe(stock[1].id)
+  })
+
+  it('forgets the drawn card when the turn ends', () => {
+    const game = makeGame({
+      players: twoPlayers({ id: 'a', hand: cards('4c 5c 6c') }),
+      phase: 'draw',
+    })
+    const drawn = unwrap(applyAction(game, 'a', { type: 'drawStock' }))
+    const cardId = drawn.players[0].hand[0].id
+    const next = unwrap(applyAction(drawn, 'a', { type: 'discard', cardId }))
+    expect(next.players[0].drawnCard).toBeNull()
   })
 
   it('lays out a drawn red 3 and draws a replacement', () => {
@@ -202,6 +214,37 @@ describe('pickUpPile', () => {
       }),
     )
     expect(next.round!.pileFrozenForAll).toBe(false)
+    expect(next.round!.frozenBy).toBeNull()
+  })
+
+  it('lays down a Red 3 upcard from the pile instead of taking it into the hand', () => {
+    const discard = cards('3h Jc 9h')
+    const pair = cards('9s 9d')
+    const game = makeGame({
+      players: twoPlayers({
+        id: 'a',
+        hand: [...pair, ...cards('4c')],
+        melds: [meld('Qh Qd Qs')],
+      }),
+      discard,
+      phase: 'draw',
+      pileFrozenForAll: true,
+      frozenBy: discard[0],
+    })
+    const next = unwrap(
+      applyAction(game, 'a', {
+        type: 'pickUpPile',
+        play: { newMelds: [[discard[2].id, ...ids(pair)]], additions: [] },
+      }),
+    )
+    const player = next.players[0]
+    expect(player.red3s).toEqual([discard[0]])
+    expect(player.hand.map((c) => c.id)).toEqual([game.players[0].hand[2].id, discard[1].id])
+    expect(next.round!.feed[0]).toMatchObject({
+      type: 'pickedUpPile',
+      count: 3,
+      red3s: [discard[0]],
+    })
   })
 })
 
@@ -226,6 +269,20 @@ describe('discard', () => {
     const game = makeGame({ players: twoPlayers({ id: 'a', hand }) })
     const next = unwrap(applyAction(game, 'a', { type: 'discard', cardId: hand[0].id }))
     expect(next.round!.pileFrozenForAll).toBe(true)
+    expect(next.round!.frozenBy).toEqual(hand[0])
+  })
+
+  it('keeps the first card that froze the pile when another wild is discarded', () => {
+    const hand = cards('2c 5c 6c')
+    const first = cards('JK')[0]
+    const game = makeGame({
+      players: twoPlayers({ id: 'a', hand }),
+      discard: [first, ...cards('Kc')],
+      pileFrozenForAll: true,
+      frozenBy: first,
+    })
+    const next = unwrap(applyAction(game, 'a', { type: 'discard', cardId: hand[0].id }))
+    expect(next.round!.frozenBy).toEqual(first)
   })
 
   it('goes out by discarding the last card', () => {
@@ -333,6 +390,8 @@ describe('feed', () => {
         playerId: 'a',
         count: 3,
         played: { newMelds: [[discard[2], ...pair]], additions: [] },
+        canastas: [],
+        red3s: [],
       },
     ])
   })
@@ -359,8 +418,61 @@ describe('feed', () => {
         type: 'melded',
         playerId: 'a',
         played: { newMelds: [nines], additions: [{ meldId: queens.id, cards: queen }] },
+        canastas: [],
       },
     ])
+  })
+
+  it('records the canastas a play completes, clean or mixed', () => {
+    const queens = meld('Qh Qd Qs Qc Qh Qd')
+    const kings = cards('Kh Kd Ks Kc Kh Ks 2c')
+    const game = makeGame({
+      players: twoPlayers({
+        id: 'a',
+        hand: [...kings, ...cards('Qs 4c 5c')],
+        melds: [queens],
+      }),
+    })
+    const queen = game.players[0].hand.find((c) => c.rank === 'Q')!
+    const next = unwrap(
+      applyAction(game, 'a', {
+        type: 'meld',
+        play: { newMelds: [ids(kings)], additions: [{ meldId: queens.id, cardIds: [queen.id] }] },
+      }),
+    )
+    const event = next.round!.feed[0]
+    expect(event.type === 'melded' && event.canastas).toEqual([
+      { rank: 'K', natural: false },
+      { rank: 'Q', natural: true },
+    ])
+  })
+
+  it('records a canasta completed by picking up the pile', () => {
+    const discard = cards('4d 9h')
+    const game = makeGame({
+      players: twoPlayers({
+        id: 'a',
+        hand: cards('9s 9d 4c 5c'),
+        melds: [meld('9c 9d 9s 9h 2c')],
+        hasPickedUpPile: true,
+      }),
+      discard,
+      phase: 'draw',
+    })
+    const hand = game.players[0].hand
+    const next = unwrap(
+      applyAction(game, 'a', {
+        type: 'pickUpPile',
+        play: {
+          newMelds: [],
+          additions: [
+            { meldId: game.players[0].melds[0].id, cardIds: [discard[1].id, hand[0].id] },
+          ],
+        },
+      }),
+    )
+    const event = next.round!.feed[0]
+    expect(event.type === 'pickedUpPile' && event.canastas).toEqual([{ rank: '9', natural: false }])
   })
 
   it('keeps a past meld event unchanged when cards are later added to that meld', () => {

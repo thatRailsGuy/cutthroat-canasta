@@ -22,6 +22,8 @@ export interface Player {
   turnsThisRound: number
   /** Whether the player had any melds when their current turn began (concealed hand bonus). */
   meldedBeforeThisTurn: boolean
+  /** The card drawn from the stock this turn, so the client can point it out. */
+  drawnCard: CardId | null
 }
 
 export type Phase = 'draw' | 'play'
@@ -33,8 +35,10 @@ export interface Round {
   stock: Card[]
   /** Last element is the top of the pile. */
   discard: Card[]
-  /** A wild was buried as the upcard or discarded; cleared when the pile is picked up. */
+  /** A wild or Red 3 upcard, or a discarded wild, froze the pile; cleared when it is picked up. */
   pileFrozenForAll: boolean
+  /** The card that froze the pile for everyone (the first, if several did), or null. */
+  frozenBy: Card | null
   phase: Phase
   nextMeldId: number
   /** Public events this round, oldest first. Every card in it was face up at the time. */
@@ -47,14 +51,32 @@ export interface Played {
   additions: { meldId: string; cards: Card[] }[]
 }
 
+/** A meld that a play made into a canasta. */
+export interface CompletedCanasta {
+  rank: NaturalRank
+  natural: boolean
+}
+
 export type FeedEvent =
   | { type: 'drewStock'; playerId: string; red3s: Card[] }
-  /** `count` is the whole pile, including the top card that went into a meld. */
-  | { type: 'pickedUpPile'; playerId: string; count: number; played: Played }
-  | { type: 'melded'; playerId: string; played: Played }
+  /**
+   * `count` is the whole pile, including the top card that went into a meld. `red3s` are Red 3s
+   * that were in the pile (a Red 3 upcard); they are laid down, not taken into the hand.
+   */
+  | {
+      type: 'pickedUpPile'
+      playerId: string
+      count: number
+      played: Played
+      canastas: CompletedCanasta[]
+      red3s: Card[]
+    }
+  | { type: 'melded'; playerId: string; played: Played; canastas: CompletedCanasta[] }
   | { type: 'discarded'; playerId: string; card: Card }
   | { type: 'wentOut'; playerId: string }
   | { type: 'stockOut' }
+  /** The player left the game for good. The name is kept, since they are no longer seated. */
+  | { type: 'quit'; playerId: string; name: string }
 
 export interface ScoreBreakdown {
   meldPoints: number
@@ -90,7 +112,20 @@ export type Action =
   | { type: 'discard'; cardId: CardId }
 
 export type LogEntry =
-  { playerId: string; action: Action } | { event: 'startGame' } | { event: 'startNextRound' }
+  | { playerId: string; action: Action }
+  | { event: 'startGame' }
+  | { event: 'startNextRound' }
+  | { event: 'quit'; playerId: string }
+
+/** A player who quit a started game. Their past rounds stay in `history`. */
+export interface QuitPlayer {
+  id: string
+  name: string
+  /** Their total when they quit. */
+  score: number
+  /** The round they quit in. */
+  round: number
+}
 
 export interface Game {
   players: Player[]
@@ -100,6 +135,8 @@ export interface Game {
   seed: Seed
   log: LogEntry[]
   winners: string[]
+  /** Players who quit, in the order they quit. */
+  quit: QuitPlayer[]
 }
 
 export type GameResult = { ok: true; game: Game } | { ok: false; error: RuleError }

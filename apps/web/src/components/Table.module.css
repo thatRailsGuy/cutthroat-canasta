@@ -46,6 +46,31 @@
   grid-area: you;
 }
 
+.drewNote {
+  font-size: 0.85rem;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  background: #7fd3ff;
+  color: var(--ink);
+}
+
+.tools {
+  margin-left: auto;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.confirmQuit {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius);
+  background: var(--paper);
+  color: var(--ink);
+}
+
 .turn {
   outline: 3px solid var(--gold);
 }
@@ -68,6 +93,18 @@
   border-radius: 999px;
   background: var(--gold);
   color: var(--ink);
+}
+
+.roundPoints {
+  font-size: 0.85rem;
+  opacity: 0.9;
+}
+
+.needs {
+  font-size: 0.75rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 999px;
+  border: 1px solid currentColor;
 }
 
 .stuck {
@@ -125,6 +162,35 @@
   text-align: center;
 }
 
+.pileStack {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.topCard {
+  position: relative;
+}
+
+/* A normal card is 3rem × 4.25rem. Turned sideways it is 4.25rem wide, and it sits
+   under the top card with 1.75rem sticking out to the right. */
+.sideways {
+  position: absolute;
+  left: 1.125rem;
+  top: 50%;
+  transform: translateY(-50%) rotate(90deg);
+}
+
+.pileStack:has(.sideways) {
+  padding-right: 1.75rem;
+}
+
+.sidewaysTop {
+  display: inline-block;
+  margin: 0 0.625rem;
+  transform: rotate(90deg);
+}
+
 .stagedNote {
   font-size: 0.85rem;
   color: var(--gold);
@@ -177,6 +243,21 @@
   background: none;
   color: inherit;
   text-align: left;
+}
+
+/* A squared-up canasta: the edges of the cards beneath show under the top card. */
+.canastaPile {
+  display: inline-block;
+  border-radius: 6px;
+  line-height: 0;
+  box-shadow:
+    2px 2px 0 white,
+    3px 3px 0 #c9c4b8,
+    4px 4px 0 white,
+    5px 5px 0 #c9c4b8,
+    6px 6px 0 white,
+    7px 7px 0 #c9c4b8;
+  margin: 0 7px 7px 0;
 }
 
 .meldLabel {

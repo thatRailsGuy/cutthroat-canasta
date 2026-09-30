@@ -19,6 +19,7 @@ export function dealRound(game: Game, number: number, dealer: number): void {
     player.hasPickedUpPile = false
     player.turnsThisRound = 0
     player.meldedBeforeThisTurn = false
+    player.drawnCard = null
   }
   for (const player of game.players) {
     for (let i = player.hand.findIndex(isRed3); i !== -1; i = player.hand.findIndex(isRed3)) {
@@ -27,13 +28,9 @@ export function dealRound(game: Game, number: number, dealer: number): void {
     }
   }
 
-  let pileFrozenForAll = false
-  let upcard = stock.pop()!
-  while (isRed3(upcard) || isWild(upcard)) {
-    if (isWild(upcard)) pileFrozenForAll = true
-    stock.unshift(upcard)
-    upcard = stock.pop()!
-  }
+  // A wild or Red 3 upcard stays in the pile and freezes it for everyone.
+  const upcard = stock.pop()!
+  const frozenBy = isRed3(upcard) || isWild(upcard) ? upcard : null
 
   game.round = {
     number,
@@ -41,7 +38,8 @@ export function dealRound(game: Game, number: number, dealer: number): void {
     current: (dealer + 1) % n,
     stock,
     discard: [upcard],
-    pileFrozenForAll,
+    pileFrozenForAll: frozenBy !== null,
+    frozenBy,
     phase: 'draw',
     nextMeldId: 0,
     feed: [],
@@ -65,6 +63,7 @@ export function beginTurn(game: Game): void {
 
 export function advanceTurn(game: Game): void {
   const round = game.round!
+  game.players[round.current].drawnCard = null
   round.current = (round.current + 1) % game.players.length
   beginTurn(game)
 }

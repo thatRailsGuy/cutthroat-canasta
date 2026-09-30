@@ -203,11 +203,31 @@ describe('leave', () => {
     )
   })
 
-  it('is refused once the game has started', () => {
+  it('quits a started game: the others play on and are told who quit', () => {
+    const { state, ids } = roomWith(['Ann', 'Bob', 'Cat'])
+    const game = handleMessage(state, 'p1', { type: 'start' }, ids, []).state
+    const outcome = handleMessage(game, 'p2', { type: 'leave' }, ids, [])
+    expect(outcome.changed).toBe(true)
+    expect(outcome.broadcast).toBe(true)
+    expect(outcome.detach).toEqual({ playerId: 'p2', reason: 'quit' })
+    expect(outcome.announce).toEqual({ type: 'playerQuit', playerId: 'p2', name: 'Bob' })
+    expect(outcome.state.game.players.map((p) => p.id)).toEqual(['p1', 'p3'])
+    expect(outcome.state.game.status).toBe('playing')
+    expect(Object.values(outcome.state.tokens)).toEqual(['p1', 'p3'])
+    expect(outcome.state.hostId).toBe('p1')
+  })
+
+  it('makes the next seat host at once when the host quits', () => {
+    const { state, ids } = roomWith(['Ann', 'Bob', 'Cat'])
+    const game = handleMessage(state, 'p1', { type: 'start' }, ids, []).state
+    expect(handleMessage(game, 'p1', { type: 'leave' }, ids, []).state.hostId).toBe('p2')
+  })
+
+  it('ends a two-player game when one quits', () => {
     const { state, ids } = started()
-    expect(errorOf(handleMessage(state, 'p2', { type: 'leave' }, ids, []))).toMatchObject({
-      code: 'NOT_IN_LOBBY',
-    })
+    const outcome = handleMessage(state, 'p2', { type: 'leave' }, ids, [])
+    expect(outcome.state.game.status).toBe('gameOver')
+    expect(outcome.state.game.winners).toEqual(['p1'])
   })
 
   it('requires joining first', () => {

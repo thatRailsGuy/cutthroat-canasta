@@ -1,4 +1,5 @@
-import { isPileFrozenFor, type CardId, type PlayerView } from '@canasta/engine'
+import { isPileFrozenFor, isRed3, type CardId, type PlayerView } from '@canasta/engine'
+import { cardLabel } from '../cards'
 import { Card } from './Card'
 import styles from './Table.module.css'
 
@@ -20,9 +21,13 @@ export function CenterPile(props: CenterPileProps) {
   const top = round.discardTop
   const canDraw = yourTurn && round.phase === 'draw'
   const topStaged = top !== null && staged.has(top.id)
+  // `?? null`: a view from a server that predates `frozenBy`.
+  const frozenBy = round.frozenBy ?? null
   const frozenReason = view.you
     ? round.pileFrozenForAll
-      ? 'a wild is in the pile'
+      ? frozenBy
+        ? `the ${cardLabel(frozenBy)} ${isRed3(frozenBy) ? 'started' : 'is in'} the pile`
+        : 'a wild is in the pile'
       : !view.you.hasPickedUpPile
         ? "you haven't picked it up this round"
         : null
@@ -43,11 +48,21 @@ export function CenterPile(props: CenterPileProps) {
       <div className={styles.pile}>
         {top ? (
           <>
-            <Card
-              card={top}
-              selected={selected.includes(top.id) || topStaged}
-              onClick={canDraw && !topStaged ? () => onToggleTop(top.id) : undefined}
-            />
+            {/* The card that froze the pile lies sideways under it, sticking out so it shows. */}
+            <span className={styles.pileStack}>
+              {frozenBy && frozenBy.id !== top.id && (
+                <span className={styles.sideways}>
+                  <Card card={frozenBy} />
+                </span>
+              )}
+              <span className={frozenBy?.id === top.id ? styles.sidewaysTop : styles.topCard}>
+                <Card
+                  card={top}
+                  selected={selected.includes(top.id) || topStaged}
+                  onClick={canDraw && !topStaged ? () => onToggleTop(top.id) : undefined}
+                />
+              </span>
+            </span>
             {topStaged && <span className={styles.stagedNote}>In the staging area</span>}
           </>
         ) : (

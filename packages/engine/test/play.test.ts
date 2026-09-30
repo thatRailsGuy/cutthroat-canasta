@@ -46,6 +46,39 @@ describe('validatePlay: basic melds', () => {
     expect(errorCode(play(player, batch([fives])))).toBeNull()
   })
 
+  it('rejects a second meld of a rank while the first is not yet a canasta', () => {
+    const fives = cards('5h 5s 5d')
+    const player = makePlayer({
+      id: 'a',
+      hand: [...fives, ...cards('4c 6c')],
+      melds: [meld('5c 5d 5s 2c')],
+    })
+    expect(errorCode(play(player, batch([fives])))).toBe('RANK_ALREADY_MELDED')
+  })
+
+  it('allows a second meld once the same play makes the first a canasta', () => {
+    const existing = meld('5c 5d 5s 5h 5c 2c')
+    const [five, ...fives] = cards('5d 5h 5s 5d')
+    const player = makePlayer({
+      id: 'a',
+      hand: [five, ...fives, ...cards('4c 6c')],
+      melds: [existing],
+    })
+    expect(
+      errorCode(play(player, batch([fives], [{ meldId: existing.id, cards: [five] }]))),
+    ).toBeNull()
+  })
+
+  it('rejects two new unfinished melds of one rank in the same play', () => {
+    const [a, b] = [cards('9h 9s 9d'), cards('9c 9h 9s')]
+    const player = makePlayer({
+      id: 'a',
+      hand: [...a, ...b, ...cards('4c 6c')],
+      melds: [meld('Qh Qd Qs')],
+    })
+    expect(errorCode(play(player, batch([a, b])))).toBe('RANK_ALREADY_MELDED')
+  })
+
   it('allows adding cards from hand to a finished canasta', () => {
     const canasta = canastaOf5s()
     const [five] = cards('5c')

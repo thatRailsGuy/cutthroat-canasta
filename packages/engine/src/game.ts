@@ -2,7 +2,7 @@ import { cloneGame } from './clone'
 import { MAX_PLAYERS, MIN_PLAYERS } from './constants'
 import { ruleError, type RuleErrorCode } from './errors'
 import type { Seed } from './rng'
-import { dealRound } from './round'
+import { beginTurn, dealRound } from './round'
 import type { Game, GameResult } from './types'
 
 const fail = (code: RuleErrorCode, message: string): GameResult => ({
@@ -11,7 +11,16 @@ const fail = (code: RuleErrorCode, message: string): GameResult => ({
 })
 
 export function createGame(seed: Seed): Game {
-  return { players: [], round: null, history: [], status: 'lobby', seed, log: [], winners: [] }
+  return {
+    players: [],
+    round: null,
+    history: [],
+    status: 'lobby',
+    seed,
+    log: [],
+    winners: [],
+    quit: [],
+  }
 }
 
 export function addPlayer(game: Game, id: string, name: string): GameResult {
@@ -38,6 +47,7 @@ export function addPlayer(game: Game, id: string, name: string): GameResult {
     hasPickedUpPile: false,
     turnsThisRound: 0,
     meldedBeforeThisTurn: false,
+    drawnCard: null,
   })
   return { ok: true, game: next }
 }
@@ -72,5 +82,45 @@ export function startNextRound(game: Game): GameResult {
   const previous = next.round!
   dealRound(next, previous.number + 1, (previous.dealer + 1) % next.players.length)
   next.log.push({ event: 'startNextRound' })
+  return { ok: true, game: next }
+}
+
+/**
+ * A player leaves a started game for good. Their hand and melds leave play and are not scored;
+ * their past rounds stay in `history`. The turn order and the dealer seat close up. If it was
+ * their turn, the next player starts at the draw. When only one player is left, they win.
+ * Throws for an unknown id: callers check the seat exists.
+ */
+export function quitGame(game: Game, id: string): GameResult {
+  if (game.status !== 'playing' && game.status !== 'roundOver') {
+    return fail('GAME_NOT_PLAYING', 'You can only quit a game that is in progress.')
+  }
+  const seat = game.players.findIndex((p) => p.id === id)
+  if (seat === -1) throw new Error(`Unknown player: ${id}`)
+  const next = cloneGame(game)
+  const [gone] = next.players.splice(seat, 1)
+  const round = next.round!
+  // `?? []`: games saved before quitting existed.
+  next.quit = [
+    ...(next.quit ?? []),
+    { id, name: gone.name, score: gone.score, round: round.number },
+  ]
+  next.log.push({ event: 'quit', playerId: id })
+  round.feed.push({ type: 'quit', playerId: id, name: gone.name })
+
+  const n = next.players.length
+  // The seat after the dealer deals next, so a quitting dealer passes the deal to that seat.
+  if (seat <= round.dealer) round.dealer = (round.dealer - 1 + n) % n
+  if (seat < round.current) {
+    round.current -= 1
+  } else if (seat === round.current) {
+    round.current = seat % n
+    if (next.status === 'playing') beginTurn(next)
+  }
+
+  if (n === 1) {
+    next.status = 'gameOver'
+    next.winners = [next.players[0].id]
+  }
   return { ok: true, game: next }
 }

@@ -1,10 +1,10 @@
 import { isNatural, type Card, type CardId, type NaturalRank } from './cards'
 import { CANASTA_SIZE, cardValue, initialMeldMinimum } from './constants'
 import { ruleError, type RuleError } from './errors'
-import { checkMeldCards } from './meldRules'
+import { checkMeldCards, isCanasta, isNaturalCanasta } from './meldRules'
 import { checkPickupShape, type PileState } from './pileRules'
 import { goingOutBlocker } from './turnRules'
-import type { MeldBatch, Player, Round } from './types'
+import type { CompletedCanasta, Meld, MeldBatch, Player, Round } from './types'
 
 export interface PlayContext {
   player: Player
@@ -66,6 +66,25 @@ export function validatePlay(ctx: PlayContext, batch: MeldBatch): PlayResult {
     additions.push({ meldId, cards: added })
   }
 
+  // A player may start another meld of a rank only once their meld of that rank is a canasta.
+  const rankOf = (cards: Card[]) => cards.find(isNatural)!.rank
+  for (const rank of new Set(newMelds.map(rankOf))) {
+    const unfinished = [
+      ...player.melds
+        .filter((m) => m.rank === rank)
+        .map((m) => m.cards.length + (grouped.get(m.id)?.length ?? 0)),
+      ...newMelds.filter((cards) => rankOf(cards) === rank).map((cards) => cards.length),
+    ].filter((size) => size < CANASTA_SIZE)
+    if (unfinished.length > 1) {
+      return fail(
+        ruleError(
+          'RANK_ALREADY_MELDED',
+          `You can only have one unfinished meld of ${rank}s. Add to it: you can start another once it is a canasta.`,
+        ),
+      )
+    }
+  }
+
   if (player.melds.length === 0) {
     const placed = [...newMelds.flat(), ...additions.flatMap((a) => a.cards)]
     const points = placed.reduce((sum, c) => sum + cardValue(c), 0)
@@ -105,19 +124,31 @@ export function validatePlay(ctx: PlayContext, batch: MeldBatch): PlayResult {
   return { ok: true, play: { newMelds, additions, usedFromHand, goesOut: handAfter === 0 } }
 }
 
-/** Moves a validated play's cards into melds. Mutates; callers pass a cloned game. */
-export function applyPlay(round: Round, player: Player, play: ValidatedPlay): void {
+/**
+ * Moves a validated play's cards into melds, and returns the melds it made into canastas.
+ * Mutates; callers pass a cloned game.
+ */
+export function applyPlay(round: Round, player: Player, play: ValidatedPlay): CompletedCanasta[] {
   const used = new Set(play.usedFromHand)
   player.hand = player.hand.filter((c) => !used.has(c.id))
+  const wasCanasta = new Set(player.melds.filter(isCanasta).map((m) => m.id))
+  const touched: Meld[] = []
   for (const meldCards of play.newMelds) {
     const natural = meldCards.find(isNatural)!
-    player.melds.push({
+    const meld = {
       id: `m${round.nextMeldId++}`,
       rank: natural.rank as NaturalRank,
       cards: meldCards,
-    })
+    }
+    player.melds.push(meld)
+    touched.push(meld)
   }
   for (const addition of play.additions) {
-    player.melds.find((m) => m.id === addition.meldId)!.cards.push(...addition.cards)
+    const meld = player.melds.find((m) => m.id === addition.meldId)!
+    meld.cards.push(...addition.cards)
+    touched.push(meld)
   }
+  return touched
+    .filter((m) => isCanasta(m) && !wasCanasta.has(m.id))
+    .map((m) => ({ rank: m.rank, natural: isNaturalCanasta(m) }))
 }

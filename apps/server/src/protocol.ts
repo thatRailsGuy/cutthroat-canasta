@@ -84,11 +84,13 @@ export type ServerMessage =
   | { type: 'removed'; reason: RemovedReason }
   | { type: 'reissued'; playerId: string; token: string }
   | { type: 'seatReissued'; playerId: string }
+  /** A player quit a started game. The name is sent too, since they are no longer seated. */
+  | { type: 'playerQuit'; playerId: string; name: string }
   /** The heartbeat reply. The runtime's auto-response sends it, never the room handler. */
   | { type: 'pong' }
 
-/** Why a socket's seat went away: it left, or the host kicked it. */
-export type RemovedReason = 'left' | 'kicked'
+/** Why a socket's seat went away: it left the lobby, quit a started game, or was kicked. */
+export type RemovedReason = 'left' | 'quit' | 'kicked'
 
 export type ParseResult = { ok: true; message: ClientMessage } | { ok: false; error: ServerMessage }
 

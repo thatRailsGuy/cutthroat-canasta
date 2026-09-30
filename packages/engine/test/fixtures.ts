@@ -42,6 +42,7 @@ export function makePlayer(overrides: Partial<Player> & { id: string }): Player 
     hasPickedUpPile: false,
     turnsThisRound: 2,
     meldedBeforeThisTurn: melds.length > 0,
+    drawnCard: null,
     ...overrides,
     melds,
   }
@@ -54,6 +55,7 @@ export function makeGame(opts: {
   current?: number
   phase?: Round['phase']
   pileFrozenForAll?: boolean
+  frozenBy?: Card | null
 }): Game {
   return {
     players: opts.players,
@@ -64,6 +66,7 @@ export function makeGame(opts: {
       stock: opts.stock ?? cards('4c 5c 6c 7c 8c 9c'),
       discard: opts.discard ?? cards('Kc'),
       pileFrozenForAll: opts.pileFrozenForAll ?? false,
+      frozenBy: opts.frozenBy ?? null,
       phase: opts.phase ?? 'play',
       nextMeldId: 100,
       feed: [],
@@ -73,6 +76,7 @@ export function makeGame(opts: {
     seed: seedOf(1),
     log: [],
     winners: [],
+    quit: [],
   }
 }
 

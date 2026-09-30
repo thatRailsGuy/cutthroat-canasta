@@ -29,6 +29,7 @@ export function makeView(opts: {
     hasPickedUpPile: opts.hasPickedUpPile ?? false,
     turnsThisRound: opts.turnsThisRound ?? 2,
     meldedBeforeThisTurn: melds.length > 0,
+    drawnCard: null,
   }
   const top = opts.top === undefined ? card('Kc', 900) : opts.top
   return {
@@ -54,10 +55,12 @@ export function makeView(opts: {
       discardTop: top,
       discardCount: top ? 3 : 0,
       pileFrozenForAll: false,
+      frozenBy: null,
       feed: [],
     },
     history: [],
     status: 'playing',
     winners: [],
+    quit: [],
   }
 }

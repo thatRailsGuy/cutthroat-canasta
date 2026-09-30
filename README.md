@@ -8,7 +8,8 @@ An online version of the house Cutthroat Canasta rules (V3) for 2–8 players pl
 - **Black 3s are stop cards:** they can never be melded; while a Black 3 (or a wild) is on top of the discard pile, nobody can pick it up
 - **Wild ratio:** wilds (Jokers and 2s) cannot outnumber naturals in a meld (`wilds ≤ naturals`)
 - **Personal pile freeze:** the discard pile is frozen for you until your first pickup each round. To take a frozen pile you need a natural pair matching the top card
-- **Multiple melds per rank:** a player can start a new meld of the same rank they already have
+- **One unfinished meld per rank:** a player can start another meld of a rank only once their meld of that rank is a canasta
+- **Frozen upcard:** a wild or Red 3 upcard stays in the discard pile and freezes it for everyone
 - **Finished canasta cannot take the pile:** a completed 7+ card meld cannot accept the top discard card
 - **Initial meld minimums by score:** 15 points (negative score), 50 (0–1,495), 90 (1,500–2,995), 120 (3,000+)
 - **No going out first turn:** a player cannot end the round on their first turn of that round

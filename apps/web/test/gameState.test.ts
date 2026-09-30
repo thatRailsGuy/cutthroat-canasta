@@ -89,6 +89,19 @@ describe('gameReducer', () => {
     expect(state.notices).toEqual([])
   })
 
+  it('toasts when another player quits, but not for the one who quit', () => {
+    const seated = receive(initialGameState, {
+      type: 'joined',
+      code: 'ABC',
+      playerId: 'you',
+      token: 't',
+    })
+    const other = receive(seated, { type: 'playerQuit', playerId: 'bob', name: 'Bob' })
+    expect(other.toasts).toEqual([{ id: 1, message: 'Bob quit the game.', section: null }])
+    const self = receive(seated, { type: 'playerQuit', playerId: 'you', name: 'You' })
+    expect(self.toasts).toEqual([])
+  })
+
   it('toasts a message that could not be sent', () => {
     const state = gameReducer(initialGameState, { type: 'notSent' })
     expect(state.toasts).toEqual([{ id: 1, message: NOT_SENT_MESSAGE, section: null }])

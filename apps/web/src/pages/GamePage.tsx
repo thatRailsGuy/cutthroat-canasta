@@ -115,7 +115,11 @@ function Session({ code, linkToken, autoJoinName, joinsByItself }: SessionProps)
   useEffect(() => {
     if (!state.removed) return
     const notice =
-      state.removed === 'kicked' ? 'The host removed you from the game.' : 'You left the game.'
+      state.removed === 'kicked'
+        ? 'The host removed you from the game.'
+        : state.removed === 'quit'
+          ? 'You quit the game.'
+          : 'You left the game.'
     navigate('/', { replace: true, state: { notice } })
   }, [state.removed, navigate])
 

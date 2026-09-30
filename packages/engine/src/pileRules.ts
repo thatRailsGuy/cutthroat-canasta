@@ -1,4 +1,4 @@
-import { isBlack3, isNatural, isWild, type Card } from './cards'
+import { isBlack3, isNatural, isRed3, isWild, type Card, type CardId } from './cards'
 import { ruleError, type RuleError } from './errors'
 import { isCanasta } from './meldRules'
 import type { MeldBatch, Player, Round } from './types'
@@ -31,17 +31,21 @@ export function checkPickupShape(
 ): RuleError | null {
   const top = pile.top
   if (!top) return ruleError('PILE_EMPTY', 'The discard pile is empty.')
-  if (isWild(top) || isBlack3(top)) {
-    const blocker = isWild(top) ? 'a wild card' : 'a black 3'
+  if (isWild(top) || isBlack3(top) || isRed3(top)) {
+    const blocker = isWild(top) ? 'a wild card' : isRed3(top) ? 'a Red 3' : 'a black 3'
     return ruleError('PILE_BLOCKED', `The pile can't be picked up while ${blocker} is on top.`)
   }
   const frozen = isPileFrozenFor(player, pile)
+  const hasNaturalPair = (cardIds: CardId[]) =>
+    player.hand.filter((c) => cardIds.includes(c.id) && isNatural(c) && c.rank === top.rank)
+      .length >= 2
 
   const addition = batch.additions.find((a) => a.cardIds.includes(top.id))
   if (addition) {
     const target = player.melds.find((m) => m.id === addition.meldId)
     if (!target) return ruleError('MELD_NOT_FOUND', "That meld doesn't exist.")
-    if (frozen) return frozenError(top)
+    // With one unfinished meld per rank, a frozen pile's top card and pair join that meld.
+    if (frozen && !hasNaturalPair(addition.cardIds)) return frozenError(top)
     if (isCanasta(target)) {
       return ruleError(
         'CANASTA_CANNOT_TAKE_PILE',
@@ -58,11 +62,6 @@ export function checkPickupShape(
       'To pick up the pile you must meld the top discard in the same play.',
     )
   }
-  if (frozen) {
-    const pair = player.hand.filter(
-      (c) => newMeld.includes(c.id) && isNatural(c) && c.rank === top.rank,
-    )
-    if (pair.length < 2) return frozenError(top)
-  }
+  if (frozen && !hasNaturalPair(newMeld)) return frozenError(top)
   return null
 }

@@ -1,6 +1,6 @@
 import { RULE_ERROR_SECTIONS, type Action, type PlayerView } from '@canasta/engine'
 import { rankPlural } from '../cards'
-import { stagingPreview, type Staging, type StagingAction } from '../staging'
+import { selectionTarget, stagingPreview, type Staging, type StagingAction } from '../staging'
 import { Card } from './Card'
 import { WhyLink } from './WhyLink'
 import styles from './StagingArea.module.css'
@@ -30,6 +30,10 @@ export function StagingArea({
     const meld = you?.melds.find((m) => m.id === meldId)
     return meld ? `Add to your ${rankPlural(meld.rank)}` : 'Add to meld'
   }
+  const targetRank = (meldId: string) => {
+    const meld = you?.melds.find((m) => m.id === meldId)
+    return meld ? rankPlural(meld.rank) : 'meld'
+  }
   const ready = (kind: 'meld' | 'pickUpPile' | 'discard') =>
     !offline && preview.kind === kind && preview.error === null
   const run = () => {
@@ -37,6 +41,8 @@ export function StagingArea({
     if (onAction(preview.action)) dispatch({ type: 'clear' })
   }
   const nothingStaged = staging.selected.length === 0 && staging.groups.length === 0
+  // Selected cards of a rank you have an unfinished meld of go onto it; no new meld is allowed.
+  const target = selectionTarget(view, staging.selected)
 
   return (
     <section className={styles.staging} aria-label="Staging area">
@@ -61,6 +67,13 @@ export function StagingArea({
         ))}
       </div>
 
+      {target !== null && (
+        <p className={styles.target}>
+          The selected cards go onto your {targetRank(target)}. You can start another meld of that
+          rank once this one is a canasta.
+        </p>
+      )}
+
       <p className={styles.preview} role="status">
         {preview.kind === 'none' ? (
           'Select cards from your hand.'
@@ -77,7 +90,7 @@ export function StagingArea({
       <div className={styles.buttons}>
         <button
           type="button"
-          disabled={staging.selected.length === 0}
+          disabled={staging.selected.length === 0 || target !== null}
           onClick={() => dispatch({ type: 'stageNew' })}
         >
           New meld

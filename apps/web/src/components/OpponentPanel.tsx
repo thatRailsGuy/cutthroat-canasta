@@ -1,6 +1,7 @@
 import type { PublicPlayer } from '@canasta/engine'
 import { useRef, useState } from 'react'
 import { MeldList } from './MeldList'
+import { RoundPoints } from './RoundPoints'
 import styles from './Table.module.css'
 
 export interface OpponentPanelProps {
@@ -8,6 +9,8 @@ export interface OpponentPanelProps {
   isTurn: boolean
   isConnected: boolean
   isHost: boolean
+  /** The round is in play. */
+  playing: boolean
   /**
    * Host only: ask the server for a rejoin link. Offered for every opponent, because a dead
    * phone can still count as connected: the server only notices a silent socket when a message
@@ -18,7 +21,7 @@ export interface OpponentPanelProps {
 }
 
 export function OpponentPanel(props: OpponentPanelProps) {
-  const { player, isTurn, isConnected, isHost, onReissue, rejoinLink } = props
+  const { player, isTurn, isConnected, isHost, playing, onReissue, rejoinLink } = props
   return (
     <section
       className={`${styles.opponent} ${isTurn ? styles.turn : ''}`}
@@ -35,6 +38,7 @@ export function OpponentPanel(props: OpponentPanelProps) {
         {isHost && <span className={styles.badge}>Host</span>}
         <span>{player.handCount} cards</span>
         <span>{player.score.toLocaleString('en-US')} pts</span>
+        <RoundPoints player={player} playing={playing} />
       </header>
       <MeldList melds={player.melds} red3s={player.red3s} />
       {onReissue && (
