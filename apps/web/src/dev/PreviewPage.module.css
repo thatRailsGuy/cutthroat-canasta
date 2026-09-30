@@ -1,0 +1,31 @@
+.controls {
+  position: fixed;
+  left: 0.5rem;
+  bottom: 0.5rem;
+  z-index: 30;
+  max-width: 34rem;
+  padding: 0.5rem;
+  border: 2px dashed var(--ink);
+  border-radius: var(--radius);
+  background: rgb(255 250 240 / 0.95);
+}
+
+.controls button {
+  min-height: 30px;
+  padding: 0 0.6rem;
+  font-size: 0.75rem;
+  box-shadow: none;
+}
+
+.controls[open] {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.controls summary {
+  flex-basis: 100%;
+  font-size: 0.8rem;
+  font-weight: 800;
+  cursor: pointer;
+}
