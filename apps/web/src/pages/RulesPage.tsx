@@ -17,6 +17,7 @@ export function RulesPage() {
       <header className={styles.header}>
         <Link to="/">Cutthroat Canasta</Link>
         <h1>Rules</h1>
+        <Link to="/learn">Learn to play</Link>
         <button type="button" className={styles.print} onClick={() => window.print()}>
           Print
         </button>

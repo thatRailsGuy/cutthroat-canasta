@@ -63,7 +63,9 @@ export function HomePage() {
         </button>
       </form>
       {error && <p className={styles.error}>{error}</p>}
-      <Link to="/rules">Read the rules</Link>
+      <p className={styles.links}>
+        <Link to="/learn">Learn to play</Link> · <Link to="/rules">Read the rules</Link>
+      </p>
     </main>
   )
 }

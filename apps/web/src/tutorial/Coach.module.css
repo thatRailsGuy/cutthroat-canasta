@@ -1,0 +1,66 @@
+/* A recipe card pinned to the table: a teal header rule, tilted the other way from the pad. */
+.coach {
+  padding: 0.9rem 1rem 1rem;
+  border: 2px solid var(--ink);
+  border-top: 0.6rem solid var(--teal);
+  border-radius: var(--radius);
+  background: var(--paper);
+  box-shadow: var(--shadow);
+  transform: rotate(-0.8deg);
+}
+
+.count {
+  margin: 0;
+  font-family: var(--hand);
+  font-size: 1.15rem;
+  color: var(--teal-dark);
+}
+
+.title {
+  margin: 0.1rem 0 0.4rem;
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 1.35rem;
+  line-height: 1.15;
+}
+
+.body {
+  margin: 0;
+  line-height: 1.45;
+}
+
+.hint {
+  margin: 0;
+  color: var(--bad);
+  font-weight: 600;
+}
+
+.hint:not(:empty) {
+  margin-top: 0.6rem;
+}
+
+.buttons {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  margin-top: 0.8rem;
+}
+
+.buttons:empty {
+  display: none;
+}
+
+.primary {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 1.1rem;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  background: var(--red);
+  color: var(--paper);
+  box-shadow: var(--shadow);
+  font-weight: 800;
+  text-decoration: none;
+}

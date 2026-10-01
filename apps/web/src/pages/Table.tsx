@@ -1,6 +1,6 @@
 import type { Action, PlayerView } from '@canasta/engine'
 import type { ClientMessage } from '@canasta/server/protocol'
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { rejoinLink } from '../api'
 import { cardLabel } from '../cards'
 import { Avatar } from '../components/Avatar'
@@ -25,9 +25,11 @@ export interface TableProps {
   view: PlayerView
   state: GameState
   send: (message: ClientMessage) => boolean
+  /** Shown at the top of the side column: the tutorial's lesson card. */
+  coach?: ReactNode
 }
 
-export function Table({ code, view, state, send }: TableProps) {
+export function Table({ code, view, state, send, coach }: TableProps) {
   const [staging, dispatch] = useStaging(view)
   const round = view.round!
   const you = view.you!
@@ -159,6 +161,7 @@ export function Table({ code, view, state, send }: TableProps) {
       </div>
 
       <aside className={styles.side}>
+        {coach}
         <ScorePad view={view} onOpenSheet={() => setScoresOpen(true)} />
         <Feed events={round.feed} notices={state.notices} players={view.players} quit={view.quit} />
       </aside>
