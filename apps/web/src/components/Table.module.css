@@ -309,10 +309,14 @@
   color: var(--pad-ink);
 }
 
-/* A crowded table: short panels in an even grid, so the pile stays near the top. */
+/* A crowded table: short panels in an even grid under the logo, so the pile stays near the top. */
+.crowdedTop .opponents {
+  flex-basis: 100%;
+}
+
 .crowdedOpponents {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));
   gap: 0.6rem;
 }
 
@@ -329,7 +333,17 @@
 }
 
 .opponent.crowded .who {
+  flex: 1 1 auto;
   min-width: 0;
+}
+
+.opponent.crowded .who > * {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.opponent.crowded .handCount {
+  flex-shrink: 0;
 }
 
 /* The count says it; the stack of backs takes room a crowded panel doesn't have. */

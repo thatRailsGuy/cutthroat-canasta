@@ -35,4 +35,16 @@ describe('MeldList', () => {
     expect(kings).toHaveAttribute('data-canasta')
     expect(screen.getByRole('img', { name: 'Red 3s: 1' })).toHaveAttribute('data-red3s')
   })
+
+  it('keeps each chip\u2019s cards in a popup you can focus to see', () => {
+    const melds = [
+      { id: 'm1', rank: '9' as const, cards: ['9c', '9d', '2s'].map((c, i) => card(c, i + 1)) },
+    ]
+    render(<MeldList melds={melds} red3s={[]} chips />)
+    const nines = screen.getByRole('img', { name: '9s: 3 cards' })
+    expect(nines).toHaveAttribute('tabindex', '0')
+    const peek = nines.querySelector('[aria-hidden="true"]')!
+    expect(peek.querySelectorAll('[data-card-id]')).toHaveLength(3)
+    expect(peek.querySelector('[data-card-id="3"]')).toHaveTextContent('2')
+  })
 })

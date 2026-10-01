@@ -53,7 +53,7 @@ export function Table({ code, view, state, send, coach }: TableProps) {
   return (
     <main className={styles.table}>
       <div className={styles.play}>
-        <header className={styles.top}>
+        <header className={`${styles.top} ${crowded ? styles.crowdedTop : ''}`}>
           <h1 className={styles.logo}>
             <span className={styles.logoSmall}>Cutthroat</span> Canasta!
           </h1>

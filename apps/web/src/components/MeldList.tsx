@@ -134,7 +134,10 @@ export function MeldList({ melds, red3s, onPick, compact = false, chips = false 
   )
 }
 
-/** One chip per meld: its rank and how many cards, filled in when it is a canasta. */
+/**
+ * One chip per meld: its rank and how many cards, filled in when it is a canasta. Hovering,
+ * focusing, or tapping a chip shows its cards, so you can still see which are wild.
+ */
 function MeldChips({ melds, red3s }: { melds: Meld[]; red3s: CardValue[] }) {
   return (
     <div className={styles.chips}>
@@ -154,8 +157,10 @@ function MeldChips({ melds, red3s }: { melds: Meld[]; red3s: CardValue[] }) {
             data-canasta={canasta || undefined}
             role="img"
             aria-label={`${rankPlural(meld.rank)}: ${label}`}
+            tabIndex={0}
           >
             <span className={styles.chipRank}>{meld.rank}</span>×{meld.cards.length}
+            <Peek cards={meld.cards} />
           </span>
         )
       })}
@@ -165,10 +170,23 @@ function MeldChips({ melds, red3s }: { melds: Meld[]; red3s: CardValue[] }) {
           data-red3s=""
           role="img"
           aria-label={`Red 3s: ${red3s.length}`}
+          tabIndex={0}
         >
           <span className={styles.chipRank}>3♥</span>×{red3s.length}
+          <Peek cards={red3s} />
         </span>
       )}
     </div>
+  )
+}
+
+/** The cards behind a chip, fanned out in a popup. */
+function Peek({ cards }: { cards: CardValue[] }) {
+  return (
+    <span className={styles.peek} aria-hidden="true">
+      {cards.map((c) => (
+        <Card key={c.id} card={c} size="small" />
+      ))}
+    </span>
   )
 }
