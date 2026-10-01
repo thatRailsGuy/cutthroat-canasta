@@ -1,5 +1,6 @@
 import type { PlayerView } from '@canasta/engine'
 import type { CSSProperties } from 'react'
+import { isCrowded } from '../layout'
 import styles from './ScorePad.module.css'
 
 export interface ScorePadProps {
@@ -11,13 +12,47 @@ export interface ScorePadProps {
 /**
  * The paper score pad beside the table: one handwritten line per scored round and the running
  * total underneath, with the leader underlined. Players who quit are left off; the full score
- * sheet still has them.
+ * sheet still has them. A crowded table has no room for a column each, so the pad lists the
+ * players down the page with their last round and total.
  */
 export function ScorePad({ view, onOpenSheet }: ScorePadProps) {
   const players = view.players
   const top = Math.max(...players.map((p) => p.score))
   const leaders = view.history.length > 0 ? players.filter((p) => p.score === top) : []
   const columns = { '--cols': players.length } as CSSProperties
+  if (isCrowded(view)) {
+    const last = view.history.at(-1)
+    return (
+      <section className={styles.pad} aria-label="Score pad">
+        <table className={`${styles.table} ${styles.list}`}>
+          <thead>
+            <tr>
+              <th scope="col">
+                <span className={styles.hidden}>Player</span>
+              </th>
+              <th scope="col">{last ? `Rd ${last.round}` : ''}</th>
+              <th scope="col">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            {players.map((p) => (
+              <tr key={p.id} aria-label={p.name}>
+                <th scope="row" title={p.name}>
+                  {p.name}
+                </th>
+                <td>{last ? (last.breakdown[p.id]?.total ?? '–') : ''}</td>
+                <td className={leaders.includes(p) ? styles.leader : undefined}>{p.score}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {view.history.length === 0 && <p className={styles.none}>No rounds yet</p>}
+        <button type="button" className={styles.sheet} onClick={onOpenSheet}>
+          Scores
+        </button>
+      </section>
+    )
+  }
   return (
     <section className={styles.pad} aria-label="Score pad">
       <table className={styles.table} style={columns}>

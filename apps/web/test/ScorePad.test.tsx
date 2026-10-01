@@ -38,4 +38,28 @@ describe('ScorePad', () => {
     render(<ScorePad view={makeView({ hand: [], phase: 'draw' })} onOpenSheet={vi.fn()} />)
     expect(screen.getByText('No rounds yet')).toBeInTheDocument()
   })
+
+  it('lists players down the pad at a crowded table', () => {
+    const view = makeView({ hand: [], phase: 'draw' })
+    view.players = ['Ann', 'Ben', 'Cara', 'Dee', 'Eve'].map((name, i) => ({
+      ...view.players[0],
+      id: name.toLowerCase(),
+      name,
+      score: 100 * (i + 1),
+    }))
+    view.history = [
+      {
+        round: 1,
+        endedBy: 'goingOut',
+        wentOut: 'eve',
+        breakdown: Object.fromEntries(view.players.map((p) => [p.id, breakdown(p.score)])),
+        hands: {},
+      },
+    ]
+    render(<ScorePad view={view} onOpenSheet={vi.fn()} />)
+    const eve = within(screen.getByRole('row', { name: 'Eve' }))
+    expect(eve.getAllByText('500')).toHaveLength(2)
+    expect(eve.getAllByText('500')[1].className).toMatch(/leader/)
+    expect(screen.getByRole('columnheader', { name: 'Rd 1' })).toBeInTheDocument()
+  })
 })

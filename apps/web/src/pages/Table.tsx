@@ -18,6 +18,7 @@ import { StagingArea } from '../components/StagingArea'
 import { TableEffects } from '../components/TableEffects'
 import styles from '../components/Table.module.css'
 import type { GameState } from '../gameState'
+import { isCrowded } from '../layout'
 import { pickupHelpers, stagedIds, useStaging } from '../staging'
 
 export interface TableProps {
@@ -47,6 +48,7 @@ export function Table({ code, view, state, send, coach }: TableProps) {
   // A game that ended because the others quit has no final round breakdown to show.
   const lastScoredThisRound = view.history.at(-1)?.round === round.number
   const yourSeat = view.players.findIndex((p) => p.id === you.id)
+  const crowded = isCrowded(view)
 
   return (
     <main className={styles.table}>
@@ -55,7 +57,7 @@ export function Table({ code, view, state, send, coach }: TableProps) {
           <h1 className={styles.logo}>
             <span className={styles.logoSmall}>Cutthroat</span> Canasta!
           </h1>
-          <div className={styles.opponents}>
+          <div className={`${styles.opponents} ${crowded ? styles.crowdedOpponents : ''}`}>
             {view.players.map((p, seat) => {
               if (p.id === you.id) return null
               const token = state.rejoinTokens[p.id]
@@ -70,6 +72,7 @@ export function Table({ code, view, state, send, coach }: TableProps) {
                   playing={view.status === 'playing'}
                   onReissue={isHost ? () => send({ type: 'reissue', playerId: p.id }) : undefined}
                   rejoinLink={token ? rejoinLink(code, token) : undefined}
+                  crowded={crowded}
                 />
               )
             })}

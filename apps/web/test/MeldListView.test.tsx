@@ -19,4 +19,20 @@ describe('MeldList', () => {
     expect(screen.getByRole('img', { name: 'Kings: Natural canasta, 7 cards' })).toBeInTheDocument()
     expect(screen.getByRole('img', { name: 'Red 3s: 1' })).toBeInTheDocument()
   })
+
+  it('shows chips with the same names and the hooks the table animations look for', () => {
+    const melds = [
+      {
+        id: 'm2',
+        rank: 'K' as const,
+        cards: ['Kh', 'Ks', 'Kd', 'Kc', 'Kh', 'Ks', '2d'].map((c, i) => card(c, i + 10)),
+      },
+    ]
+    render(<MeldList melds={melds} red3s={[card('3h', 30)]} chips />)
+    const kings = screen.getByRole('img', { name: 'Kings: Mixed canasta, 7 cards' })
+    expect(kings).toHaveTextContent('K×7')
+    expect(kings).toHaveAttribute('data-rank', 'K')
+    expect(kings).toHaveAttribute('data-canasta')
+    expect(screen.getByRole('img', { name: 'Red 3s: 1' })).toHaveAttribute('data-red3s')
+  })
 })

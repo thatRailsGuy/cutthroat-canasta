@@ -17,6 +17,11 @@ export interface MeldListProps {
   onPick?: (meldId: string) => void
   /** Opponents' melds overlap more, so their panels stay short. */
   compact?: boolean
+  /**
+   * A crowded table: each meld is a chip with its rank and card count, and no cards. Not for
+   * your own melds, which you click to add to.
+   */
+  chips?: boolean
 }
 
 /**
@@ -34,10 +39,11 @@ export function canastaTopCard(meld: Meld): CardValue {
  * Melds in rank order, each an overlapping column of cards. A finished canasta is squared up,
  * with one card on top and a ribbon saying natural or mixed.
  */
-export function MeldList({ melds, red3s, onPick, compact = false }: MeldListProps) {
+export function MeldList({ melds, red3s, onPick, compact = false, chips = false }: MeldListProps) {
   const ordered = [...melds].sort(
     (a, b) => rankIndex(a.rank) - rankIndex(b.rank) || a.id.localeCompare(b.id),
   )
+  if (chips) return <MeldChips melds={ordered} red3s={red3s} />
   return (
     <div className={`${styles.melds} ${compact ? styles.compact : ''}`}>
       {ordered.map((meld) => {
@@ -123,6 +129,45 @@ export function MeldList({ melds, red3s, onPick, compact = false }: MeldListProp
           </span>
           <span className={styles.caption}>Red 3s</span>
         </div>
+      )}
+    </div>
+  )
+}
+
+/** One chip per meld: its rank and how many cards, filled in when it is a canasta. */
+function MeldChips({ melds, red3s }: { melds: Meld[]; red3s: CardValue[] }) {
+  return (
+    <div className={styles.chips}>
+      {melds.map((meld) => {
+        const canasta = isCanasta(meld)
+        const natural = canasta && isNaturalCanasta(meld)
+        const kind = canasta ? (natural ? styles.natural : styles.mixed) : ''
+        const label = canasta
+          ? `${natural ? 'Natural' : 'Mixed'} canasta, ${meld.cards.length} cards`
+          : `${meld.cards.length} cards`
+        return (
+          <span
+            key={meld.id}
+            className={`${styles.chip} ${kind}`}
+            data-meld-id={meld.id}
+            data-rank={meld.rank}
+            data-canasta={canasta || undefined}
+            role="img"
+            aria-label={`${rankPlural(meld.rank)}: ${label}`}
+          >
+            <span className={styles.chipRank}>{meld.rank}</span>×{meld.cards.length}
+          </span>
+        )
+      })}
+      {red3s.length > 0 && (
+        <span
+          className={`${styles.chip} ${styles.red3Chip}`}
+          data-red3s=""
+          role="img"
+          aria-label={`Red 3s: ${red3s.length}`}
+        >
+          <span className={styles.chipRank}>3♥</span>×{red3s.length}
+        </span>
       )}
     </div>
   )

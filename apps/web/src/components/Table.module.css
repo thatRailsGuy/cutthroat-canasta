@@ -309,6 +309,45 @@
   color: var(--pad-ink);
 }
 
+/* A crowded table: short panels in an even grid, so the pile stays near the top. */
+.crowdedOpponents {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+  gap: 0.6rem;
+}
+
+.opponent.crowded {
+  gap: 0.45rem;
+  min-width: 0;
+  max-width: none;
+  padding: 0.45rem 0.7rem 0.6rem 0.45rem;
+}
+
+.opponent.crowded header {
+  flex-wrap: nowrap;
+  gap: 0.5rem;
+}
+
+.opponent.crowded .who {
+  min-width: 0;
+}
+
+/* The count says it; the stack of backs takes room a crowded panel doesn't have. */
+.opponent.crowded .backs {
+  display: none;
+}
+
+.opponent.crowded .who > *,
+.opponent.crowded .handCount {
+  white-space: nowrap;
+}
+
+.opponent.crowded .nameLine strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 @media (max-width: 1000px) {
   .table {
     grid-template-columns: minmax(0, 1fr);
