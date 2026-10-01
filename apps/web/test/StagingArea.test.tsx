@@ -147,6 +147,25 @@ describe('StagingArea', () => {
     expect(onAction).toHaveBeenCalledWith({ type: 'discard', cardId: 2 })
   })
 
+  it('melds a single card onto your meld of its rank, or discards it', async () => {
+    const view = makeView({
+      phase: 'play',
+      melds: [{ id: 'm1', rank: 'K', cards: [card('Kh', 10), card('Kd', 11), card('Ks', 12)] }],
+      hand: [card('Kc', 1), card('5c', 2), card('6c', 3)],
+    })
+    const { click, onAction } = setup(view)
+    await click('King of clubs')
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'You can add this card to your Kings or discard it.',
+    )
+    expect(button('Discard')).toBeEnabled()
+    await click('Meld')
+    expect(onAction).toHaveBeenCalledWith({
+      type: 'meld',
+      play: { newMelds: [], additions: [{ meldId: 'm1', cardIds: [1] }] },
+    })
+  })
+
   it('drops staged cards that leave your hand, and the top discard after the draw phase', async () => {
     const hand = [card('Qs', 2), card('Qd', 3), card('4c', 4), card('5c', 5)]
     const drawView = makeView({ phase: 'draw', top: card('Qh', 1), score: -100, hand })

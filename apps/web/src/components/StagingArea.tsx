@@ -1,6 +1,12 @@
 import { RULE_ERROR_SECTIONS, type Action, type PlayerView } from '@canasta/engine'
 import { rankPlural } from '../cards'
-import { selectionTarget, stagingPreview, type Staging, type StagingAction } from '../staging'
+import {
+  selectionTarget,
+  singleAddition,
+  stagingPreview,
+  type Staging,
+  type StagingAction,
+} from '../staging'
 import { Card } from './Card'
 import { WhyLink } from './WhyLink'
 import styles from './StagingArea.module.css'
@@ -39,6 +45,12 @@ export function StagingArea({
   const run = () => {
     if (preview.kind === 'none') return
     if (onAction(preview.action)) dispatch({ type: 'clear' })
+  }
+  // One card that fits your meld of its rank: Meld adds it there, and Discard still discards it.
+  const addition = singleAddition(view, staging)
+  const canAdd = !offline && addition !== null && addition.error === null
+  const add = () => {
+    if (addition && onAction(addition.action)) dispatch({ type: 'clear' })
   }
   const nothingStaged = staging.selected.length === 0 && staging.groups.length === 0
   // Selected cards of a rank you have an unfinished meld of go onto it; no new meld is allowed.
@@ -83,7 +95,11 @@ export function StagingArea({
             <WhyLink section={RULE_ERROR_SECTIONS[preview.error.code]} />
           </>
         ) : (
-          <span className={styles.legal}>{legalText(preview.kind)}</span>
+          <span className={styles.legal}>
+            {canAdd && target !== null && preview.kind === 'discard'
+              ? `You can add this card to your ${targetRank(target)} or discard it.`
+              : legalText(preview.kind)}
+          </span>
         )}
       </p>
 
@@ -95,7 +111,12 @@ export function StagingArea({
         >
           New meld
         </button>
-        <button type="button" className={styles.primary} disabled={!ready('meld')} onClick={run}>
+        <button
+          type="button"
+          className={styles.primary}
+          disabled={!ready('meld') && !canAdd}
+          onClick={canAdd ? add : run}
+        >
           Meld
         </button>
         <button

@@ -209,6 +209,23 @@ export function stagingPreview(view: PlayerView, staging: Staging): StagingPrevi
 }
 
 /**
+ * One selected card, with nothing staged, that can also join your unfinished meld of its rank:
+ * the play that adds it there. `stagingPreview` reads that selection as a discard, so this is
+ * the other choice. Null when the selection isn't one such card.
+ */
+export function singleAddition(
+  view: PlayerView,
+  staging: Staging,
+): { action: Action; error: RuleError | null } | null {
+  if (view.status !== 'playing' || view.round?.phase !== 'play') return null
+  if (staging.groups.length > 0 || staging.selected.length !== 1) return null
+  const target = selectionTarget(view, staging.selected)
+  if (target === null) return null
+  const action: Action = { type: 'meld', play: toBatch(staging, target) }
+  return { action, error: legalityPreview(view, action) }
+}
+
+/**
  * Staging state that stays in step with the view: cards that left your hand drop out. When the
  * view prunes something, the stored state is pruned too (a guarded update during render), so a
  * card that comes back later, such as the same top discard in a later draw phase, doesn't

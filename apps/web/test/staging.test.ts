@@ -6,6 +6,7 @@ import {
   stagingReducer,
   pickupHelpers,
   selectionTarget,
+  singleAddition,
   toBatch,
   type Staging,
   type StagingAction,
@@ -199,6 +200,19 @@ describe('stagingPreview', () => {
       action: { type: 'discard', cardId: 2 },
       error: null,
     })
+  })
+
+  it('offers adding one selected card to your meld of its rank', () => {
+    const view = makeView({
+      phase: 'play',
+      melds: [{ id: 'm1', rank: '9', cards: nines }],
+      hand: [card('9d', 4), card('4c', 5), card('5c', 6), card('6c', 7)],
+    })
+    expect(singleAddition(view, { selected: [4], groups: [] })).toEqual({
+      action: { type: 'meld', play: { newMelds: [], additions: [{ meldId: 'm1', cardIds: [4] }] } },
+      error: null,
+    })
+    expect(singleAddition(view, { selected: [5], groups: [] })).toBeNull()
   })
 
   it('previews a pickup in the draw phase', () => {
