@@ -205,7 +205,8 @@ export default function PreviewPage() {
       'End the round',
       () =>
         change((d) => {
-          const total = { ann: 865, ben: 1210, cara: -35 } as Record<string, number>
+          const total: Record<string, number> = { ann: 865, ben: 1210, cara: -35 }
+          for (const p of d.players) total[p.id] ??= 120
           d.history.push({
             round: d.history.length + 1,
             endedBy: 'goingOut',
@@ -272,6 +273,35 @@ function meld(codes: string[]): Meld {
   return { id: `m${nextId()}`, rank: natural.rank as Meld['rank'], cards }
 }
 
+const EXTRA_NAMES = ['Dee', 'Eve', 'Fay', 'Gus', 'Hal']
+const EXTRA_MELDS = [
+  ['8s', '8h', '8d', '8c', '8s', '2d', 'JK'],
+  ['6h', '6s', '6d'],
+  ['10c', '10h', '10s', '2c'],
+  ['5d', '5c', '5h'],
+  ['Qd', 'Qc', 'Qh', 'Qs'],
+]
+
+/**
+ * `/dev/table?players=6` seats more opponents after Cara (up to 8 players), each with a few
+ * melds, to see how the opponent panels hold up at a crowded table.
+ */
+function extraPlayers(): PlayerView['players'] {
+  const count = Number(new URLSearchParams(window.location.search).get('players')) || 3
+  return EXTRA_NAMES.slice(0, Math.min(count, 8) - 3).map((name, i) => ({
+    id: name.toLowerCase(),
+    name,
+    score: 400 + i * 310,
+    handCount: 6 + i,
+    // Two to four melds each, from a different starting point, so the panels differ.
+    melds: Array.from({ length: 2 + (i % 3) }, (_, j) =>
+      meld(EXTRA_MELDS[(i + j) % EXTRA_MELDS.length]),
+    ),
+    red3s: i % 2 === 0 ? [card('3h')] : [],
+    turnsThisRound: 3,
+  }))
+}
+
 /** Keeps your public seat in step with your private one. */
 function syncYou(view: PlayerView) {
   const you = view.you!
@@ -331,6 +361,7 @@ function startingView(): PlayerView {
         red3s: [],
         turnsThisRound: 3,
       },
+      ...extraPlayers(),
     ],
     round: {
       number: 4,
