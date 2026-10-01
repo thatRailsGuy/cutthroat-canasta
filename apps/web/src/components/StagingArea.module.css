@@ -64,3 +64,17 @@
   background: var(--red);
   color: var(--paper);
 }
+
+@media (max-width: 600px) {
+  .staging {
+    padding: 0.6rem;
+  }
+
+  .buttons {
+    gap: 0.4rem;
+  }
+
+  .buttons button {
+    padding: 0 0.8rem;
+  }
+}

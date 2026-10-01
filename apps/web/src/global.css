@@ -63,6 +63,8 @@
   --ok: #1e6b2e;
   --bad: #a3261b;
   --radius: 12px;
+  --card-w: 4.4rem;
+  --card-h: 6.25rem;
   --shadow: 0 3px 0 var(--ink);
   --font: Karla, system-ui, -apple-system, 'Segoe UI', sans-serif;
   --display: Shrikhand, Georgia, serif;
@@ -140,6 +142,14 @@ a:hover {
 :focus-visible {
   outline: 3px solid var(--teal);
   outline-offset: 2px;
+}
+
+/* A phone: smaller cards, so a hand fits in two rows. */
+@media (max-width: 600px) {
+  :root {
+    --card-w: 3.5rem;
+    --card-h: 5rem;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

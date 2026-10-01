@@ -48,8 +48,8 @@
 .stack {
   position: relative;
   display: block;
-  width: calc(4.4rem + 8px);
-  height: calc(6.25rem + 8px);
+  width: calc(var(--card-w) + 8px);
+  height: calc(var(--card-h) + 8px);
 }
 
 .stack > * {
@@ -121,8 +121,8 @@
   position: absolute;
   left: 0;
   top: 0;
-  width: 4.4rem;
-  height: 6.25rem;
+  width: var(--card-w);
+  height: var(--card-h);
   border: 2px solid var(--ink);
   border-radius: 10px;
   background: var(--paper);
@@ -141,8 +141,8 @@
   line-height: 0;
 }
 
-/* A normal card is 4.4rem × 6.25rem. Turned sideways it is 6.25rem wide, and it sits
-   under the top card with 2.25rem sticking out to the right. */
+/* A normal card turned sideways is as wide as a card is tall, and it sits under the top
+   card with 2.25rem sticking out to the right (less on a phone, where cards are smaller). */
 .sideways {
   position: absolute;
   left: 1.2rem;
@@ -152,7 +152,7 @@
 }
 
 .pileStack:has(.sideways) {
-  padding-right: 2.25rem;
+  padding-right: calc(1.325rem + (var(--card-h) - var(--card-w)) / 2);
 }
 
 .sidewaysTop {
@@ -219,8 +219,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 4.4rem;
-  height: 6.25rem;
+  width: var(--card-w);
+  height: var(--card-h);
   border: 2px dashed var(--ink);
   border-radius: 10px;
   font-size: 0.75rem;
@@ -267,4 +267,29 @@
   border-left: 2px solid var(--ink);
   border-bottom: 2px solid var(--ink);
   transform: rotate(45deg);
+}
+
+/* A phone: the stock, the pile and its bubble share one row, to leave room for the hand. */
+@media (max-width: 600px) {
+  .center {
+    flex-wrap: nowrap;
+    gap: 1rem;
+    padding: 0.25rem 0;
+  }
+
+  .label {
+    font-size: 0.85rem;
+    text-align: center;
+  }
+
+  .bubble {
+    max-width: 9.5rem;
+    padding: 0.45rem 0.65rem;
+    font-size: 0.8rem;
+  }
+
+  .pile {
+    min-width: 5.5rem;
+    min-height: 5.5rem;
+  }
 }

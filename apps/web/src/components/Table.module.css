@@ -362,6 +362,94 @@
   white-space: nowrap;
 }
 
+/* A phone: the hand in even rows, each card overlapping the one before so a row fits the
+   screen. Up to the width a card needs, the overlap is only as much as it has to be. */
+.handRows {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.handRow {
+  display: flex;
+}
+
+.handRow > * + * {
+  margin-left: min(0.4rem, calc((100% - var(--card-w)) / (var(--per-row) - 1) - var(--card-w)));
+}
+
+/* A phone: opponents as short tiles, side by side. */
+.phoneOpponents {
+  flex-basis: 100%;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(6.5rem, 1fr));
+  gap: 0.5rem;
+}
+
+.phoneOpponents .opponent header {
+  flex-wrap: wrap;
+}
+
+.phoneOpponents .handCount {
+  flex-basis: 100%;
+  justify-items: start;
+  margin-left: 0;
+}
+
+/* A crowded table on a phone: a grid of seats, and below it the panel of the one tapped. */
+.seats {
+  flex-basis: 100%;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.seat {
+  display: grid;
+  justify-items: center;
+  gap: 0.15rem;
+  min-width: 0;
+  min-height: 0;
+  padding: 0.45rem 0.25rem 0.35rem;
+  border-radius: var(--radius);
+  font-weight: 400;
+  line-height: 1.2;
+}
+
+.seatOpen {
+  background: var(--ice);
+}
+
+.seatName {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 800;
+  font-size: 0.85rem;
+}
+
+.seatLine {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.peeked {
+  flex-basis: 100%;
+  display: grid;
+}
+
+.peeked .opponent {
+  max-width: none;
+}
+
+/* Opens the sheet with the score pad and table talk, beside the Rules button. */
+.sideButton {
+  position: fixed;
+  top: 0.5rem;
+  right: 6.25rem;
+  z-index: 5;
+}
+
 @media (max-width: 1000px) {
   .table {
     grid-template-columns: minmax(0, 1fr);
@@ -371,5 +459,38 @@
   .side {
     position: static;
     margin-top: 0;
+  }
+}
+
+@media (max-width: 600px) {
+  .table {
+    gap: 1rem;
+    padding: 0.5rem 0.75rem 1rem;
+  }
+
+  .play {
+    gap: 0.75rem;
+  }
+
+  .top {
+    gap: 0.6rem;
+  }
+
+  .logo {
+    margin-left: 0.25rem;
+    font-size: 1.8rem;
+  }
+
+  .logoSmall {
+    font-size: 0.85rem;
+  }
+
+  .you {
+    gap: 0.75rem;
+    padding: 0.75rem;
+  }
+
+  .hand {
+    padding-top: 1.1rem;
   }
 }

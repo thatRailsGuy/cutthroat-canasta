@@ -22,13 +22,16 @@ export interface OpponentPanelProps {
    */
   onReissue?: () => void
   rejoinLink?: string
-  /** A crowded table: a shorter panel, with meld chips instead of cards. */
+  /** A crowded table or a phone: a shorter panel, with meld chips instead of cards. */
   crowded?: boolean
+  /** Overrides whether melds show as chips; by default they do on a crowded panel. */
+  chips?: boolean
 }
 
 export function OpponentPanel(props: OpponentPanelProps) {
   const { player, isTurn, isConnected, isHost, seat, playing, onReissue, rejoinLink } = props
   const crowded = props.crowded ?? false
+  const chips = props.chips ?? crowded
   return (
     <section
       className={`${styles.opponent} ${crowded ? styles.crowded : ''} ${isTurn ? styles.turn : ''}`}
@@ -60,7 +63,7 @@ export function OpponentPanel(props: OpponentPanelProps) {
           {player.handCount} cards
         </span>
       </header>
-      <MeldList melds={player.melds} red3s={player.red3s} compact chips={crowded} />
+      <MeldList melds={player.melds} red3s={player.red3s} compact chips={chips} />
       {onReissue && (
         // A new link remounts the control, which clears the last copy result.
         <RejoinControl

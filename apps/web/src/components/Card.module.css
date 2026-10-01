@@ -21,8 +21,8 @@ button.card:active:not(:disabled) {
 }
 
 .normal {
-  width: 4.4rem;
-  height: 6.25rem;
+  width: var(--card-w);
+  height: var(--card-h);
 }
 
 .small {
@@ -175,6 +175,12 @@ button.selected:active:not(:disabled) {
   display: inline-flex;
   flex-wrap: wrap;
   gap: 0.25rem;
+}
+
+@media (max-width: 600px) {
+  .normal .pip {
+    font-size: 1.6rem;
+  }
 }
 
 @media print {

@@ -1,4 +1,4 @@
-import type { Action, PlayerView } from '@canasta/engine'
+import type { Action, PlayerView, PublicPlayer } from '@canasta/engine'
 import type { ClientMessage } from '@canasta/server/protocol'
 import { useState, type ReactNode } from 'react'
 import { rejoinLink } from '../api'
@@ -14,11 +14,12 @@ import { RoundEnd } from '../components/RoundEnd'
 import { RoundPoints } from '../components/RoundPoints'
 import { ScorePad } from '../components/ScorePad'
 import { ScoreSheet } from '../components/ScoreSheet'
+import { SideSheet } from '../components/SideSheet'
 import { StagingArea } from '../components/StagingArea'
 import { TableEffects } from '../components/TableEffects'
 import styles from '../components/Table.module.css'
 import type { GameState } from '../gameState'
-import { isCrowded } from '../layout'
+import { isCrowded, usePhone } from '../layout'
 import { pickupHelpers, stagedIds, useStaging } from '../staging'
 
 export interface TableProps {
@@ -49,34 +50,85 @@ export function Table({ code, view, state, send, coach }: TableProps) {
   const lastScoredThisRound = view.history.at(-1)?.round === round.number
   const yourSeat = view.players.findIndex((p) => p.id === you.id)
   const crowded = isCrowded(view)
+  const phone = usePhone()
+  const [sideOpen, setSideOpen] = useState(false)
+  // A crowded table on a phone shows opponents as seat tiles; tapping one opens its panel.
+  const seatTiles = phone && crowded
+  const [peekId, setPeekId] = useState<string | null>(null)
+  const isTurn = (p: PublicPlayer) => p.id === currentId && view.status === 'playing'
+  const opponents = view.players
+    .map((player, seat) => ({ player, seat }))
+    .filter(({ player }) => player.id !== you.id)
+  const panel = (p: PublicPlayer, seat: number) => {
+    const token = state.rejoinTokens[p.id]
+    return (
+      <OpponentPanel
+        key={p.id}
+        player={p}
+        seat={seat}
+        isTurn={isTurn(p)}
+        isConnected={state.connected.includes(p.id)}
+        isHost={p.id === state.hostId}
+        playing={view.status === 'playing'}
+        onReissue={isHost ? () => send({ type: 'reissue', playerId: p.id }) : undefined}
+        rejoinLink={token ? rejoinLink(code, token) : undefined}
+        crowded={crowded || phone}
+        // The panel opened from a seat tile has the room to show the melds' cards.
+        chips={seatTiles ? false : undefined}
+      />
+    )
+  }
+  const peeked = seatTiles ? opponents.find(({ player }) => player.id === peekId) : undefined
+  const hand = (
+    <Hand
+      cards={you.hand}
+      selected={staging.selected}
+      hidden={stagedIds(staging)}
+      fresh={drawn?.id ?? null}
+      rows={phone}
+      onToggle={(cardId) => dispatch({ type: 'toggle', cardId })}
+    />
+  )
+  const side = (
+    <>
+      <ScorePad view={view} onOpenSheet={() => setScoresOpen(true)} />
+      <Feed events={round.feed} notices={state.notices} players={view.players} quit={view.quit} />
+    </>
+  )
 
   return (
     <main className={styles.table}>
       <div className={styles.play}>
-        <header className={`${styles.top} ${crowded ? styles.crowdedTop : ''}`}>
+        {phone && coach}
+        <header className={`${styles.top} ${crowded || phone ? styles.crowdedTop : ''}`}>
           <h1 className={styles.logo}>
             <span className={styles.logoSmall}>Cutthroat</span> Canasta!
           </h1>
-          <div className={`${styles.opponents} ${crowded ? styles.crowdedOpponents : ''}`}>
-            {view.players.map((p, seat) => {
-              if (p.id === you.id) return null
-              const token = state.rejoinTokens[p.id]
-              return (
-                <OpponentPanel
-                  key={p.id}
-                  player={p}
+          {seatTiles ? (
+            <div className={styles.seats}>
+              {opponents.map(({ player, seat }) => (
+                <SeatTile
+                  key={player.id}
+                  player={player}
                   seat={seat}
-                  isTurn={p.id === currentId && view.status === 'playing'}
-                  isConnected={state.connected.includes(p.id)}
-                  isHost={p.id === state.hostId}
-                  playing={view.status === 'playing'}
-                  onReissue={isHost ? () => send({ type: 'reissue', playerId: p.id }) : undefined}
-                  rejoinLink={token ? rejoinLink(code, token) : undefined}
-                  crowded={crowded}
+                  isTurn={isTurn(player)}
+                  open={player.id === peekId}
+                  onToggle={() => setPeekId(player.id === peekId ? null : player.id)}
                 />
-              )
-            })}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div
+              className={`${styles.opponents} ${crowded ? styles.crowdedOpponents : ''} ${phone ? styles.phoneOpponents : ''}`}
+            >
+              {opponents.map(({ player, seat }) => panel(player, seat))}
+            </div>
+          )}
+          {peeked && (
+            <div id="peeked-seat" className={styles.peeked}>
+              {panel(peeked.player, peeked.seat)}
+            </div>
+          )}
         </header>
 
         <CenterPile
@@ -144,6 +196,8 @@ export function Table({ code, view, state, send, coach }: TableProps) {
             red3s={you.red3s}
             onPick={(meldId) => dispatch({ type: 'stageAdd', meldId })}
           />
+          {/* On a phone the buttons sit under the hand, where a thumb reaches them. */}
+          {phone && hand}
           {view.status === 'playing' && (
             <StagingArea
               view={view}
@@ -153,24 +207,62 @@ export function Table({ code, view, state, send, coach }: TableProps) {
               onAction={act}
             />
           )}
-          <Hand
-            cards={you.hand}
-            selected={staging.selected}
-            hidden={stagedIds(staging)}
-            fresh={drawn?.id ?? null}
-            onToggle={(cardId) => dispatch({ type: 'toggle', cardId })}
-          />
+          {!phone && hand}
         </section>
       </div>
 
-      <aside className={styles.side}>
-        {coach}
-        <ScorePad view={view} onOpenSheet={() => setScoresOpen(true)} />
-        <Feed events={round.feed} notices={state.notices} players={view.players} quit={view.quit} />
-      </aside>
+      {phone ? (
+        <>
+          <button type="button" className={styles.sideButton} onClick={() => setSideOpen(true)}>
+            Scores
+          </button>
+          <SideSheet open={sideOpen} onClose={() => setSideOpen(false)}>
+            {side}
+          </SideSheet>
+        </>
+      ) : (
+        <aside className={styles.side}>
+          {coach}
+          {side}
+        </aside>
+      )}
       <ScoreSheet view={view} open={scoresOpen} onClose={() => setScoresOpen(false)} />
       <TableEffects view={view} />
     </main>
+  )
+}
+
+/** A crowded table on a phone: one opponent's seat, which opens their panel when tapped. */
+function SeatTile({
+  player,
+  seat,
+  isTurn,
+  open,
+  onToggle,
+}: {
+  player: PublicPlayer
+  seat: number
+  isTurn: boolean
+  open: boolean
+  onToggle: () => void
+}) {
+  return (
+    <button
+      type="button"
+      className={`${styles.seat} ${isTurn ? styles.turn : ''} ${open ? styles.seatOpen : ''}`}
+      aria-expanded={open}
+      aria-controls={open ? 'peeked-seat' : undefined}
+      aria-label={`${player.name}${isTurn ? ', playing now' : ''}: ${player.score.toLocaleString('en-US')} points, ${player.handCount} cards`}
+      data-player-id={player.id}
+      onClick={onToggle}
+    >
+      <Avatar name={player.name} seat={seat} active={isTurn} />
+      <span className={styles.seatName}>{player.name}</span>
+      <span className={styles.seatLine}>{player.score.toLocaleString('en-US')}</span>
+      <span className={styles.seatLine} data-hand-target="">
+        {player.handCount} cards
+      </span>
+    </button>
   )
 }
 
