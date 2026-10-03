@@ -46,6 +46,9 @@ export function Coach({ step, hint, refusals, focus, moves, onNext, onRestart }:
   const readOnly = !current.allow && !current.waiting
   const phone = usePhone()
   const [open, setOpen] = useState(false)
+  // The step where Start over was clicked: the question goes away once the lesson moves on.
+  const [confirmAt, setConfirmAt] = useState<number | null>(null)
+  const confirming = confirmAt === step
   const ref = useRef<HTMLElement>(null)
   const tracked = useTracked(focus, ref)
 
@@ -136,6 +139,17 @@ export function Coach({ step, hint, refusals, focus, moves, onNext, onRestart }:
       <p className={styles.hint} role="status">
         {hint}
       </p>
+      {confirming && (
+        <div className={styles.confirm} role="alertdialog" aria-label="Start the lesson over?">
+          <span>Start the lesson over from the first step?</span>
+          <button type="button" className={styles.primary} onClick={onRestart}>
+            Start over
+          </button>
+          <button type="button" onClick={() => setConfirmAt(null)}>
+            Keep going
+          </button>
+        </div>
+      )}
       <div className={styles.buttons}>
         {last ? (
           <>
@@ -159,8 +173,8 @@ export function Coach({ step, hint, refusals, focus, moves, onNext, onRestart }:
                 {open ? 'Less' : 'Why?'}
               </button>
             )}
-            {step > 0 && (!phone || open) && (
-              <button type="button" className={styles.quiet} onClick={onRestart}>
+            {step > 0 && (!phone || open) && !confirming && (
+              <button type="button" className={styles.quiet} onClick={() => setConfirmAt(step)}>
                 Start over
               </button>
             )}

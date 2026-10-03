@@ -275,6 +275,23 @@
   text-decoration: none;
 }
 
+/* Asks before throwing the lesson away: Start over sits where a Next button might. */
+.confirm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  margin-top: 0.9rem;
+  padding: 0.7rem 0.8rem;
+  border: 2px dashed var(--ink);
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+.confirm span {
+  flex-basis: 100%;
+}
+
 .floating .quiet {
   margin-left: auto;
 }

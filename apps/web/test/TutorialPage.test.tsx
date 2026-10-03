@@ -60,4 +60,23 @@ describe('TutorialPage', () => {
     for (let move = 0; move < 3; move++) await act(() => vi.advanceTimersByTimeAsync(1200))
     expect(title()).toBe('Pick up the pile')
   })
+
+  it('asks before starting the lesson over', async () => {
+    const { lesson, title, click } = setup()
+    await click(lesson().getByRole('button', { name: 'Next' }))
+    expect(title()).toBe('Find your way around')
+
+    await click(lesson().getByRole('button', { name: 'Start over' }))
+    const confirm = () => lesson().queryByRole('alertdialog', { name: 'Start the lesson over?' })
+    expect(confirm()).toBeInTheDocument()
+    expect(title()).toBe('Find your way around')
+
+    await click(within(confirm()!).getByRole('button', { name: 'Keep going' }))
+    expect(confirm()).not.toBeInTheDocument()
+    expect(title()).toBe('Find your way around')
+
+    await click(lesson().getByRole('button', { name: 'Start over' }))
+    await click(within(confirm()!).getByRole('button', { name: 'Start over' }))
+    expect(title()).toBe('Welcome to the table')
+  })
 })
