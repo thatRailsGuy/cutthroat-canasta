@@ -18,8 +18,8 @@ export const CARD_VALUES: Record<Rank, number> = {
 }
 
 export const RED_THREE_BONUS = 100
-export const NATURAL_CANASTA_BONUS = 500
-export const MIXED_CANASTA_BONUS = 300
+export const CLEAN_CANASTA_BONUS = 500
+export const DIRTY_CANASTA_BONUS = 300
 export const GOING_OUT_BONUS = 100
 export const CONCEALED_HAND_BONUS = 200
 export const WINNING_SCORE = 5000

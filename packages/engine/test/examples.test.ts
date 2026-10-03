@@ -37,7 +37,7 @@ describe('rules page examples', () => {
     expect(checkMeldCards(after)?.code ?? null).toBe(example.expected)
     if (example.canasta !== undefined) {
       const meld = { id: 'm', rank: 'K' as const, cards: after }
-      const kind = !isCanasta(meld) ? null : isNaturalCanasta(meld) ? 'natural' : 'mixed'
+      const kind = !isCanasta(meld) ? null : isNaturalCanasta(meld) ? 'clean' : 'dirty'
       expect(kind).toBe(example.canasta)
     }
   })

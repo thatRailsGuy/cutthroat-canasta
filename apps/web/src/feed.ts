@@ -11,7 +11,7 @@ function playedCards(played: Played): string {
 function completed(canastas: readonly CompletedCanasta[] | undefined): string {
   if (!canastas || canastas.length === 0) return ''
   const list = canastas.map(
-    (c) => `a ${c.natural ? 'clean' : 'mixed'} canasta of ${rankPlural(c.rank)}`,
+    (c) => `a ${c.natural ? 'clean' : 'dirty'} canasta of ${rankPlural(c.rank)}`,
   )
   return `, completing ${list.join(' and ')}`
 }

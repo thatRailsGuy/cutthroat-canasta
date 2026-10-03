@@ -2,8 +2,8 @@ import type { Card } from './cards'
 import {
   CONCEALED_HAND_BONUS,
   GOING_OUT_BONUS,
-  MIXED_CANASTA_BONUS,
-  NATURAL_CANASTA_BONUS,
+  DIRTY_CANASTA_BONUS,
+  CLEAN_CANASTA_BONUS,
   RED_THREE_BONUS,
   cardValue,
 } from './constants'
@@ -22,10 +22,7 @@ export function tableScore({ melds, red3s }: { melds: Meld[]; red3s: Card[] }): 
   const meldPoints = melds.reduce((sum, m) => sum + sumValues(m.cards), 0)
   const canastaBonus = melds
     .filter(isCanasta)
-    .reduce(
-      (sum, m) => sum + (isNaturalCanasta(m) ? NATURAL_CANASTA_BONUS : MIXED_CANASTA_BONUS),
-      0,
-    )
+    .reduce((sum, m) => sum + (isNaturalCanasta(m) ? CLEAN_CANASTA_BONUS : DIRTY_CANASTA_BONUS), 0)
   // melds.length > 0 means the player made an initial meld this round; relies on
   // dealRound resetting melds at the start of each round.
   const red3Sign = melds.length > 0 ? 1 : -1

@@ -9,12 +9,12 @@ const meldOf = (codes: string[]) => ({
 })
 
 describe('canastaTopCard', () => {
-  it('shows a red card of the rank on a natural canasta', () => {
+  it('shows a red card of the rank on a clean canasta', () => {
     const top = canastaTopCard(meldOf(['Qs', 'Qc', 'Qs', 'Qh', 'Qc', 'Qs', 'Qc']))
     expect(top).toMatchObject({ rank: 'Q', suit: 'hearts' })
   })
 
-  it('shows a black card of the rank on a mixed canasta', () => {
+  it('shows a black card of the rank on a dirty canasta', () => {
     const top = canastaTopCard(meldOf(['Qh', 'Qd', 'Qc', 'Qh', 'Qd', '2h', 'JK']))
     expect(top).toMatchObject({ rank: 'Q', suit: 'clubs' })
   })

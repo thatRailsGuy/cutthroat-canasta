@@ -22,7 +22,7 @@ export interface MeldExample extends ExampleBase {
   cards: string
   expected: RuleErrorCode | null
   /** What the meld is after the play, when the play is legal. */
-  canasta?: 'natural' | 'mixed' | null
+  canasta?: 'clean' | 'dirty' | null
 }
 
 export interface PickupExample extends ExampleBase {
@@ -202,14 +202,14 @@ export const RULES_EXAMPLES: RulesExample[] = [
   },
   {
     kind: 'meld',
-    id: 'meld-canasta-goes-mixed',
+    id: 'meld-canasta-goes-dirty',
     section: 'melds',
-    title: 'A wild makes a natural canasta mixed',
-    caption: 'Adding a 2 to a natural canasta of Kings is legal, but it now scores 300, not 500.',
+    title: 'A wild makes a clean canasta dirty',
+    caption: 'Adding a 2 to a clean canasta of Kings is legal, but it now scores 300, not 500.',
     existing: 'Kh Kd Ks Kc Kh Kd Ks',
     cards: '2c',
     expected: null,
-    canasta: 'mixed',
+    canasta: 'dirty',
   },
   {
     kind: 'pickup',

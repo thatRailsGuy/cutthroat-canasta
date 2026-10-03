@@ -26,7 +26,7 @@ export interface MeldListProps {
 
 /**
  * The card shown on top of a finished canasta, in the traditional way: a red card of its rank
- * for a natural canasta, a black one for a mixed canasta. If the meld has no natural card of
+ * for a clean canasta, a black one for a dirty canasta. If the meld has no natural card of
  * that colour, a stand-in of that colour is shown.
  */
 export function canastaTopCard(meld: Meld): CardValue {
@@ -37,7 +37,7 @@ export function canastaTopCard(meld: Meld): CardValue {
 
 /**
  * Melds in rank order, each an overlapping column of cards. A finished canasta is squared up,
- * with one card on top and a ribbon saying natural or mixed.
+ * with one card on top and a ribbon saying clean or dirty.
  */
 export function MeldList({ melds, red3s, onPick, compact = false, chips = false }: MeldListProps) {
   const ordered = [...melds].sort(
@@ -50,7 +50,7 @@ export function MeldList({ melds, red3s, onPick, compact = false, chips = false 
         const canasta = isCanasta(meld)
         const natural = canasta && isNaturalCanasta(meld)
         const label = canasta
-          ? `${natural ? 'Natural' : 'Mixed'} canasta, ${meld.cards.length} cards`
+          ? `${natural ? 'Clean' : 'Dirty'} canasta, ${meld.cards.length} cards`
           : `${meld.cards.length} cards`
         const body = (
           <>
@@ -59,8 +59,8 @@ export function MeldList({ melds, red3s, onPick, compact = false, chips = false 
                 <span className={styles.squared} aria-hidden="true">
                   <Card card={canastaTopCard(meld)} size="small" />
                 </span>
-                <span className={`${styles.ribbon} ${natural ? styles.natural : styles.mixed}`}>
-                  {natural ? 'Natural' : 'Mixed'}
+                <span className={`${styles.ribbon} ${natural ? styles.clean : styles.dirty}`}>
+                  {natural ? 'Clean' : 'Dirty'}
                 </span>
               </span>
             ) : (
@@ -144,9 +144,9 @@ function MeldChips({ melds, red3s }: { melds: Meld[]; red3s: CardValue[] }) {
       {melds.map((meld) => {
         const canasta = isCanasta(meld)
         const natural = canasta && isNaturalCanasta(meld)
-        const kind = canasta ? (natural ? styles.natural : styles.mixed) : ''
+        const kind = canasta ? (natural ? styles.clean : styles.dirty) : ''
         const label = canasta
-          ? `${natural ? 'Natural' : 'Mixed'} canasta, ${meld.cards.length} cards`
+          ? `${natural ? 'Clean' : 'Dirty'} canasta, ${meld.cards.length} cards`
           : `${meld.cards.length} cards`
         return (
           <span

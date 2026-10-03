@@ -256,7 +256,7 @@ export const STEPS: Step[] = [
   {
     title: 'Make a canasta',
     task: 'Click your other aces and the 2♥, then click Meld.',
-    body: 'Seven cards make a canasta. 2s and jokers are wild: a canasta with a wild in it is mixed (300 points), and one with no wilds is clean (500 points).',
+    body: 'Seven cards make a canasta. 2s and jokers are wild: a canasta with a wild in it is dirty (300 points), and one with no wilds is clean (500 points).',
     focus: { areas: ['you'], cards: [...ACES, '2h'] },
     done: (g) => player(g, YOU).melds.some(isCanasta),
     allow: (a, g) => {

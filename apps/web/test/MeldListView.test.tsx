@@ -16,7 +16,7 @@ describe('MeldList', () => {
     render(<MeldList melds={melds} red3s={[card('3h', 30)]} />)
     expect(screen.getByRole('img', { name: 'Queens: 3 cards' })).toBeInTheDocument()
     expect(screen.getByText('3 of 7')).toBeInTheDocument()
-    expect(screen.getByRole('img', { name: 'Kings: Natural canasta, 7 cards' })).toBeInTheDocument()
+    expect(screen.getByRole('img', { name: 'Kings: Clean canasta, 7 cards' })).toBeInTheDocument()
     expect(screen.getByRole('img', { name: 'Red 3s: 1' })).toBeInTheDocument()
   })
 
@@ -29,7 +29,7 @@ describe('MeldList', () => {
       },
     ]
     render(<MeldList melds={melds} red3s={[card('3h', 30)]} chips />)
-    const kings = screen.getByRole('img', { name: 'Kings: Mixed canasta, 7 cards' })
+    const kings = screen.getByRole('img', { name: 'Kings: Dirty canasta, 7 cards' })
     expect(kings).toHaveTextContent('K×7')
     expect(kings).toHaveAttribute('data-rank', 'K')
     expect(kings).toHaveAttribute('data-canasta')

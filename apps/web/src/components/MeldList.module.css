@@ -85,11 +85,11 @@ button.meld:hover {
   transform: rotate(-4deg);
 }
 
-.natural {
+.clean {
   background: var(--red);
 }
 
-.mixed {
+.dirty {
   background: var(--teal-dark);
 }
 
@@ -126,12 +126,12 @@ button.meld:hover {
   font-weight: 800;
 }
 
-.chip.natural {
+.chip.clean {
   background: var(--red);
   color: var(--paper);
 }
 
-.chip.mixed {
+.chip.dirty {
   background: var(--teal-dark);
   color: var(--paper);
 }

@@ -5,8 +5,8 @@ import {
   MAX_PLAYERS,
   MIN_MELD_SIZE,
   MIN_PLAYERS,
-  MIXED_CANASTA_BONUS,
-  NATURAL_CANASTA_BONUS,
+  DIRTY_CANASTA_BONUS,
+  CLEAN_CANASTA_BONUS,
   RED_THREE_BONUS,
   WINNING_SCORE,
   type RuleSection,
@@ -62,7 +62,7 @@ export function QuickReference() {
           <dd>{MIN_MELD_SIZE}+ cards of one rank, at least 2 natural, wilds ≤ naturals</dd>
           <dt>Canasta</dt>
           <dd>
-            {CANASTA_SIZE}+ cards: natural {NATURAL_CANASTA_BONUS}, mixed {MIXED_CANASTA_BONUS}
+            {CANASTA_SIZE}+ cards: clean {CLEAN_CANASTA_BONUS}, dirty {DIRTY_CANASTA_BONUS}
           </dd>
           <dt>Red 3</dt>
           <dd>
@@ -197,8 +197,8 @@ export function RulesContent() {
           </li>
           <li>
             A <strong>canasta</strong> is a meld of {CANASTA_SIZE} or more cards. It is{' '}
-            <em>natural</em> with no wilds ({NATURAL_CANASTA_BONUS} bonus) and <em>mixed</em> with
-            any wild ({MIXED_CANASTA_BONUS} bonus).
+            <em>clean</em> with no wilds ({CLEAN_CANASTA_BONUS} bonus) and <em>dirty</em> with any
+            wild ({DIRTY_CANASTA_BONUS} bonus).
           </li>
           <li>
             Everything you meld in one play is checked together, so several melds can add up to your
@@ -213,7 +213,7 @@ export function RulesContent() {
           you may start another meld of that rank with at least {MIN_MELD_SIZE} cards that make a
           legal meld on their own.
         </House>
-        <House>Adding a wild to a natural canasta makes it mixed.</House>
+        <House>Adding a wild to a clean canasta makes it dirty.</House>
         <Examples section="melds" />
       </Section>
 
@@ -305,8 +305,8 @@ export function RulesContent() {
         <ul>
           <li>+ the value of every card in their melds</li>
           <li>
-            + {NATURAL_CANASTA_BONUS} for each natural canasta and {MIXED_CANASTA_BONUS} for each
-            mixed canasta
+            + {CLEAN_CANASTA_BONUS} for each clean canasta and {DIRTY_CANASTA_BONUS} for each dirty
+            canasta
           </li>
           <li>
             + {RED_THREE_BONUS} for each Red 3 if they melded this round, or − {RED_THREE_BONUS}{' '}

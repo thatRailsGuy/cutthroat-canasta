@@ -423,7 +423,7 @@ describe('feed', () => {
     ])
   })
 
-  it('records the canastas a play completes, clean or mixed', () => {
+  it('records the canastas a play completes, clean or dirty', () => {
     const queens = meld('Qh Qd Qs Qc Qh Qd')
     const kings = cards('Kh Kd Ks Kc Kh Ks 2c')
     const game = makeGame({

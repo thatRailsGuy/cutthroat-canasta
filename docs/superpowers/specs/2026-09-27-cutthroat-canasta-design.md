@@ -82,7 +82,7 @@ This section combines the V3 sheet with the decisions from the design discussion
 - **[clarified] One unfinished meld per rank.** A player can start another meld of a rank only once their meld of that rank is a canasta (after the play's additions), using at least 3 cards that form a valid meld on their own. Otherwise the play fails with `RANK_ALREADY_MELDED`. (Changed 2026-09-30 after playtesting; any number of melds per rank used to be allowed.)
 - Cards can be added from hand to any of your own melds, including a finished canasta. The meld must still be valid after the addition.
 - Melds belong to individual players. You can only add to your own melds.
-- **Canasta:** a meld of 7 or more cards. It is *natural* if it contains no wilds (500 bonus) and *mixed* if it contains any wild (300 bonus). **[clarified]** Adding a wild to a natural canasta makes it mixed.
+- **Canasta:** a meld of 7 or more cards. It is *clean* if it contains no wilds (500 bonus) and *dirty* if it contains any wild (300 bonus). **[clarified]** Adding a wild to a clean canasta makes it dirty.
 - **Meld play is atomic.** One play submits a batch of new melds and additions to existing melds, and the whole batch is validated together. This is how an initial meld made of several melds reaches its minimum.
 
 ### 3.5 Initial meld
@@ -121,7 +121,7 @@ This section combines the V3 sheet with the decisions from the design discussion
 For each player:
 
 - **+** the value of every card in their melds
-- **+** 500 for each natural canasta and 300 for each mixed canasta
+- **+** 500 for each clean canasta and 300 for each dirty canasta
 - **+** 100 for each Red 3 if they made an initial meld this round, **−** 100 for each Red 3 if they did not
 - **−** the value of every card left in their hand
 - For the player who went out: **+** 100 going-out bonus, and a further **+** 200 concealed hand bonus if they had not melded at all this round before the turn they went out on. **[clarified]** The concealed bonus still applies if they picked up the pile on that turn.
@@ -270,7 +270,7 @@ Rule constants (card values, initial meld minimums, the deck and hand-size funct
 
 - **Your hand:** sorted by rank, and cards are selected by clicking.
 - **Staging area:** builds a `MeldBatch` from selected cards (new meld, or add to one of your melds) and shows a live legal/illegal preview from `legalityPreview`. Buttons: **Meld**, **Pick up pile**, **Discard**, **Clear**.
-- **Your melds:** grouped by rank, with finished canastas marked natural or mixed.
+- **Your melds:** grouped by rank, with finished canastas marked clean or dirty.
 - **Opponent panels:** name, card count, melds, Red 3s, cumulative score, and a current-turn highlight.
 - **Center:** stock count, the top discard, pile size, and a *Frozen for you* badge with the reason.
 - **Errors:** shown as a toast with the rule message and a "Why?" link to that rule's section on the rules page.

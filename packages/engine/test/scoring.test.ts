@@ -21,7 +21,7 @@ describe('scorePlayer', () => {
     })
   })
 
-  it('gives 300 for a mixed canasta', () => {
+  it('gives 300 for a dirty canasta', () => {
     const player = makePlayer({ id: 'a', melds: [meld('Kh Kd Ks Kc 2h 2d JK')] })
     const score = scorePlayer(player, null)
     expect(score.meldPoints).toBe(130)

@@ -1,6 +1,6 @@
 import {
-  MIXED_CANASTA_BONUS,
-  NATURAL_CANASTA_BONUS,
+  DIRTY_CANASTA_BONUS,
+  CLEAN_CANASTA_BONUS,
   RED_THREE_BONUS,
   type Card,
   type CardId,
@@ -161,8 +161,8 @@ function play(root: HTMLElement, effect: TableEffect, ctx: PlayContext): number 
       const melds = seat?.querySelectorAll(`[data-rank="${effect.rank}"][data-canasta]`)
       const meld = melds?.[melds.length - 1]
       if (!meld) return ctx.delay
-      const bonus = effect.natural ? NATURAL_CANASTA_BONUS : MIXED_CANASTA_BONUS
-      mark(root, meld, styles.stamp, `${effect.natural ? 'Natural' : 'Mixed'}! +${bonus}`, {
+      const bonus = effect.natural ? CLEAN_CANASTA_BONUS : DIRTY_CANASTA_BONUS
+      mark(root, meld, styles.stamp, `${effect.natural ? 'Clean' : 'Dirty'}! +${bonus}`, {
         delay: ctx.delay,
         gleam: true,
       })

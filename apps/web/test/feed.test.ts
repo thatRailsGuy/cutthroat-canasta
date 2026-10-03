@@ -31,7 +31,7 @@ describe('describeEvent', () => {
         canastas: [{ rank: 'K', natural: false }],
         red3s: [card('3d', 2)],
       },
-      'Ann picked up 4 cards, melding K♥, completing a mixed canasta of Kings, and laid down 3♦',
+      'Ann picked up 4 cards, melding K♥, completing a dirty canasta of Kings, and laid down 3♦',
     ],
     [
       {
