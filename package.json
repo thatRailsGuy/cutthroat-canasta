@@ -13,7 +13,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "dev:server": "npm run dev -w @canasta/server",
-    "dev:web": "npm run dev -w @canasta/web"
+    "dev:web": "npm run dev -w @canasta/web",
+    "deploy": "npm run build -w @canasta/web && npm run deploy -w @canasta/server"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

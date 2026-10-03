@@ -7,7 +7,8 @@
     "./protocol": "./src/protocol.ts"
   },
   "scripts": {
-    "dev": "wrangler dev",
+    "dev": "mkdir -p ../web/dist && wrangler dev",
+    "deploy": "wrangler deploy",
     "types": "wrangler types",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"

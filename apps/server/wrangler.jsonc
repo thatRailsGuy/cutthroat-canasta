@@ -3,6 +3,13 @@
   "name": "cutthroat-canasta",
   "main": "src/index.ts",
   "compatibility_date": "2026-08-22",
+  // The built web client (npm run build -w @canasta/web). /api/* runs the Worker; any other
+  // path without a file, such as /g/ABC234, serves index.html so the client's router takes it.
+  "assets": {
+    "directory": "../web/dist",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*"],
+  },
   "durable_objects": {
     "bindings": [{ "name": "GAME_ROOM", "class_name": "GameRoom" }],
   },

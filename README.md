@@ -40,6 +40,7 @@ npm run format           # Format with Prettier
 npm run format:check     # Check formatting without modifying files
 npm run dev:server       # Run the game server locally (wrangler dev, http://localhost:8787)
 npm run dev:web          # Run the web client (Vite, http://localhost:5173; proxies /api to dev:server)
+npm run deploy           # Build the web client and deploy it with the server to Cloudflare
 ```
 
 To play locally, run `npm run dev:server` and `npm run dev:web` together in two terminals, then open `http://localhost:5173`.
@@ -51,6 +52,24 @@ npm run dev -w @canasta/web -- --host
 ```
 
 See [docs/playtest.md](docs/playtest.md) for the full playtest setup.
+
+## Deployment
+
+The app deploys as one Cloudflare Worker. The Worker runs `/api/*`, and it serves the built web client (`apps/web/dist`, set in [wrangler.jsonc](apps/server/wrangler.jsonc)) for every other path. A path with no file, such as `/g/ABC234`, gets `index.html`, so the client's router takes it. The page and the API share an origin, as they do behind the Vite proxy in development.
+
+You need a Cloudflare account. The free plan includes the SQLite-backed Durable Objects that `GameRoom` uses. Log in once:
+
+```sh
+npx -w @canasta/server wrangler login
+```
+
+Then deploy:
+
+```sh
+npm run deploy
+```
+
+This builds the web client, then runs `wrangler deploy`. Wrangler prints the address, such as `https://cutthroat-canasta.<subdomain>.workers.dev`. Add `--dry-run` to the server step (`npm run build -w @canasta/web && npm run deploy -w @canasta/server -- --dry-run`) to check the bundle without uploading it.
 
 ## Server
 
@@ -102,4 +121,4 @@ Message types are exported from `@canasta/server/protocol`.
 
 ## Status
 
-The rules engine (`packages/engine`), the server (`apps/server`) and the web client (`apps/web`) are implemented. Deployment is not set up yet. The engine is checked by a random-game simulation test that plays full games under a seeded bot and asserts invariants (card conservation, hidden-information leakage, and score-breakdown consistency) hold throughout.
+The rules engine (`packages/engine`), the server (`apps/server`) and the web client (`apps/web`) are implemented. `npm run deploy` deploys them to Cloudflare (see [Deployment](#deployment)). The engine is checked by a random-game simulation test that plays full games under a seeded bot and asserts invariants (card conservation, hidden-information leakage, and score-breakdown consistency) hold throughout.
