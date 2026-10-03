@@ -69,7 +69,7 @@ Then deploy:
 npm run deploy
 ```
 
-This builds the web client, then runs `wrangler deploy`. Wrangler prints the address, such as `https://cutthroat-canasta.<subdomain>.workers.dev`. Add `--dry-run` to the server step (`npm run build -w @canasta/web && npm run deploy -w @canasta/server -- --dry-run`) to check the bundle without uploading it.
+This builds the web client, then runs `wrangler deploy`. The game is served at https://canasta.clintcecil.com, a custom domain set in `wrangler.jsonc` (the `clintcecil.com` zone must be in the same Cloudflare account). The `workers.dev` address is turned off. Add `--dry-run` to the server step (`npm run build -w @canasta/web && npm run deploy -w @canasta/server -- --dry-run`) to check the bundle without uploading it.
 
 ## Server
 

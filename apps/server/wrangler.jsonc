@@ -3,6 +3,10 @@
   "name": "cutthroat-canasta",
   "main": "src/index.ts",
   "compatibility_date": "2026-08-22",
+  // Cloudflare makes the DNS record and certificate for a custom domain. workers.dev is off, so
+  // share links and QR codes always hold this one address.
+  "routes": [{ "pattern": "canasta.clintcecil.com", "custom_domain": true }],
+  "workers_dev": false,
   // The built web client (npm run build -w @canasta/web). /api/* runs the Worker; any other
   // path without a file, such as /g/ABC234, serves index.html so the client's router takes it.
   "assets": {
