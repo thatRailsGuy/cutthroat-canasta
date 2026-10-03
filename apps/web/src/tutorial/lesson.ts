@@ -12,6 +12,7 @@ import {
   type Rank,
   type Suit,
 } from '@canasta/engine'
+import type { Area, Focus } from './spotlight'
 
 /**
  * The practice hand: one round against Dot, on a stacked deck, so each step of the lesson has
@@ -147,9 +148,18 @@ export function playDot(game: Game): Game {
   return result.ok ? result.game : game
 }
 
+/** What a step lights up on the table. Card codes are as in the deal: 'As', '9d', 'JK'. */
+export interface StepFocus {
+  areas: Area[]
+  cards?: string[]
+}
+
 export interface Step {
   title: string
+  /** The one thing to do now, shown above the explanation. Read-only steps have none. */
+  task?: string
   body: string
+  focus?: StepFocus | ((game: Game) => StepFocus)
   /** The step is over once this holds. Steps without it wait for the Next button. */
   done?: (game: Game) => boolean
   /**
@@ -182,6 +192,8 @@ const yourPlay = (game: Game, n: number) =>
   turn(game) === n && isTurnOf(game, YOU) && game.round!.phase === 'play'
 const passed = (game: Game, n: number) => turn(game) > n || !isTurnOf(game, YOU)
 
+const ACES = ['As', 'Ah', 'Ad', 'Ac']
+
 export const STEPS: Step[] = [
   {
     title: 'Welcome to the table',
@@ -190,16 +202,21 @@ export const STEPS: Step[] = [
   {
     title: 'Find your way around',
     body: "Your hand is at the bottom, sorted by rank. The stock and the discard pile are in the middle. Dot's cards and melds are at the top. The score pad and the feed of every move are on the right.",
+    focus: { areas: ['hand', 'center', 'opponents', 'side'] },
   },
   {
     title: 'Draw a card',
-    body: 'Every turn starts with a draw. Click the stock (the face-down pile) to draw its top card.',
+    task: 'Click the stock to draw a card.',
+    body: 'Every turn starts with a draw. The stock is the face-down pile.',
+    focus: { areas: ['stock'] },
     done: (g) => yourPlay(g, 1),
     allow: (a) => (a.type === 'drawStock' ? null : 'Start by drawing from the stock.'),
   },
   {
     title: 'Make your first meld',
-    body: 'Your first meld of a round must be worth 50 points or more. That is the number next to your score. Aces are worth 20 points each. Click three or more aces in your hand, then click Meld.',
+    task: 'Click three or more aces, then click Meld.',
+    body: 'Your first meld of a round must be worth 50 points or more. That is the number next to your score. Aces are worth 20 points each.',
+    focus: { areas: ['you'], cards: ACES },
     done: (g) => player(g, YOU).melds.length > 0,
     allow: (a, g) => {
       if (a.type !== 'meld') return 'Meld your aces first.'
@@ -208,7 +225,9 @@ export const STEPS: Step[] = [
   },
   {
     title: 'Discard to end your turn',
-    body: "Every turn ends with a discard. Click the 4♣, then click Discard. Dot can take the pile with the card you throw away, so throw away cards she can't use.",
+    task: 'Click the 4♣, then click Discard.',
+    body: "Every turn ends with a discard. Dot can take the pile with the card you throw away, so throw away cards she can't use.",
+    focus: { areas: ['you'], cards: ['4c'] },
     done: (g) => passed(g, 1),
     allow: (a, g) => {
       if (a.type === 'meld') {
@@ -221,19 +240,24 @@ export const STEPS: Step[] = [
   },
   {
     title: "Dot's turn",
-    body: 'Watch the feed on the right. Dot draws, melds her queens with a joker (a wild card), and discards.',
+    body: 'Dot draws, melds her queens with a joker (a wild card), and discards.',
+    focus: { areas: ['opponents', 'center'] },
     waiting: true,
     done: (g) => isTurnOf(g, YOU),
   },
   {
     title: 'Pick up the pile',
-    body: "Dot discarded the 9♦, and you hold two 9s. Until you pick it up once, the pile is frozen for you: you can take it only with a natural pair (no wilds) of the top card's rank. Click the 9♦ on the pile, then click Pick up pile. The 9s make a meld, and the rest of the pile goes into your hand.",
+    task: 'Click the 9♦ on the pile, then click Pick up pile.',
+    body: "You hold two 9s. Until you pick it up once, the pile is frozen for you: you can take it only with a natural pair (no wilds) of the top card's rank. The 9s make a meld, and the rest of the pile goes into your hand.",
+    focus: { areas: ['pile', 'you'], cards: ['9d', '9s', '9c'] },
     done: (g) => player(g, YOU).hasPickedUpPile,
     allow: (a) => (a.type === 'pickUpPile' ? null : 'Take the pile with your two 9s.'),
   },
   {
     title: 'Make a canasta',
-    body: 'Seven cards make a canasta. Click your other aces and the 2♥, then click Meld. They go onto your aces. 2s and jokers are wild: a canasta with a wild in it is mixed (300 points), and one with no wilds is clean (500 points).',
+    task: 'Click your other aces and the 2♥, then click Meld.',
+    body: 'Seven cards make a canasta. 2s and jokers are wild: a canasta with a wild in it is mixed (300 points), and one with no wilds is clean (500 points).',
+    focus: { areas: ['you'], cards: [...ACES, '2h'] },
     done: (g) => player(g, YOU).melds.some(isCanasta),
     allow: (a, g) => {
       if (a.type !== 'meld') return 'Finish the canasta of aces first.'
@@ -244,7 +268,9 @@ export const STEPS: Step[] = [
   },
   {
     title: 'Discard again',
-    body: 'Discard the 5♠ or the 4♣ to end your turn. Keep the kings and the 7s for later.',
+    task: 'Discard the 5♠ or the 4♣.',
+    body: 'Keep the kings and the 7s for later.',
+    focus: { areas: ['you'], cards: ['5s', '4c'] },
     done: (g) => passed(g, 2),
     allow: (a, g) => {
       if (a.type === 'meld') return null
@@ -257,12 +283,18 @@ export const STEPS: Step[] = [
   {
     title: "Dot's turn",
     body: 'Dot draws and discards. She is holding a lot of cards, and every card left in her hand when the round ends counts against her.',
+    focus: { areas: ['opponents', 'center'] },
     waiting: true,
     done: (g) => isTurnOf(g, YOU),
   },
   {
     title: 'Go out',
-    body: 'Now that you have a canasta, you may go out: play every card from your hand, and the round ends. Draw from the stock. Then meld your kings, meld your 7s, and discard your last card. Going out earns 100 points.',
+    task: 'Draw, meld your kings and your 7s, then discard your last card.',
+    body: 'Now that you have a canasta, you may go out: play every card from your hand, and the round ends. Going out earns 100 points.',
+    focus: (g) =>
+      isTurnOf(g, YOU) && g.round!.phase === 'draw'
+        ? { areas: ['stock'] }
+        : { areas: ['you'], cards: ['Ks', 'Kd', 'Kc', 'Kh', '7s', '7d', '7c'] },
     done: (g) => g.status !== 'playing',
     allow: (a, g) => {
       if (a.type === 'pickUpPile') return 'Draw from the stock.'
@@ -275,8 +307,22 @@ export const STEPS: Step[] = [
   {
     title: 'You went out!',
     body: 'The round is scored. You get points for every card in your melds, plus your canasta bonus and the bonus for going out. Dot loses the points of the cards left in her hand. A real game deals new hands each round, until a round ends with someone at 5,000 or more.',
+    focus: { areas: ['roundEnd'] },
   },
 ]
+
+/** The areas and cards a step lights up in this game. */
+export function focusFor(step: number, game: Game): Focus {
+  const { focus } = STEPS[step]
+  const resolved = typeof focus === 'function' ? focus(game) : focus
+  if (!resolved) return { areas: [], cards: [] }
+  const codes = resolved.cards ?? []
+  const top = game.status === 'playing' ? game.round!.discard.at(-1) : undefined
+  const cards = [...player(game, YOU).hand, ...(top ? [top] : [])]
+    .filter((c) => codes.some((code) => matches(c, code)))
+    .map((c) => c.id)
+  return { areas: resolved.areas, cards }
+}
 
 /** Moves past the steps whose goal the game already meets. */
 export function advance(step: number, game: Game): number {

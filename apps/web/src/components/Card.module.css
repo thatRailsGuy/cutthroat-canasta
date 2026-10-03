@@ -116,6 +116,24 @@ button.selected:active:not(:disabled) {
     0 6px 0 2px var(--ink);
 }
 
+/* Pointed at by the tutorial: a gold ring that pulses outward. */
+.lit {
+  outline: 3px solid var(--gold);
+  outline-offset: 1px;
+  animation: lit 1.4s ease-out infinite;
+}
+
+@keyframes lit {
+  0% {
+    outline-offset: 1px;
+    outline-color: var(--gold);
+  }
+  100% {
+    outline-offset: 9px;
+    outline-color: rgb(242 178 51 / 0);
+  }
+}
+
 .fresh {
   box-shadow:
     0 0 0 4px var(--teal),

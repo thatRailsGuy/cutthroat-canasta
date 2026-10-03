@@ -8,6 +8,8 @@ export interface CardProps {
   size?: 'normal' | 'small'
   /** Just drawn: highlighted so it stands out. */
   fresh?: boolean
+  /** The tutorial points at it. */
+  lit?: boolean
   /** Makes the card a toggle button. Without it the card is a picture. */
   onClick?: () => void
 }
@@ -17,6 +19,7 @@ export function Card({
   selected = false,
   size = 'normal',
   fresh = false,
+  lit = false,
   onClick,
 }: CardProps) {
   const className = [
@@ -25,6 +28,7 @@ export function Card({
     card.suit ? (isRed(card) ? styles.red : styles.black) : styles.joker,
     selected ? styles.selected : '',
     fresh ? styles.fresh : '',
+    lit ? styles.lit : '',
   ].join(' ')
   const suit = card.suit ? SUIT_SYMBOLS[card.suit] : '★'
   const face = (

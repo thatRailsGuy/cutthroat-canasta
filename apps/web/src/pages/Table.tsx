@@ -1,4 +1,4 @@
-import type { Action, PlayerView, PublicPlayer } from '@canasta/engine'
+import type { Action, CardId, PlayerView, PublicPlayer } from '@canasta/engine'
 import type { ClientMessage } from '@canasta/server/protocol'
 import { useState, type ReactNode } from 'react'
 import { rejoinLink } from '../api'
@@ -27,11 +27,16 @@ export interface TableProps {
   view: PlayerView
   state: GameState
   send: (message: ClientMessage) => boolean
-  /** Shown at the top of the side column: the tutorial's lesson card. */
+  /**
+   * The tutorial's lesson card. On a phone it sits above your hand; on a wider screen it
+   * places itself over the table.
+   */
   coach?: ReactNode
+  /** Cards the tutorial points at, ringed in gold. */
+  lit?: readonly CardId[]
 }
 
-export function Table({ code, view, state, send, coach }: TableProps) {
+export function Table({ code, view, state, send, coach, lit }: TableProps) {
   const [staging, dispatch] = useStaging(view)
   const round = view.round!
   const you = view.you!
@@ -85,6 +90,7 @@ export function Table({ code, view, state, send, coach }: TableProps) {
       selected={staging.selected}
       hidden={stagedIds(staging)}
       fresh={drawn?.id ?? null}
+      lit={lit}
       rows={phone}
       onToggle={(cardId) => dispatch({ type: 'toggle', cardId })}
     />
@@ -99,13 +105,12 @@ export function Table({ code, view, state, send, coach }: TableProps) {
   return (
     <main className={styles.table}>
       <div className={styles.play}>
-        {phone && coach}
         <header className={`${styles.top} ${crowded || phone ? styles.crowdedTop : ''}`}>
           <h1 className={styles.logo}>
             <span className={styles.logoSmall}>Cutthroat</span> Canasta!
           </h1>
           {seatTiles ? (
-            <div className={styles.seats}>
+            <div className={styles.seats} data-coach="opponents">
               {opponents.map(({ player, seat }) => (
                 <SeatTile
                   key={player.id}
@@ -120,6 +125,7 @@ export function Table({ code, view, state, send, coach }: TableProps) {
           ) : (
             <div
               className={`${styles.opponents} ${crowded ? styles.crowdedOpponents : ''} ${phone ? styles.phoneOpponents : ''}`}
+              data-coach="opponents"
             >
               {opponents.map(({ player, seat }) => panel(player, seat))}
             </div>
@@ -141,6 +147,7 @@ export function Table({ code, view, state, send, coach }: TableProps) {
             dispatch({ type: 'toggle', cardId, also: pickupHelpers(view, staging) })
           }
           onDraw={() => act({ type: 'drawStock' })}
+          lit={lit}
         />
 
         {view.status === 'roundOver' && (
@@ -197,6 +204,7 @@ export function Table({ code, view, state, send, coach }: TableProps) {
             onPick={(meldId) => dispatch({ type: 'stageAdd', meldId })}
           />
           {/* On a phone the buttons sit under the hand, where a thumb reaches them. */}
+          {phone && coach}
           {phone && hand}
           {view.status === 'playing' && (
             <StagingArea
@@ -213,7 +221,12 @@ export function Table({ code, view, state, send, coach }: TableProps) {
 
       {phone ? (
         <>
-          <button type="button" className={styles.sideButton} onClick={() => setSideOpen(true)}>
+          <button
+            type="button"
+            className={styles.sideButton}
+            onClick={() => setSideOpen(true)}
+            data-coach="side"
+          >
             Scores
           </button>
           <SideSheet open={sideOpen} onClose={() => setSideOpen(false)}>
@@ -221,11 +234,11 @@ export function Table({ code, view, state, send, coach }: TableProps) {
           </SideSheet>
         </>
       ) : (
-        <aside className={styles.side}>
-          {coach}
+        <aside className={styles.side} data-coach="side">
           {side}
         </aside>
       )}
+      {!phone && coach}
       <ScoreSheet view={view} open={scoresOpen} onClose={() => setScoresOpen(false)} />
       <TableEffects view={view} />
     </main>

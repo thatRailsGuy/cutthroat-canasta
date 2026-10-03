@@ -1,6 +1,15 @@
 import { applyAction, type Action, type Game } from '@canasta/engine'
 import { describe, expect, it } from 'vitest'
-import { advance, lessonGame, player, playDot, STEPS, YOU, isTurnOf } from '../src/tutorial/lesson'
+import {
+  advance,
+  focusFor,
+  lessonGame,
+  player,
+  playDot,
+  STEPS,
+  YOU,
+  isTurnOf,
+} from '../src/tutorial/lesson'
 
 const ids = (game: Game, ...codes: string[]) => {
   const hand = [...player(game, YOU).hand]
@@ -89,5 +98,16 @@ describe('the practice hand', () => {
       play: { newMelds: [ids(drawn.game, 'Ks', 'Kd', 'Kc')], additions: [] },
     }
     expect(STEPS[3].allow!(kings, drawn.game)).toBe('For this lesson, meld only aces.')
+  })
+
+  it('lights up the cards each step is about', () => {
+    const game = lessonGame()
+    expect(focusFor(0, game)).toEqual({ areas: [], cards: [] })
+    expect(focusFor(2, game)).toEqual({ areas: ['stock'], cards: [] })
+    const drawn = applyAction(game, YOU, { type: 'drawStock' })
+    if (!drawn.ok) throw new Error(drawn.error.message)
+    const aces = player(drawn.game, YOU).hand.filter((c) => c.rank === 'A')
+    expect(focusFor(3, drawn.game).cards.sort()).toEqual(aces.map((c) => c.id).sort())
+    expect(focusFor(10, drawn.game).areas).toEqual(['you'])
   })
 })

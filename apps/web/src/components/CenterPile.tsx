@@ -13,10 +13,12 @@ export interface CenterPileProps {
   offline?: boolean
   onToggleTop: (cardId: CardId) => void
   onDraw: () => void
+  /** Cards the tutorial points at. */
+  lit?: readonly CardId[]
 }
 
 export function CenterPile(props: CenterPileProps) {
-  const { view, yourTurn, selected, staged, offline = false, onToggleTop, onDraw } = props
+  const { view, yourTurn, selected, staged, offline = false, onToggleTop, onDraw, lit = [] } = props
   const round = view.round!
   const top = round.discardTop
   const canDraw = yourTurn && round.phase === 'draw'
@@ -84,6 +86,7 @@ export function CenterPile(props: CenterPileProps) {
                 <Card
                   card={top}
                   selected={selected.includes(top.id) || topStaged}
+                  lit={lit.includes(top.id)}
                   onClick={canDraw && !topStaged ? () => onToggleTop(top.id) : undefined}
                 />
                 {isBlack3(top) && (

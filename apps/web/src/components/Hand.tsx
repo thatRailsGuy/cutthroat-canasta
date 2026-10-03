@@ -14,6 +14,8 @@ export interface HandProps {
   hidden: ReadonlySet<CardId>
   /** The card just drawn from the stock, marked so it stands out in the sorted hand. */
   fresh?: CardId | null
+  /** Cards the tutorial points at. */
+  lit?: readonly CardId[]
   /**
    * A phone: the hand is split into even rows of overlapping cards, each as wide as the
    * screen, instead of wrapping.
@@ -22,7 +24,15 @@ export interface HandProps {
   onToggle: (cardId: CardId) => void
 }
 
-export function Hand({ cards, selected, hidden, fresh = null, rows = false, onToggle }: HandProps) {
+export function Hand({
+  cards,
+  selected,
+  hidden,
+  fresh = null,
+  lit = [],
+  rows = false,
+  onToggle,
+}: HandProps) {
   const shown = sortHand(cards).filter((c) => !hidden.has(c.id))
   const toCard = (c: CardValue) => (
     <Card
@@ -30,6 +40,7 @@ export function Hand({ cards, selected, hidden, fresh = null, rows = false, onTo
       card={c}
       selected={selected.includes(c.id)}
       fresh={c.id === fresh}
+      lit={lit.includes(c.id)}
       onClick={() => onToggle(c.id)}
     />
   )
