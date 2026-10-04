@@ -1,8 +1,11 @@
 import type { Card, FeedEvent, Meld, PlayerView, Rank, Suit } from '@canasta/engine'
 import type { ClientMessage } from '@canasta/server/protocol'
 import { useState } from 'react'
+import { RulesDrawer } from '../components/RulesDrawer'
 import { initialGameState, type GameState } from '../gameState'
+import pageStyles from '../pages/Pages.module.css'
 import { Table } from '../pages/Table'
+import type { DrawerRequest } from '../rules/drawer'
 import styles from './PreviewPage.module.css'
 
 /**
@@ -11,6 +14,7 @@ import styles from './PreviewPage.module.css'
  */
 export default function PreviewPage() {
   const [view, setView] = useState(startingView)
+  const [rules, setRules] = useState<DrawerRequest | null>(null)
   const change = (fn: (draft: PlayerView) => void) =>
     setView((v) => {
       const draft = structuredClone(v)
@@ -237,6 +241,15 @@ export default function PreviewPage() {
   return (
     <>
       <Table code="PREVIEW" view={view} state={previewState} send={send} />
+      {/* The game page's Rules button, so the buttons beside it can be judged in place. */}
+      <button
+        type="button"
+        className={pageStyles.rulesButton}
+        onClick={() => setRules({ section: 'overview', id: 1 })}
+      >
+        Rules
+      </button>
+      <RulesDrawer request={rules} onClose={() => setRules(null)} />
       <details className={styles.controls}>
         <summary>Preview controls</summary>
         {acts.map(([label, run]) => (
@@ -373,6 +386,7 @@ function startingView(): PlayerView {
       discardCount: 9,
       pileFrozenForAll: false,
       frozenBy: null,
+      redeals: 0,
       feed: [
         { type: 'melded', playerId: 'ben', played: { newMelds: [], additions: [] }, canastas: [] },
         { type: 'discarded', playerId: 'ben', card: card('5c') },
@@ -388,6 +402,7 @@ function startingView(): PlayerView {
     status: 'playing',
     winners: [],
     quit: [],
+    waiting: [],
   }
   return view
 }

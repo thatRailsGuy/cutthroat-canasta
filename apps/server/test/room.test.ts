@@ -125,10 +125,16 @@ describe('join', () => {
     },
   )
 
-  it('rejects new players once the game has started', () => {
+  it('lets a new player join a started game to wait for the next hand', () => {
     const { state, ids } = started()
     const outcome = handleMessage(state, null, { type: 'join', name: 'Cat' }, ids, [])
-    expect(errorOf(outcome)).toMatchObject({ type: 'error', code: 'NOT_IN_LOBBY' })
+    expect(outcome).toMatchObject({ changed: true, bindPlayerId: 'p3' })
+    expect(outcome.state.game.waiting?.map((p) => p.name)).toEqual(['Cat'])
+
+    // Waiting still counts as seated: they can quit before being dealt in.
+    const quit = handleMessage(outcome.state, 'p3', { type: 'leave' }, ids, [])
+    expect(quit).toMatchObject({ announce: { type: 'playerQuit', playerId: 'p3', name: 'Cat' } })
+    expect(quit.state.game.waiting).toEqual([])
   })
 })
 
@@ -170,6 +176,26 @@ describe('host controls', () => {
     const { state, ids } = started()
     expect(errorOf(handleMessage(state, 'p2', { type: 'nextRound' }, ids, []))).toMatchObject({
       code: 'ROUND_NOT_OVER',
+    })
+  })
+})
+
+describe('redeal', () => {
+  it('lets only the host deal a new hand', () => {
+    const { state, ids } = started()
+    expect(errorOf(handleMessage(state, 'p2', { type: 'redeal' }, ids, []))).toMatchObject({
+      code: 'NOT_HOST',
+    })
+    const outcome = handleMessage(state, 'p1', { type: 'redeal' }, ids, [])
+    expect(outcome).toMatchObject({ changed: true, broadcast: true })
+    expect(outcome.state.game.round).toMatchObject({ number: 1, redeals: 1 })
+  })
+
+  it('rejects a new hand between rounds', () => {
+    const { state, ids } = started()
+    const roundOver: RoomState = { ...state, game: { ...state.game, status: 'roundOver' } }
+    expect(errorOf(handleMessage(roundOver, 'p1', { type: 'redeal' }, ids, []))).toMatchObject({
+      code: 'GAME_NOT_PLAYING',
     })
   })
 })

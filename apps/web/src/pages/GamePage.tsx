@@ -10,6 +10,7 @@ import { loadName, loadToken, tokenFromHash } from '../storage'
 import { useGame } from '../useGame'
 import { Lobby } from './Lobby'
 import { Table } from './Table'
+import { WaitingRoom } from './WaitingRoom'
 import styles from './Pages.module.css'
 
 /** Navigation state the home page passes: join with this name right away. */
@@ -149,9 +150,15 @@ function Session({ code, linkToken, autoJoinName, joinsByItself }: SessionProps)
         send={send}
       />
     )
+  } else if (view.waiting.some((p) => p.id === state.playerId)) {
+    body = (
+      <WaitingRoom view={view} playerId={state.playerId} connected={state.connected} send={send} />
+    )
   } else {
-    // A new key each round remounts the table, which resets staging: card ids repeat per round.
-    body = <Table key={view.round?.number} code={code} view={view} state={state} send={send} />
+    // A new key each round, and each new hand of a round, remounts the table, which resets
+    // staging: card ids repeat per deal.
+    const deal = view.round ? `${view.round.number}.${view.round.redeals}` : undefined
+    body = <Table key={deal} code={code} view={view} state={state} send={send} />
   }
 
   return (

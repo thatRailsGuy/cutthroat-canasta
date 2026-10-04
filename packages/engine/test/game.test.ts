@@ -5,6 +5,7 @@ import {
   quitGame,
   removePlayer,
   startGame,
+  redealRound,
   startNextRound,
 } from '../src/game'
 import { isRed3, isWild } from '../src/cards'
@@ -38,9 +39,45 @@ describe('lobby', () => {
     expect(result.ok ? null : result.error.code).toBe('TABLE_FULL')
   })
 
-  it('rejects joining after the game starts', () => {
+  it('seats a late joiner at the next hand, after everyone already playing', () => {
     const game = unwrap(startGame(lobby(2)))
-    const result = addPlayer(game, 'late', 'Late')
+    const joined = unwrap(addPlayer(game, 'late', 'Late'))
+    expect(joined.players.map((p) => p.id)).toEqual(['p0', 'p1'])
+    expect(joined.waiting!.map((p) => p.id)).toEqual(['late'])
+    expect(joined.round!.feed.at(-1)).toEqual({ type: 'joined', playerId: 'late', name: 'Late' })
+
+    const next = unwrap(startNextRound({ ...joined, status: 'roundOver' }))
+    expect(next.players.map((p) => p.id)).toEqual(['p0', 'p1', 'late'])
+    expect(next.waiting).toEqual([])
+    expect(next.players[2].hand.length).toBe(next.players[0].hand.length)
+    expect(next.players[2].score).toBe(0)
+  })
+
+  it('deals a waiting player in at a new hand of the same round', () => {
+    const joined = unwrap(addPlayer(unwrap(startGame(lobby(2))), 'late', 'Late'))
+    const redealt = unwrap(redealRound(joined, 'p0'))
+    expect(redealt.players.map((p) => p.id)).toEqual(['p0', 'p1', 'late'])
+  })
+
+  it('counts waiting players toward the table limit and their names', () => {
+    const joined = unwrap(addPlayer(unwrap(startGame(lobby(7))), 'late', 'Late'))
+    const full = addPlayer(joined, 'later', 'Later')
+    expect(full.ok ? null : full.error.code).toBe('TABLE_FULL')
+    const taken = addPlayer(unwrap(addPlayer(unwrap(startGame(lobby(2))), 'a', 'Ann')), 'b', 'ann')
+    expect(taken.ok ? null : taken.error.code).toBe('NAME_TAKEN')
+  })
+
+  it('lets a waiting player leave before they are dealt in', () => {
+    const joined = unwrap(addPlayer(unwrap(startGame(lobby(2))), 'late', 'Late'))
+    const left = unwrap(quitGame(joined, 'late'))
+    expect(left.waiting).toEqual([])
+    expect(left.players).toHaveLength(2)
+    expect(left.quit).toEqual([])
+  })
+
+  it('rejects joining a finished game', () => {
+    const game = unwrap(startGame(lobby(2)))
+    const result = addPlayer({ ...game, status: 'gameOver' }, 'late', 'Late')
     expect(result.ok ? null : result.error.code).toBe('NOT_IN_LOBBY')
   })
 
@@ -117,6 +154,36 @@ describe('dealing', () => {
     game.round!.feed.push({ type: 'stockOut' })
     const next = unwrap(startNextRound({ ...game, status: 'roundOver' }))
     expect(next.round!.feed).toEqual([])
+  })
+})
+
+describe('redealRound', () => {
+  it('throws out the hand and deals the same round again with a new shuffle', () => {
+    const game = unwrap(startGame(lobby(3, 9)))
+    game.round!.feed.push({ type: 'stockOut' })
+    const next = unwrap(redealRound(game, 'p0'))
+    expect(next.status).toBe('playing')
+    expect(next.round!.number).toBe(1)
+    expect(next.round!.dealer).toBe(0)
+    expect(next.round!.current).toBe(1)
+    expect(next.round!.redeals).toBe(1)
+    expect(next.round!.feed).toEqual([{ type: 'redealt', playerId: 'p0' }])
+    expect(next.players[0].hand).not.toEqual(game.players[0].hand)
+    expect(next.history).toEqual([])
+    expect(countCards(next)).toBe(countCards(game))
+  })
+
+  it('deals a different shuffle each time', () => {
+    const once = unwrap(redealRound(unwrap(startGame(lobby(3, 9))), 'p0'))
+    const twice = unwrap(redealRound(once, 'p0'))
+    expect(twice.round!.redeals).toBe(2)
+    expect(twice.players[0].hand).not.toEqual(once.players[0].hand)
+  })
+
+  it('only works while a round is being played', () => {
+    const game = unwrap(startGame(lobby(2)))
+    const result = redealRound({ ...game, status: 'roundOver' }, 'p0')
+    expect(result.ok ? null : result.error.code).toBe('GAME_NOT_PLAYING')
   })
 })
 

@@ -60,6 +60,11 @@
   --pad-rule: #b9d4e6;
   --pad-margin: #e5877a;
   --pad-ink: #1f3a78;
+  /* Seat colours past the first four, so every player at a full table has their own. */
+  --plum: #73385f;
+  --avocado: #5e6f1f;
+  --pink: #f2a6b6;
+  --walnut: #85502f;
   --ok: #1e6b2e;
   --bad: #a3261b;
   --radius: 12px;

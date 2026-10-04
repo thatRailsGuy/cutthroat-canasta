@@ -1,0 +1,150 @@
+/* Slides over from the right, like the rules. */
+.drawer {
+  margin: 0 0 0 auto;
+  height: 100dvh;
+  max-height: none;
+  /* The browser keeps a modal dialog off the screen's edges; this one is meant to touch them. */
+  max-width: none;
+  width: min(28rem, 100vw);
+  box-sizing: border-box;
+  border: none;
+  border-left: 2px solid var(--ink);
+  padding: 0;
+  overflow-y: auto;
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.drawer::backdrop {
+  background: rgb(0 0 0 / 0.4);
+}
+
+/* The padding lives in here, so a click on the dialog itself can only be the backdrop. */
+.body {
+  min-height: 100%;
+  box-sizing: border-box;
+  padding: 0 1.25rem 2rem;
+}
+
+.head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 0 -1.25rem;
+  padding: 1rem 1.25rem 0.75rem;
+  background: var(--paper);
+}
+
+.head h2 {
+  margin: 0;
+  font-size: 1.8rem;
+}
+
+.section {
+  display: grid;
+  gap: 0.6rem;
+  padding: 1rem 0;
+  border-top: 2px dashed var(--pad-rule);
+}
+
+.section h3 {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 1.2rem;
+  color: var(--red);
+}
+
+.section p {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.section > button {
+  justify-self: start;
+}
+
+.waiting {
+  font-weight: 800;
+}
+
+.confirm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  padding: 0.6rem 0.9rem;
+  border: 2px dashed var(--red);
+  border-radius: var(--radius);
+}
+
+.danger {
+  background: var(--red);
+  color: var(--paper);
+}
+
+.seats {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.seats li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem 0.5rem;
+}
+
+.seats li > button {
+  padding: 0 0.8rem;
+  font-size: 0.85rem;
+}
+
+.seat {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.online,
+.offline {
+  width: 0.65rem;
+  height: 0.65rem;
+  border-radius: 50%;
+  border: 2px solid var(--ink);
+  background: #5fbf6f;
+}
+
+.offline {
+  background: #b9b2a6;
+}
+
+/* A connected seat: the quieter button. */
+.stuck {
+  border-style: dashed;
+  box-shadow: none;
+}
+
+/* A link, once made, takes the row under the name. */
+.copy {
+  flex-basis: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.copy input {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 0.5rem;
+}

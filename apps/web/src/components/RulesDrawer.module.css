@@ -4,9 +4,16 @@
   max-height: none;
   width: min(40rem, 100vw);
   border: none;
-  padding: 1rem 1.25rem;
+  padding: 0;
   overflow-y: auto;
   background: var(--paper);
+}
+
+/* The padding lives in here, so a click on the dialog itself can only be the backdrop. */
+.body {
+  min-height: 100%;
+  box-sizing: border-box;
+  padding: 1rem 1.25rem;
 }
 
 .drawer::backdrop {
@@ -15,6 +22,6 @@
 
 .close {
   position: sticky;
-  top: 0;
+  top: 1rem;
   float: right;
 }

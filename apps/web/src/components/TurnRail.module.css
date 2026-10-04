@@ -1,0 +1,316 @@
+/* A paper strip of seats in the order they play, joined by chevrons. It fills the logo's row. */
+.rail {
+  flex: 1;
+  min-width: min(100%, 18rem);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  padding: 0.5rem 0.9rem;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+}
+
+.label {
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.stops {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.stop {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  padding: 0.3rem 0.9rem 0.3rem 0.3rem;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  background: var(--paper);
+  box-sizing: border-box;
+}
+
+/* A chevron before every stop but the first: play passes this way. */
+.stop + .stop {
+  position: relative;
+  margin-left: 2rem;
+}
+
+.stop + .stop::before {
+  content: '';
+  position: absolute;
+  left: -1.45rem;
+  top: 50%;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-top: 3px solid var(--ink);
+  border-right: 3px solid var(--ink);
+  transform: translateY(-50%) rotate(45deg);
+}
+
+.now {
+  background: var(--gold);
+  box-shadow: var(--shadow);
+}
+
+.next {
+  border-style: dashed;
+}
+
+.text {
+  display: grid;
+  line-height: 1.1;
+  min-width: 0;
+}
+
+.name {
+  max-width: 8rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 800;
+}
+
+.note {
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.now .note {
+  color: var(--ink);
+}
+
+.next .note {
+  color: var(--red);
+}
+
+.back {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-family: var(--hand);
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.back svg {
+  width: 2.1rem;
+  height: 1.6rem;
+  stroke: currentColor;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* A crowded table: the label over a loop of two rows on a dashed track. */
+.looped {
+  /* Too narrow beside the logo, the loop takes a row of its own under it. */
+  min-width: min(100%, 36rem);
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.35rem;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.loop {
+  --stop-h: 44px;
+  --track-top: calc(var(--stop-h) / 2);
+  --track-bottom: calc(var(--stop-h) / 2);
+  --track-side: 1.1rem;
+  position: relative;
+  display: grid;
+  row-gap: 1.75rem;
+  container-type: inline-size;
+}
+
+/* Through the middle of every stop; the stops' paper hides it behind them. */
+.track {
+  position: absolute;
+  inset: var(--track-top) var(--track-side) var(--track-bottom);
+  border: 3px dashed var(--muted);
+  border-radius: 22px;
+}
+
+.loopRow {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* The top row stands in from the corners, so the track turns before it reaches a stop. */
+.far {
+  padding-inline: 2rem;
+}
+
+.loop .stop {
+  height: var(--stop-h);
+  min-width: 0;
+}
+
+.you {
+  border-width: 3px;
+}
+
+.chevron,
+.side {
+  flex: none;
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  background: var(--paper);
+}
+
+.chevron {
+  box-sizing: content-box;
+  width: 1.1rem;
+  height: 1.1rem;
+  padding: 0 0.3rem;
+}
+
+/* Up the left side and down the right, centred on the track between the rows. */
+.side {
+  position: absolute;
+  z-index: 1;
+  top: calc(50% + (var(--track-top) - var(--track-bottom)) / 2);
+  width: 1.4rem;
+  height: 1.4rem;
+  transform: translateY(-50%);
+}
+
+.up {
+  left: calc(var(--track-side) - 0.7rem + 1.5px);
+}
+
+.down {
+  right: calc(var(--track-side) - 0.7rem + 1.5px);
+}
+
+/* Still short of room beside a wide screen's score pad: the top row's stops with nothing to
+   say shrink to their avatars. A phone has its own narrow stops, names and all. */
+@media (min-width: 601px) {
+  @container (max-width: 44rem) {
+    .far {
+      padding-inline: 1rem;
+    }
+
+    .far .plain {
+      padding-right: 0.3rem;
+    }
+
+    .far .plain .text {
+      display: none;
+    }
+  }
+}
+
+/* A phone: each stop is an avatar over a name, and the strip wraps. */
+@media (max-width: 600px) {
+  .rail {
+    padding: 0.4rem 0.6rem;
+  }
+
+  .stop {
+    flex-direction: column;
+    gap: 0.15rem;
+    min-height: 0;
+    padding: 0.3rem 0.35rem;
+    border-radius: var(--radius);
+  }
+
+  .stop + .stop {
+    margin-left: 1.3rem;
+  }
+
+  .stop + .stop::before {
+    left: -1rem;
+    width: 0.4rem;
+    height: 0.4rem;
+  }
+
+  .text {
+    justify-items: center;
+  }
+
+  .name {
+    max-width: 4.5rem;
+    font-size: 0.8rem;
+  }
+
+  .note {
+    font-size: 0.6rem;
+  }
+
+  .back {
+    font-size: 1.1rem;
+  }
+
+  .loop {
+    /* The avatar's middle: the stop's padding and border, then half the avatar. */
+    --stop-h: 4.6rem;
+    --track-top: calc(0.3rem + 2px + 1rem);
+    --track-bottom: calc(var(--stop-h) - var(--track-top));
+    --track-side: 0.8rem;
+    row-gap: 1.5rem;
+  }
+
+  .loop .stop {
+    justify-content: flex-start;
+    width: 3.4rem;
+    flex-shrink: 1;
+    border-color: transparent;
+  }
+
+  /* Only the stops with something to say keep an outline. */
+  .loop .now,
+  .loop .next {
+    border-color: var(--ink);
+  }
+
+  .loop .name {
+    max-width: 100%;
+  }
+
+  .far {
+    padding-inline: 0.25rem;
+  }
+
+  .chevron {
+    width: 0.7rem;
+    height: 0.7rem;
+    padding: 0;
+    margin-top: calc(var(--track-top) - 0.35rem);
+    align-self: flex-start;
+  }
+
+  .loopRow {
+    align-items: flex-start;
+  }
+}

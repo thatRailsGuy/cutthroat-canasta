@@ -32,6 +32,8 @@ export interface RoundView {
   /** The card that froze the pile for everyone. It is face up, sideways under the pile. */
   frozenBy: Card | null
   feed: FeedEvent[]
+  /** How many times this round's hand was thrown out and dealt again. */
+  redeals: number
 }
 
 export interface PlayerView {
@@ -42,6 +44,8 @@ export interface PlayerView {
   status: GameStatus
   winners: string[]
   quit: QuitPlayer[]
+  /** Players who joined mid-game and are dealt in with the next hand. */
+  waiting: { id: string; name: string }[]
 }
 
 /**
@@ -75,6 +79,8 @@ export function viewFor(game: Game, playerId: string): PlayerView {
           // `?? null`: rounds saved before `frozenBy` existed.
           frozenBy: round.frozenBy ?? null,
           feed: round.feed,
+          // `?? 0`: rounds saved before redeals existed.
+          redeals: round.redeals ?? 0,
         }
       : null,
     history: game.history,
@@ -82,5 +88,7 @@ export function viewFor(game: Game, playerId: string): PlayerView {
     winners: game.winners,
     // `?? []`: games saved before quitting existed.
     quit: game.quit ?? [],
+    // `?? []`: games saved before mid-game joining existed.
+    waiting: (game.waiting ?? []).map((p) => ({ id: p.id, name: p.name })),
   }
 }

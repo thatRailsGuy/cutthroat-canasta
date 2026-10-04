@@ -7,9 +7,9 @@ import type { Game } from './types'
 
 // The helpers below mutate `game`. Only call them on a copy made with cloneGame.
 
-export function dealRound(game: Game, number: number, dealer: number): void {
+export function dealRound(game: Game, number: number, dealer: number, redeals = 0): void {
   const n = game.players.length
-  const stock = shuffle(buildDeck(deckCount(n)), createRng(roundSeed(game.seed, number)))
+  const stock = shuffle(buildDeck(deckCount(n)), createRng(roundSeed(game.seed, number, redeals)))
   const size = handSize(n)
 
   for (const player of game.players) {
@@ -43,14 +43,23 @@ export function dealRound(game: Game, number: number, dealer: number): void {
     phase: 'draw',
     nextMeldId: 0,
     feed: [],
+    redeals,
   }
   game.status = 'playing'
   beginTurn(game)
 }
 
-/** Mixes the round number into the seed, so no two rounds of a game share a shuffle. */
-function roundSeed([a, b, c, d]: Seed, round: number): Seed {
-  return [(a ^ Math.imul(round, 0x9e3779b9)) >>> 0, b, c, d]
+/**
+ * Mixes the round number and the redeal count into the seed, so no two deals of a game share a
+ * shuffle. With no redeals the seed is the same as before redeals existed.
+ */
+function roundSeed([a, b, c, d]: Seed, round: number, redeals: number): Seed {
+  return [
+    (a ^ Math.imul(round, 0x9e3779b9)) >>> 0,
+    redeals === 0 ? b : (b ^ Math.imul(redeals, 0x85ebca6b)) >>> 0,
+    c,
+    d,
+  ]
 }
 
 export function beginTurn(game: Game): void {

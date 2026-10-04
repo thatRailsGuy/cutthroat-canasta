@@ -56,11 +56,13 @@ export function makeView(opts: {
       discardCount: top ? 3 : 0,
       pileFrozenForAll: false,
       frozenBy: null,
+      redeals: 0,
       feed: [],
     },
     history: [],
     status: 'playing',
     winners: [],
     quit: [],
+    waiting: [],
   }
 }

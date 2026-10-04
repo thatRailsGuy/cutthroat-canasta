@@ -1,4 +1,10 @@
-import type { Action, CardId, PlayerView, PublicPlayer } from '@canasta/engine'
+import {
+  MAX_PLAYERS,
+  type Action,
+  type CardId,
+  type PlayerView,
+  type PublicPlayer,
+} from '@canasta/engine'
 import type { ClientMessage } from '@canasta/server/protocol'
 import { useState, type ReactNode } from 'react'
 import { rejoinLink } from '../api'
@@ -7,6 +13,7 @@ import { Avatar } from '../components/Avatar'
 import { CenterPile } from '../components/CenterPile'
 import { Feed } from '../components/Feed'
 import { GameOver } from '../components/GameOver'
+import { HostDrawer } from '../components/HostDrawer'
 import { Hand } from '../components/Hand'
 import { MeldList } from '../components/MeldList'
 import { OpponentPanel } from '../components/OpponentPanel'
@@ -17,10 +24,12 @@ import { ScoreSheet } from '../components/ScoreSheet'
 import { SideSheet } from '../components/SideSheet'
 import { StagingArea } from '../components/StagingArea'
 import { TableEffects } from '../components/TableEffects'
+import { TurnRail } from '../components/TurnRail'
 import styles from '../components/Table.module.css'
 import type { GameState } from '../gameState'
 import { isCrowded, usePhone } from '../layout'
 import { pickupHelpers, stagedIds, useStaging } from '../staging'
+import { playOrder, turnText } from '../turnOrder'
 
 export interface TableProps {
   code: string
@@ -47,6 +56,7 @@ export function Table({ code, view, state, send, coach, lit }: TableProps) {
   const offline = state.connection !== 'open'
   const [scoresOpen, setScoresOpen] = useState(false)
   const [confirmQuit, setConfirmQuit] = useState(false)
+  const [hostOpen, setHostOpen] = useState(false)
   const inPlay = view.status === 'playing' || view.status === 'roundOver'
   // Point out the card you just drew from the stock, until you discard.
   const drawn =
@@ -61,11 +71,11 @@ export function Table({ code, view, state, send, coach, lit }: TableProps) {
   const seatTiles = phone && crowded
   const [peekId, setPeekId] = useState<string | null>(null)
   const isTurn = (p: PublicPlayer) => p.id === currentId && view.status === 'playing'
-  const opponents = view.players
-    .map((player, seat) => ({ player, seat }))
-    .filter(({ player }) => player.id !== you.id)
+  // Opponents in the order they play after you, so the row reads the same way as the turn order.
+  const opponents = playOrder(view.players, yourSeat + 1).filter(
+    ({ player }) => player.id !== you.id,
+  )
   const panel = (p: PublicPlayer, seat: number) => {
-    const token = state.rejoinTokens[p.id]
     return (
       <OpponentPanel
         key={p.id}
@@ -74,9 +84,8 @@ export function Table({ code, view, state, send, coach, lit }: TableProps) {
         isTurn={isTurn(p)}
         isConnected={state.connected.includes(p.id)}
         isHost={p.id === state.hostId}
+        isDealer={seat === round.dealer}
         playing={view.status === 'playing'}
-        onReissue={isHost ? () => send({ type: 'reissue', playerId: p.id }) : undefined}
-        rejoinLink={token ? rejoinLink(code, token) : undefined}
         crowded={crowded || phone}
         // The panel opened from a seat tile has the room to show the melds' cards.
         chips={seatTiles ? false : undefined}
@@ -105,10 +114,11 @@ export function Table({ code, view, state, send, coach, lit }: TableProps) {
   return (
     <main className={styles.table}>
       <div className={styles.play}>
-        <header className={`${styles.top} ${crowded || phone ? styles.crowdedTop : ''}`}>
+        <header className={styles.top}>
           <h1 className={styles.logo}>
             <span className={styles.logoSmall}>Cutthroat</span> Canasta!
           </h1>
+          <TurnRail view={view} />
           {seatTiles ? (
             <div className={styles.seats} data-coach="opponents">
               {opponents.map(({ player, seat }) => (
@@ -117,6 +127,7 @@ export function Table({ code, view, state, send, coach, lit }: TableProps) {
                   player={player}
                   seat={seat}
                   isTurn={isTurn(player)}
+                  isDealer={seat === round.dealer}
                   open={player.id === peekId}
                   onToggle={() => setPeekId(player.id === peekId ? null : player.id)}
                 />
@@ -167,7 +178,12 @@ export function Table({ code, view, state, send, coach, lit }: TableProps) {
           data-player-id={you.id}
         >
           <header>
-            <Avatar name={you.name} seat={yourSeat} active={yourTurn} />
+            <Avatar
+              name={you.name}
+              seat={yourSeat}
+              active={yourTurn}
+              dealer={yourSeat === round.dealer}
+            />
             <div className={styles.who}>
               <span className={styles.nameLine}>
                 <strong>{you.name}</strong>
@@ -177,27 +193,7 @@ export function Table({ code, view, state, send, coach, lit }: TableProps) {
               <span className={styles.turnText}>{turnText(view, yourTurn)}</span>
             </div>
             {drawn && <span className={styles.drewNote}>You drew the {cardLabel(drawn)}</span>}
-            <span className={styles.tools}>
-              {inPlay && !confirmQuit && (
-                <button type="button" onClick={() => setConfirmQuit(true)}>
-                  Quit game
-                </button>
-              )}
-            </span>
           </header>
-          {confirmQuit && (
-            <div className={styles.confirmQuit} role="alertdialog" aria-label="Quit the game?">
-              <span>
-                Quit for good? The others play on without you, and you can't come back to this game.
-              </span>
-              <button type="button" disabled={offline} onClick={() => send({ type: 'leave' })}>
-                Quit
-              </button>
-              <button type="button" onClick={() => setConfirmQuit(false)}>
-                Keep playing
-              </button>
-            </div>
-          )}
           <MeldList
             melds={you.melds}
             red3s={you.red3s}
@@ -219,20 +215,71 @@ export function Table({ code, view, state, send, coach, lit }: TableProps) {
         </section>
       </div>
 
-      {phone ? (
-        <>
+      {/* Fixed at the top, beside the Rules button. */}
+      <div className={styles.gameTools}>
+        {isHost && inPlay && (
           <button
             type="button"
-            className={styles.sideButton}
-            onClick={() => setSideOpen(true)}
-            data-coach="side"
+            className={styles.toolButton}
+            onClick={() => {
+              setConfirmQuit(false)
+              setHostOpen(true)
+            }}
           >
+            Host
+          </button>
+        )}
+        {inPlay && (
+          <button
+            type="button"
+            className={styles.toolButton}
+            aria-expanded={confirmQuit}
+            onClick={() => setConfirmQuit(!confirmQuit)}
+          >
+            Quit game
+          </button>
+        )}
+        {phone && (
+          <button type="button" onClick={() => setSideOpen(true)} data-coach="side">
             Scores
           </button>
-          <SideSheet open={sideOpen} onClose={() => setSideOpen(false)}>
-            {side}
-          </SideSheet>
-        </>
+        )}
+      </div>
+      {confirmQuit && (
+        <div className={styles.toolConfirm} role="alertdialog" aria-label="Quit the game?">
+          <span>
+            Quit for good? The others play on without you, and you can't come back to this game.
+          </span>
+          <button type="button" disabled={offline} onClick={() => send({ type: 'leave' })}>
+            Quit
+          </button>
+          <button type="button" onClick={() => setConfirmQuit(false)}>
+            Keep playing
+          </button>
+        </div>
+      )}
+      {isHost && (
+        <HostDrawer
+          open={hostOpen && inPlay}
+          onClose={() => setHostOpen(false)}
+          code={code}
+          seats={opponents}
+          waiting={view.waiting}
+          full={view.players.length + view.waiting.length >= MAX_PLAYERS}
+          playing={view.status === 'playing'}
+          offline={offline}
+          connected={state.connected}
+          links={Object.fromEntries(
+            Object.entries(state.rejoinTokens).map(([id, token]) => [id, rejoinLink(code, token)]),
+          )}
+          onReissue={(playerId) => send({ type: 'reissue', playerId })}
+          onRedeal={() => send({ type: 'redeal' })}
+        />
+      )}
+      {phone ? (
+        <SideSheet open={sideOpen} onClose={() => setSideOpen(false)}>
+          {side}
+        </SideSheet>
       ) : (
         <aside className={styles.side} data-coach="side">
           {side}
@@ -250,12 +297,14 @@ function SeatTile({
   player,
   seat,
   isTurn,
+  isDealer,
   open,
   onToggle,
 }: {
   player: PublicPlayer
   seat: number
   isTurn: boolean
+  isDealer: boolean
   open: boolean
   onToggle: () => void
 }) {
@@ -265,11 +314,11 @@ function SeatTile({
       className={`${styles.seat} ${isTurn ? styles.turn : ''} ${open ? styles.seatOpen : ''}`}
       aria-expanded={open}
       aria-controls={open ? 'peeked-seat' : undefined}
-      aria-label={`${player.name}${isTurn ? ', playing now' : ''}: ${player.score.toLocaleString('en-US')} points, ${player.handCount} cards`}
+      aria-label={`${player.name}${isTurn ? ', playing now' : ''}${isDealer ? ', dealer' : ''}: ${player.score.toLocaleString('en-US')} points, ${player.handCount} cards`}
       data-player-id={player.id}
       onClick={onToggle}
     >
-      <Avatar name={player.name} seat={seat} active={isTurn} />
+      <Avatar name={player.name} seat={seat} active={isTurn} dealer={isDealer} />
       <span className={styles.seatName}>{player.name}</span>
       <span className={styles.seatLine}>{player.score.toLocaleString('en-US')}</span>
       <span className={styles.seatLine} data-hand-target="">
@@ -277,16 +326,4 @@ function SeatTile({
       </span>
     </button>
   )
-}
-
-function turnText(view: PlayerView, yourTurn: boolean): string {
-  if (view.status === 'roundOver') return 'Round over'
-  if (view.status === 'gameOver') return 'Game over'
-  const round = view.round!
-  if (yourTurn) {
-    return round.phase === 'draw'
-      ? 'Your turn: draw or pick up the pile'
-      : 'Your turn: meld, then discard'
-  }
-  return `Waiting for ${view.players[round.current]?.name ?? '…'}`
 }

@@ -246,10 +246,11 @@ Rule constants (card values, initial meld minimums, the deck and hand-size funct
 - **GameRoom Durable Object.**
   - Uses the WebSocket Hibernation API, so idle games cost nothing.
   - Saves the `Game` to DO storage after every successful action.
-  - Seats 2–8 players. The first player to join is the host. Only the host can start the game, kick a player from the lobby, and issue a rejoin token. Any seated player can start the next round, so a missing host can't stall the table.
+  - Seats 2–8 players. The first player to join is the host. Only the host can start the game, kick a player from the lobby, issue a rejoin token, and throw out the hand being played to deal a new one (`redeal`). Any seated player can start the next round, so a missing host can't stall the table.
+  - A player can join after the game starts. They wait, sitting out the hand being played, and take the next seats when a new hand is dealt (the next round, or a redeal), starting at 0 points. Waiting players count toward the 8-player limit.
   - If the host leaves the lobby, the next player in seat order becomes the host.
 - **Protocol.** Every message is JSON. Incoming messages are validated with zod before they reach the engine.
-  - Client to server: `join {name, token?}`, `start`, `action {action}`, `nextRound`, `leave`, `kick {playerId}`, `reissue {playerId}`.
+  - Client to server: `join {name, token?}`, `start`, `action {action}`, `nextRound`, `redeal`, `leave`, `kick {playerId}`, `reissue {playerId}`.
   - Server to client: `joined {playerId, token}`, `state {view, hostId, connected}` (sent to each socket with its own view), `error {code, message}` (sent only to the socket that caused it), `removed {reason}` (sent to a socket whose seat was given up or kicked), `reissued {playerId, token}` (sent only to the host), `seatReissued {playerId}` (sent to every joined socket).
 - **Identity.**
   - There are no accounts. `join` without a token takes a new seat, which is only possible in the lobby, and returns a random token. The client saves the token in localStorage keyed by game code.

@@ -36,11 +36,11 @@
   text-shadow: none;
 }
 
+/* The opponents get a row of their own, under the logo and the turn order. */
 .opponents {
-  flex: 1;
+  flex-basis: 100%;
   display: flex;
   flex-wrap: wrap;
-  justify-content: flex-end;
   gap: 1rem;
   min-width: 0;
 }
@@ -159,29 +159,6 @@
   transform: rotate(-2deg);
 }
 
-.stuck {
-  justify-self: start;
-  min-height: 32px;
-  padding: 0 0.6rem;
-  font-size: 0.8rem;
-  border-style: dashed;
-  box-shadow: none;
-}
-
-.rejoin {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.rejoin input {
-  flex: 1;
-  min-width: 0;
-  min-height: 44px;
-  padding: 0 0.5rem;
-}
-
 .you {
   display: grid;
   gap: 1rem;
@@ -201,22 +178,6 @@
   border-radius: 999px;
   background: var(--teal);
   color: var(--paper);
-}
-
-.tools {
-  margin-left: auto;
-  display: flex;
-  gap: 0.5rem;
-}
-
-.confirmQuit {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem 0.75rem;
-  padding: 0.6rem 0.9rem;
-  border: 2px dashed var(--red);
-  border-radius: var(--radius);
 }
 
 /* Room above the hand for a selected card to rise into. */
@@ -310,10 +271,6 @@
 }
 
 /* A crowded table: short panels in an even grid under the logo, so the pile stays near the top. */
-.crowdedTop .opponents {
-  flex-basis: 100%;
-}
-
 .crowdedOpponents {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));
@@ -442,12 +399,42 @@
   max-width: none;
 }
 
-/* Opens the sheet with the score pad and table talk, beside the Rules button. */
-.sideButton {
+/* The game's own buttons, fixed at the top beside the Rules button: on a phone, Scores too. */
+.gameTools {
   position: fixed;
   top: 0.5rem;
   right: 6.25rem;
   z-index: 5;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.toolButton {
+  background: var(--teal-dark);
+  color: var(--paper);
+}
+
+/* "Are you sure?" for New hand and Quit game, dropped down under the buttons. */
+.toolConfirm {
+  position: fixed;
+  top: 3.75rem;
+  right: 0.5rem;
+  z-index: 6;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  width: min(24rem, calc(100vw - 1rem));
+  box-sizing: border-box;
+  padding: 0.75rem 0.9rem;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+}
+
+.toolConfirm > span {
+  flex-basis: 100%;
 }
 
 @media (max-width: 1000px) {
@@ -459,6 +446,11 @@
   .side {
     position: static;
     margin-top: 0;
+  }
+
+  /* Without the right column, the top of the play area clears the fixed buttons. */
+  .play {
+    padding-top: 3rem;
   }
 }
 
@@ -483,6 +475,11 @@
 
   .logoSmall {
     font-size: 0.85rem;
+  }
+
+  .gameTools button {
+    padding: 0 0.6rem;
+    font-size: 0.8rem;
   }
 
   .you {

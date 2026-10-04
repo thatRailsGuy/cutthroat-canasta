@@ -28,11 +28,22 @@ export function RulesDrawer({ request, onClose }: RulesDrawerProps) {
   }, [section, requestId])
 
   return (
-    <dialog ref={dialogRef} className={styles.drawer} onClose={onClose} aria-label="Rules">
-      <button type="button" className={styles.close} onClick={onClose}>
-        Close
-      </button>
-      {section !== null && <RulesContent />}
+    <dialog
+      ref={dialogRef}
+      className={styles.drawer}
+      onClose={onClose}
+      onClick={(e) => {
+        // A click on the dialog itself, not its contents, landed on the dimmed table behind it.
+        if (e.target === e.currentTarget) onClose()
+      }}
+      aria-label="Rules"
+    >
+      <div className={styles.body}>
+        <button type="button" className={styles.close} onClick={onClose}>
+          Close
+        </button>
+        {section !== null && <RulesContent />}
+      </div>
     </dialog>
   )
 }

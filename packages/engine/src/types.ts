@@ -43,6 +43,8 @@ export interface Round {
   nextMeldId: number
   /** Public events this round, oldest first. Every card in it was face up at the time. */
   feed: FeedEvent[]
+  /** How many times the host threw this round's hand out and dealt again. */
+  redeals?: number
 }
 
 /** Cards a play put on the table. */
@@ -77,6 +79,10 @@ export type FeedEvent =
   | { type: 'stockOut' }
   /** The player left the game for good. The name is kept, since they are no longer seated. */
   | { type: 'quit'; playerId: string; name: string }
+  /** The host threw out the hand and dealt a new one. Nobody scores the old one. */
+  | { type: 'redealt'; playerId: string }
+  /** Someone joined mid-game. They are not seated yet, so the name is sent too. */
+  | { type: 'joined'; playerId: string; name: string }
 
 export interface ScoreBreakdown {
   meldPoints: number
@@ -116,6 +122,8 @@ export type LogEntry =
   | { event: 'startGame' }
   | { event: 'startNextRound' }
   | { event: 'quit'; playerId: string }
+  | { event: 'redeal'; playerId: string }
+  | { event: 'join'; playerId: string }
 
 /** A player who quit a started game. Their past rounds stay in `history`. */
 export interface QuitPlayer {
@@ -137,6 +145,11 @@ export interface Game {
   winners: string[]
   /** Players who quit, in the order they quit. */
   quit: QuitPlayer[]
+  /**
+   * Players who joined after the game started, in join order. They sit out the hand being
+   * played and take the next seats when a new hand is dealt.
+   */
+  waiting?: Player[]
 }
 
 export type GameResult = { ok: true; game: Game } | { ok: false; error: RuleError }

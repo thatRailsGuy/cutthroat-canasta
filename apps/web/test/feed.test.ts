@@ -55,8 +55,13 @@ describe('describeEvent', () => {
       'Ann melded Q♦, completing a clean canasta of Queens',
     ],
     [{ type: 'quit', playerId: 'z', name: 'Zed' }, 'Zed quit the game'],
+    [
+      { type: 'joined', playerId: 'z', name: 'Zed' },
+      'Zed pulled up a chair and is dealt in next hand',
+    ],
     [{ type: 'discarded', playerId: 'a', card: card('7h', 1) }, 'Ann discarded 7♥'],
     [{ type: 'wentOut', playerId: 'a' }, 'Ann went out'],
+    [{ type: 'redealt', playerId: 'a' }, 'Ann threw out the hand and dealt a new one'],
     [{ type: 'stockOut' }, 'The stock ran out. The round is over.'],
   ]
 

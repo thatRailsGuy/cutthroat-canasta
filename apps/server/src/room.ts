@@ -3,6 +3,7 @@ import {
   applyAction,
   createGame,
   quitGame,
+  redealRound,
   removePlayer,
   startGame,
   startNextRound,
@@ -72,6 +73,8 @@ export function handleMessage(
     case 'nextRound':
       // Any seated player can deal, so a missing host can't stall the table.
       return fromResult(state, startNextRound(state.game))
+    case 'redeal':
+      return hostOnly(state, senderId, () => fromResult(state, redealRound(state.game, senderId)))
     case 'action':
       return fromResult(state, applyAction(state.game, senderId, message.action))
     case 'leave':
@@ -166,7 +169,8 @@ function quit(state: RoomState, playerId: string): Outcome {
     hostId: state.hostId === playerId ? (players[seat % players.length]?.id ?? null) : state.hostId,
     tokens: tokensWithout(state.tokens, playerId),
   }
-  const name = state.game.players[seat].name
+  const { players: before, waiting = [] } = state.game
+  const name = [...before, ...waiting].find((p) => p.id === playerId)!.name
   return {
     state: next,
     reply: [],
@@ -239,8 +243,10 @@ function noSuchPlayer(state: RoomState): Outcome {
   return protocolError(state, 'NO_SUCH_PLAYER', "That player isn't at the table.")
 }
 
+/** Has a seat at the table, or is waiting to be dealt in. */
 function isSeated(state: RoomState, playerId: string): boolean {
-  return state.game.players.some((p) => p.id === playerId)
+  const { players, waiting = [] } = state.game
+  return [...players, ...waiting].some((p) => p.id === playerId)
 }
 
 function tokensWithout(tokens: Record<string, string>, playerId: string): Record<string, string> {

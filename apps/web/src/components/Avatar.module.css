@@ -35,6 +35,52 @@
   background: var(--ice-ink);
 }
 
+.plum {
+  background: var(--plum);
+}
+
+.avocado {
+  background: var(--avocado);
+}
+
+.pink {
+  background: var(--pink);
+  color: var(--ink);
+}
+
+.walnut {
+  background: var(--walnut);
+}
+
+.small {
+  width: 2rem;
+  height: 2rem;
+}
+
+.small .initial {
+  font-size: 0.95rem;
+}
+
+/* The dealer's chip, tucked on the bottom right of the badge. */
+.dealer {
+  position: absolute;
+  right: -0.45rem;
+  bottom: -0.45rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.15rem;
+  height: 1.15rem;
+  border-radius: 50%;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: 0.65rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
 .active {
   box-shadow:
     0 0 0 3px var(--gold),
