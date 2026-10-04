@@ -6,7 +6,7 @@ import {
   type PublicPlayer,
 } from '@canasta/engine'
 import type { ClientMessage } from '@canasta/server/protocol'
-import { useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { rejoinLink } from '../api'
 import { cardLabel } from '../cards'
 import { Avatar } from '../components/Avatar'
@@ -65,6 +65,14 @@ export function Table({ code, view, state, send, coach, lit }: TableProps) {
   const lastScoredThisRound = view.history.at(-1)?.round === round.number
   const yourSeat = view.players.findIndex((p) => p.id === you.id)
   const crowded = isCrowded(view)
+  // The root font size scales the whole page, so a crowded table marks the root to shrink it.
+  useEffect(() => {
+    if (!crowded) return
+    document.documentElement.dataset.crowded = ''
+    return () => {
+      delete document.documentElement.dataset.crowded
+    }
+  }, [crowded])
   const phone = usePhone()
   const [sideOpen, setSideOpen] = useState(false)
   // A crowded table on a phone shows opponents as seat tiles; tapping one opens its panel.
@@ -102,6 +110,22 @@ export function Table({ code, view, state, send, coach, lit }: TableProps) {
       lit={lit}
       rows={phone}
       onToggle={(cardId) => dispatch({ type: 'toggle', cardId })}
+    />
+  )
+  const melds = (
+    <MeldList
+      melds={you.melds}
+      red3s={you.red3s}
+      onPick={(meldId) => dispatch({ type: 'stageAdd', meldId })}
+    />
+  )
+  const stagingArea = view.status === 'playing' && (
+    <StagingArea
+      view={view}
+      staging={staging}
+      offline={offline}
+      dispatch={dispatch}
+      onAction={act}
     />
   )
   const side = (
@@ -194,24 +218,24 @@ export function Table({ code, view, state, send, coach, lit }: TableProps) {
             </div>
             {drawn && <span className={styles.drewNote}>You drew the {cardLabel(drawn)}</span>}
           </header>
-          <MeldList
-            melds={you.melds}
-            red3s={you.red3s}
-            onPick={(meldId) => dispatch({ type: 'stageAdd', meldId })}
-          />
-          {/* On a phone the buttons sit under the hand, where a thumb reaches them. */}
-          {phone && coach}
-          {phone && hand}
-          {view.status === 'playing' && (
-            <StagingArea
-              view={view}
-              staging={staging}
-              offline={offline}
-              dispatch={dispatch}
-              onAction={act}
-            />
+          {phone ? (
+            <>
+              {melds}
+              {/* On a phone the buttons sit under the hand, where a thumb reaches them. */}
+              {coach}
+              {hand}
+              {stagingArea}
+            </>
+          ) : (
+            <>
+              {/* Side by side, so the hand stays on screen without scrolling. */}
+              <div className={styles.tableau}>
+                {melds}
+                {stagingArea}
+              </div>
+              {hand}
+            </>
           )}
-          {!phone && hand}
         </section>
       </div>
 

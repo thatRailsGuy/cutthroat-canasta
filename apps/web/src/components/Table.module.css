@@ -4,7 +4,7 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) 19rem;
   gap: 1.5rem 2rem;
-  padding: 1.25rem 1.75rem 2rem;
+  padding: 1.25rem 1.75rem;
   align-items: start;
 }
 
@@ -178,6 +178,22 @@
   border-radius: 999px;
   background: var(--teal);
   color: var(--paper);
+}
+
+/* Your melds, with the staging area beside them while they leave it room. */
+.tableau {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 1rem 1.5rem;
+}
+
+.tableau > :first-child {
+  flex: 0 1 auto;
+}
+
+.tableau > :nth-child(2) {
+  flex: 1 1 26rem;
 }
 
 /* Room above the hand for a selected card to rise into. */

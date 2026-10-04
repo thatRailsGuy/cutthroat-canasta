@@ -84,6 +84,22 @@
   box-sizing: border-box;
 }
 
+/*
+ * On a computer the whole table scales with the window, everything sized in rem with it: it
+ * fits a laptop's 1440 x 800 without scrolling, and fills a bigger monitor instead of floating
+ * small in the middle. The vh term keeps it within the height, the vw term within the width.
+ */
+@media (min-width: 1001px) {
+  html {
+    font-size: clamp(14px, min(1.15vw, 1.74vh), 24px);
+  }
+
+  /* A crowded table has two rows of opponents and a two-row turn loop: a little smaller. */
+  html[data-crowded] {
+    font-size: clamp(12px, min(1.15vw, 1.56vh), 24px);
+  }
+}
+
 body {
   margin: 0;
   font-family: var(--font);
