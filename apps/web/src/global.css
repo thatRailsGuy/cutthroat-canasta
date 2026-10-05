@@ -105,9 +105,12 @@ body {
   font-family: var(--font);
   color: var(--ink);
   background-color: var(--cloth);
+  /* One 56px square of gingham, tiled. Left to the default size, the image is the root
+     element's box, so a page shorter than the window restarts the check part-way down it. */
   background-image:
-    repeating-linear-gradient(0deg, var(--check) 0 28px, transparent 28px 56px),
-    repeating-linear-gradient(90deg, var(--check) 0 28px, transparent 28px 56px);
+    linear-gradient(0deg, var(--check) 50%, transparent 50%),
+    linear-gradient(90deg, var(--check) 50%, transparent 50%);
+  background-size: 56px 56px;
   line-height: 1.5;
 }
 
