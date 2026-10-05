@@ -1,4 +1,12 @@
-import type { Card, FeedEvent, Meld, PlayerView, Rank, Suit } from '@canasta/engine'
+import {
+  MAX_PLAYERS,
+  type Card,
+  type FeedEvent,
+  type Meld,
+  type PlayerView,
+  type Rank,
+  type Suit,
+} from '@canasta/engine'
 import type { ClientMessage } from '@canasta/server/protocol'
 import { useState } from 'react'
 import { RulesDrawer } from '../components/RulesDrawer'
@@ -206,6 +214,18 @@ export default function PreviewPage() {
         }),
     ],
     [
+      'Someone joins',
+      () =>
+        change((d) => {
+          // Mid-hand, a newcomer waits for the next deal, as the engine's `addPlayer` does.
+          const taken = [...d.players, ...d.waiting].map((p) => p.name)
+          const name = JOINER_NAMES.find((n) => !taken.includes(n))
+          if (!name || taken.length >= MAX_PLAYERS) return
+          d.waiting.push({ id: name.toLowerCase(), name })
+          feed(d, { type: 'joined', playerId: name.toLowerCase(), name })
+        }),
+    ],
+    [
       'End the round',
       () =>
         change((d) => {
@@ -287,6 +307,8 @@ function meld(codes: string[]): Meld {
 }
 
 const EXTRA_NAMES = ['Dee', 'Eve', 'Fay', 'Gus', 'Hal']
+/** Late joiners, named apart from the extra seats so the two never clash. */
+const JOINER_NAMES = ['Zoe', 'Max', 'Ivy', 'Kit', 'Lou']
 const EXTRA_MELDS = [
   ['8s', '8h', '8d', '8c', '8s', '2d', 'JK'],
   ['6h', '6s', '6d'],
