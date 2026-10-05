@@ -17,8 +17,10 @@ describe('viewFor', () => {
   })
 
   it("shows whether each player has picked up the pile, so others can see who it's frozen for", () => {
-    const picked = structuredClone(game)
-    picked.players[1].hasPickedUpPile = true
+    const picked = {
+      ...game,
+      players: game.players.map((p, i) => ({ ...p, hasPickedUpPile: i === 1 })),
+    }
     const seen = viewFor(picked, 'p0')
     expect(seen.players.map((p) => p.hasPickedUpPile)).toEqual([false, true, false])
   })
