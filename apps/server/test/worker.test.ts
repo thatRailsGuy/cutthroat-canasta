@@ -350,6 +350,30 @@ describe('play again', () => {
     ann.send({ type: 'chat', text: 'again!' })
     expect(((await ann.next()) as ChatMessage).line.anchor).toMatchObject({ game: 2, round: null })
   })
+
+  it('lets a player leave a finished game, keeping the standings and leaving them out of the next', async () => {
+    const { code, ann, bob, annJoined, bobJoined } = await startedGame()
+    const stub = env.GAME_ROOM.get(env.GAME_ROOM.idFromName(code))
+    await runInDurableObject(stub, async (instance) => {
+      ;(instance as unknown as { room: RoomState }).room.game.status = 'gameOver'
+    })
+
+    ann.send({ type: 'leave' })
+    expect(await ann.next()).toEqual({ type: 'removed', reason: 'left' })
+    const { view, hostId, connected } = await nextState(bob)
+    expect(view.status).toBe('gameOver')
+    expect(view.players.map((p) => p.name)).toEqual(['Ann', 'Bob'])
+    expect(hostId).toBe(bobJoined.playerId)
+    expect(connected).toEqual([bobJoined.playerId])
+    await ann.expectQuiet()
+
+    const stale = await connect(code)
+    stale.send({ type: 'join', name: 'Ann', token: annJoined.token })
+    expect(await stale.next()).toMatchObject({ type: 'error', code: 'UNKNOWN_TOKEN' })
+
+    bob.send({ type: 'playAgain' })
+    expect((await nextState(bob)).view.players.map((p) => p.name)).toEqual(['Bob'])
+  })
 })
 
 describe('chat', () => {

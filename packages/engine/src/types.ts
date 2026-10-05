@@ -125,6 +125,7 @@ export type LogEntry =
   | { event: 'redeal'; playerId: string }
   | { event: 'join'; playerId: string }
   | { event: 'restart' }
+  | { event: 'leave'; playerId: string }
 
 /** A player who quit a started game. Their past rounds stay in `history`. */
 export interface QuitPlayer {
@@ -155,6 +156,11 @@ export interface Game {
   number?: number
   /** Who deals round 1. Play again sets it to the player after the last game's last dealer. */
   firstDealer?: string
+  /**
+   * Players who left after the game ended, in the order they left. They stay in `players`, so
+   * the final standings don't change, and Play again leaves them out.
+   */
+  left?: string[]
 }
 
 export type GameResult = { ok: true; game: Game } | { ok: false; error: RuleError }

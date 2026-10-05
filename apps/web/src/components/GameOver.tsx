@@ -9,6 +9,8 @@ export interface GameOverProps {
   connected: readonly string[]
   offline: boolean
   onPlayAgain: () => void
+  /** Gives up the seat for good. The page goes home once the server confirms. */
+  onLeave: () => void
 }
 
 export function GameOver({
@@ -18,6 +20,7 @@ export function GameOver({
   connected,
   offline,
   onPlayAgain,
+  onLeave,
 }: GameOverProps) {
   const ranked = [...view.players].sort((a, b) => b.score - a.score)
   const winnerNames = view.winners.map((id) => view.players.find((p) => p.id === id)?.name ?? '?')
@@ -28,7 +31,8 @@ export function GameOver({
   const host = seated.find((p) => p.id === hostId)
   // The host starts the next game. While they're away, anyone at the table can.
   const hostHere = host !== undefined && connected.includes(host.id)
-  const canStart = seated.some((p) => p.id === playerId) && (playerId === hostId || !hostHere)
+  const isSeated = seated.some((p) => p.id === playerId)
+  const canStart = isSeated && (playerId === hostId || !hostHere)
   return (
     <section className={styles.gameOver} aria-label="Game over">
       <h2>{names.length > 1 ? `${names.join(' and ')} share the win!` : `${names[0]} wins!`}</h2>
@@ -85,7 +89,19 @@ export function GameOver({
           </button>
         )}
         {/* A link, so it still opens in a new tab, drawn as one of the table's buttons. */}
-        <Link className={styles.menuLink} to="/">
+        <Link
+          className={styles.menuLink}
+          to="/"
+          onClick={(event) => {
+            // A plain click gives up the seat, so Play again doesn't keep it. A new tab only
+            // opens the menu, and offline the link just goes home: the seat stays.
+            const newTab =
+              event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey
+            if (newTab || offline || !isSeated) return
+            event.preventDefault()
+            onLeave()
+          }}
+        >
           Main menu
         </Link>
       </div>

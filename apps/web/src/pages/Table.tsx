@@ -277,6 +277,7 @@ export function Table({ code, view, state, send, talk, coach, lit }: TableProps)
               connected={state.connected}
               offline={offline}
               onPlayAgain={() => send({ type: 'playAgain' })}
+              onLeave={() => send({ type: 'leave' })}
             />
           </>
         )}

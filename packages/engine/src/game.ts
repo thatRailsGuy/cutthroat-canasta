@@ -108,7 +108,8 @@ export function startNextRound(game: Game): GameResult {
 /**
  * Play again: takes a finished game back to the lobby with the same players, so more can join
  * before the host starts. Scores, rounds and quits start over, anyone waiting takes a seat,
- * and the player after the last dealer deals first. `seed` must be new, or the deals repeat.
+ * and the player after the last dealer deals first. Players who left the finished game don't
+ * come back. `seed` must be new, or the deals repeat.
  */
 export function restartGame(game: Game, seed: Seed): GameResult {
   if (game.status !== 'gameOver') {
@@ -116,7 +117,13 @@ export function restartGame(game: Game, seed: Seed): GameResult {
   }
   const next = cloneGame(game)
   const round = next.round
-  const firstDealer = round ? next.players[(round.dealer + 1) % next.players.length]?.id : undefined
+  // `?? []`: games saved before leaving a finished game existed.
+  const left = new Set(game.left ?? [])
+  // The seats from the one after the last dealer round to the dealer. The first still here deals.
+  const after = round ? (round.dealer + 1) % next.players.length : 0
+  const order = round ? [...next.players.slice(after), ...next.players.slice(0, after)] : []
+  const firstDealer = order.find((p) => !left.has(p.id))?.id
+  next.players = next.players.filter((p) => !left.has(p.id))
   seatWaiting(next)
   for (const player of next.players) {
     player.score = 0
@@ -134,6 +141,7 @@ export function restartGame(game: Game, seed: Seed): GameResult {
   next.seed = seed
   next.winners = []
   next.quit = []
+  next.left = []
   // `?? 1`: games saved before Play again existed were the table's first.
   next.number = (game.number ?? 1) + 1
   next.firstDealer = firstDealer
@@ -204,5 +212,29 @@ export function quitGame(game: Game, id: string): GameResult {
     next.status = 'gameOver'
     next.winners = [next.players[0].id]
   }
+  return { ok: true, game: next }
+}
+
+/**
+ * A player leaves a finished game for good. They stay in `players`, so everyone else's final
+ * standings don't change, and Play again leaves them out. Someone still waiting for a seat was
+ * never in the standings, so they just go. Throws for an unknown id: callers check the seat
+ * exists.
+ */
+export function leaveGame(game: Game, id: string): GameResult {
+  if (game.status !== 'gameOver') {
+    return fail('GAME_NOT_OVER', 'You can only leave a game this way once it is over.')
+  }
+  const next = cloneGame(game)
+  const waiting = next.waiting?.findIndex((p) => p.id === id) ?? -1
+  if (waiting !== -1) {
+    next.waiting!.splice(waiting, 1)
+  } else if (game.players.some((p) => p.id === id)) {
+    // `?? []`: games saved before leaving a finished game existed.
+    next.left = [...(next.left ?? []).filter((left) => left !== id), id]
+  } else {
+    throw new Error(`Unknown player: ${id}`)
+  }
+  next.log.push({ event: 'leave', playerId: id })
   return { ok: true, game: next }
 }

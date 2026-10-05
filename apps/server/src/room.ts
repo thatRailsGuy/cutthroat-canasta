@@ -2,6 +2,7 @@ import {
   addPlayer,
   applyAction,
   createGame,
+  leaveGame,
   quitGame,
   redealRound,
   removePlayer,
@@ -84,9 +85,9 @@ export function handleMessage(
     case 'action':
       return fromResult(state, applyAction(state.game, senderId, message.action))
     case 'leave':
-      return state.game.status === 'lobby'
-        ? removeSeat(state, senderId, 'left')
-        : quit(state, senderId)
+      if (state.game.status === 'lobby') return removeSeat(state, senderId, 'left')
+      if (state.game.status === 'gameOver') return leaveFinished(state, senderId)
+      return quit(state, senderId)
     case 'kick':
       return hostOnly(state, senderId, () => removeSeat(state, message.playerId, 'kicked'))
     case 'reissue':
@@ -190,6 +191,37 @@ function quit(state: RoomState, playerId: string): Outcome {
 }
 
 /**
+ * A player leaves a finished game, so Play again doesn't seat them. Their score stays in the
+ * final standings. If the host leaves, the next seat after them still here becomes host.
+ */
+function leaveFinished(state: RoomState, playerId: string): Outcome {
+  if (!isSeated(state, playerId)) return noSuchPlayer(state)
+  const result = leaveGame(state.game, playerId)
+  if (!result.ok) return ruleErrorOutcome(state, result.error)
+  const next: RoomState = {
+    ...state,
+    game: result.game,
+    hostId: state.hostId === playerId ? nextHost(result.game, playerId) : state.hostId,
+    tokens: tokensWithout(state.tokens, playerId),
+  }
+  return {
+    state: next,
+    reply: [],
+    detach: { playerId, reason: 'left' },
+    changed: true,
+    broadcast: true,
+  }
+}
+
+/** The first seat after the old host's that is still here, or else anyone waiting. */
+function nextHost(game: Game, hostId: string): string | null {
+  const { players, waiting = [], left = [] } = game
+  const seat = players.findIndex((p) => p.id === hostId)
+  const order = [...players.slice(seat + 1), ...players.slice(0, seat + 1), ...waiting]
+  return order.find((p) => !left.includes(p.id))?.id ?? null
+}
+
+/**
  * Replaces a disconnected player's tokens with a new one, which the host shares as a link.
  * The whole table is told, so the host can't quietly take over a seat and read its hand.
  */
@@ -275,10 +307,10 @@ function noSuchPlayer(state: RoomState): Outcome {
   return protocolError(state, 'NO_SUCH_PLAYER', "That player isn't at the table.")
 }
 
-/** Has a seat at the table, or is waiting to be dealt in. */
+/** Has a seat at the table, or is waiting to be dealt in, and hasn't left a finished game. */
 function isSeated(state: RoomState, playerId: string): boolean {
-  const { players, waiting = [] } = state.game
-  return [...players, ...waiting].some((p) => p.id === playerId)
+  const { players, waiting = [], left = [] } = state.game
+  return [...players, ...waiting].some((p) => p.id === playerId) && !left.includes(playerId)
 }
 
 function tokensWithout(tokens: Record<string, string>, playerId: string): Record<string, string> {

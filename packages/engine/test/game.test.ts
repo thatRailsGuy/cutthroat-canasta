@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   addPlayer,
   createGame,
+  leaveGame,
   quitGame,
   removePlayer,
   restartGame,
@@ -364,11 +365,69 @@ describe('restartGame', () => {
     expect(unwrap(startGame(lobbyAgain)).round!.dealer).toBe(0)
   })
 
+  it('leaves out players who left the finished game', () => {
+    const next = unwrap(restartGame(unwrap(leaveGame(finished(), 'p0')), seedOf(9)))
+    expect(next.players.map((p) => p.id)).toEqual(['p1', 'p2', 'p3'])
+    expect(next.left).toEqual([])
+  })
+
+  it('has the next player still here deal first when the one after the dealer left', () => {
+    // p1 dealt, so p2 would deal first, but p2 left.
+    const lobbyAgain = unwrap(restartGame(unwrap(leaveGame(finished(), 'p2')), seedOf(9)))
+    expect(lobbyAgain.firstDealer).toBe('p0')
+  })
+
+  it('restarts a game saved before leaving a finished game existed', () => {
+    const game: Game = { ...finished(), left: undefined }
+    expect(unwrap(restartGame(game, seedOf(9))).players).toHaveLength(4)
+  })
+
   it('deals new hands with the new seed', () => {
     // The same four players in a first game with the old seed.
     const game = finished()
     const before = unwrap(startGame(lobby(4))).players[0].hand.map((c) => c.id)
     const after = unwrap(startGame(unwrap(restartGame(game, seedOf(9))))).players[0].hand
     expect(after.map((c) => c.id)).not.toEqual(before)
+  })
+})
+
+describe('leaveGame', () => {
+  /** Three players at game over. p3 waits for a seat. */
+  function finished(): Game {
+    const game = unwrap(addPlayer(unwrap(startGame(lobby(3))), 'p3', 'Player 3'))
+    game.status = 'gameOver'
+    game.players[1].score = 5120
+    game.winners = ['p1']
+    return game
+  }
+
+  it('refuses before the game is over', () => {
+    const result = leaveGame(unwrap(startGame(lobby(2))), 'p0')
+    expect(result.ok ? null : result.error.code).toBe('GAME_NOT_OVER')
+  })
+
+  it('throws for a player who is not seated', () => {
+    expect(() => leaveGame(finished(), 'stranger')).toThrow('Unknown player')
+  })
+
+  it('records the player but keeps them in the final standings', () => {
+    const game = finished()
+    const next = unwrap(leaveGame(game, 'p1'))
+    expect(next.left).toEqual(['p1'])
+    expect(next.players).toEqual(game.players)
+    expect(next.winners).toEqual(['p1'])
+    expect(next.status).toBe('gameOver')
+    expect(next.log.at(-1)).toEqual({ event: 'leave', playerId: 'p1' })
+  })
+
+  it('takes a waiting player off the waiting list', () => {
+    const next = unwrap(leaveGame(finished(), 'p3'))
+    expect(next.waiting).toEqual([])
+    expect(next.left ?? []).toEqual([])
+  })
+
+  it('works on a game saved before leaving a finished game existed', () => {
+    const game: Game = { ...finished(), left: undefined }
+    expect(unwrap(leaveGame(game, 'p0')).left).toEqual(['p0'])
   })
 })

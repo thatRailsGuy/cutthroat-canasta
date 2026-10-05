@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router'
 import { describe, expect, it, vi } from 'vitest'
@@ -10,6 +10,7 @@ function renderGameOver(props: Partial<GameOverProps> = {}) {
   const view = { ...makeView({ hand: [], phase: 'draw' }), status: 'gameOver' as const }
   view.winners = ['bob']
   const onPlayAgain = vi.fn()
+  const onLeave = vi.fn()
   render(
     <MemoryRouter>
       <GameOver
@@ -19,11 +20,12 @@ function renderGameOver(props: Partial<GameOverProps> = {}) {
         connected={['you', 'bob']}
         offline={false}
         onPlayAgain={onPlayAgain}
+        onLeave={onLeave}
         {...props}
       />
     </MemoryRouter>,
   )
-  return { onPlayAgain }
+  return { onPlayAgain, onLeave }
 }
 
 describe('GameOver', () => {
@@ -59,5 +61,26 @@ describe('GameOver', () => {
   it('can’t play again while offline', () => {
     renderGameOver({ offline: true })
     expect(screen.getByRole('button', { name: 'Play again' })).toBeDisabled()
+  })
+
+  it('gives up the seat from Main menu', async () => {
+    const { onLeave } = renderGameOver()
+    await userEvent.click(screen.getByRole('link', { name: 'Main menu' }))
+    expect(onLeave).toHaveBeenCalled()
+  })
+
+  it('only opens the main menu in a new tab, keeping the seat', () => {
+    const { onLeave } = renderGameOver()
+    const link = screen.getByRole('link', { name: 'Main menu' })
+    fireEvent.click(link, { ctrlKey: true })
+    fireEvent.click(link, { metaKey: true })
+    fireEvent.click(link, { button: 1 })
+    expect(onLeave).not.toHaveBeenCalled()
+  })
+
+  it('goes home from Main menu while offline, keeping the seat', async () => {
+    const { onLeave } = renderGameOver({ offline: true })
+    await userEvent.click(screen.getByRole('link', { name: 'Main menu' }))
+    expect(onLeave).not.toHaveBeenCalled()
   })
 })

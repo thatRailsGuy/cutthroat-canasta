@@ -10,6 +10,7 @@ export { scorePlayer, scoreRound, tableScore } from './scoring'
 export {
   addPlayer,
   createGame,
+  leaveGame,
   quitGame,
   redealRound,
   removePlayer,

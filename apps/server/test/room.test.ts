@@ -260,6 +260,47 @@ describe('leave', () => {
     expect(outcome.state.game.winners).toEqual(['p1'])
   })
 
+  it('frees the seat for good at game over, but keeps the final standings', () => {
+    const { state, ids } = roomWith(['Ann', 'Bob', 'Cat'])
+    const game = handleMessage(state, 'p1', { type: 'start' }, ids, []).state
+    const over = { ...game, game: { ...game.game, status: 'gameOver' as const } }
+    const outcome = handleMessage(over, 'p2', { type: 'leave' }, ids, [])
+    expect(outcome).toMatchObject({
+      changed: true,
+      broadcast: true,
+      reply: [],
+      detach: { playerId: 'p2', reason: 'left' },
+    })
+    expect(outcome.announce).toBeUndefined()
+    expect(outcome.state.game.players.map((p) => p.id)).toEqual(['p1', 'p2', 'p3'])
+    expect(outcome.state.game.left).toEqual(['p2'])
+    expect(Object.values(outcome.state.tokens)).toEqual(['p1', 'p3'])
+    expect(outcome.state.hostId).toBe('p1')
+
+    const again = handleMessage(outcome.state, 'p1', { type: 'playAgain' }, ids, ['p1', 'p3'])
+    expect(again.state.game.players.map((p) => p.id)).toEqual(['p1', 'p3'])
+  })
+
+  it('makes the next seat still here host when the host leaves at game over', () => {
+    const { state, ids } = roomWith(['Ann', 'Bob', 'Cat'])
+    const game = handleMessage(state, 'p1', { type: 'start' }, ids, []).state
+    const over = { ...game, game: { ...game.game, status: 'gameOver' as const, left: ['p2'] } }
+    expect(handleMessage(over, 'p1', { type: 'leave' }, ids, []).state.hostId).toBe('p3')
+  })
+
+  it('leaves no host when the last player leaves a finished game', () => {
+    const { state, ids } = started()
+    const over = { ...state, game: { ...state.game, status: 'gameOver' as const, left: ['p2'] } }
+    expect(handleMessage(over, 'p1', { type: 'leave' }, ids, []).state.hostId).toBeNull()
+  })
+
+  it('treats a player who left a finished game as gone', () => {
+    const { state, ids } = started()
+    const over = { ...state, game: { ...state.game, status: 'gameOver' as const, left: ['p2'] } }
+    const outcome = handleMessage(over, 'p1', { type: 'reissue', playerId: 'p2' }, ids, ['p1'])
+    expect(errorOf(outcome)).toMatchObject({ code: 'NO_SUCH_PLAYER' })
+  })
+
   it('requires joining first', () => {
     const { state, ids } = roomWith(['Ann'])
     expect(errorOf(handleMessage(state, null, { type: 'leave' }, ids, []))).toMatchObject({
