@@ -278,6 +278,26 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* The game-over link home, drawn like the paper buttons around it. */
+.menuLink {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 1.1rem;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: var(--shadow);
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.menuLink:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 var(--ink);
+}
+
 /* A hand left over at round end: runs of one rank, each a small overlapping fan. */
 .leftover {
   display: inline-flex;

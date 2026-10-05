@@ -35,7 +35,10 @@ export function GameOver({ view }: { view: PlayerView }) {
           ))}
         </tbody>
       </table>
-      <Link to="/">New game</Link>
+      {/* A link, so it still opens in a new tab, drawn as one of the table's buttons. */}
+      <Link className={styles.menuLink} to="/">
+        Main menu
+      </Link>
     </section>
   )
 }
