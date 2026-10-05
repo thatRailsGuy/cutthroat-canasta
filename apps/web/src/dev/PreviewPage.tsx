@@ -32,6 +32,16 @@ export default function PreviewPage() {
       return draft
     })
   const feed = (draft: PlayerView, event: FeedEvent) => draft.round!.feed.push(event)
+  /** Mid-hand, a newcomer waits for the next deal, as the engine's `addPlayer` does. */
+  const join = (draft: PlayerView): string | undefined => {
+    const taken = [...draft.players, ...draft.waiting].map((p) => p.name)
+    const name = JOINER_NAMES.find((n) => !taken.includes(n))
+    if (!name || taken.length >= MAX_PLAYERS) return undefined
+    const id = name.toLowerCase()
+    draft.waiting.push({ id, name })
+    feed(draft, { type: 'joined', playerId: id, name })
+    return id
+  }
 
   const send = (message: ClientMessage) => {
     if (message.type !== 'action') return true
@@ -215,27 +225,17 @@ export default function PreviewPage() {
           d.round!.current = 1
         }),
     ],
-    [
-      'Someone joins',
-      () =>
-        change((d) => {
-          // Mid-hand, a newcomer waits for the next deal, as the engine's `addPlayer` does.
-          const taken = [...d.players, ...d.waiting].map((p) => p.name)
-          const name = JOINER_NAMES.find((n) => !taken.includes(n))
-          if (!name || taken.length >= MAX_PLAYERS) return
-          d.waiting.push({ id: name.toLowerCase(), name })
-          feed(d, { type: 'joined', playerId: name.toLowerCase(), name })
-        }),
-    ],
+    ['Someone joins', () => change((d) => void join(d))],
     [
       'Watch as the newcomer',
       () => {
-        const newcomer = view.waiting.at(-1)
+        // With nobody waiting yet, someone joins first, so there's always a newcomer to watch as.
+        const draft = structuredClone(view)
+        const newcomer = draft.waiting.at(-1)?.id ?? join(draft)
         if (!newcomer) return
-        setWatcher(newcomer.id)
-        change((d) => {
-          d.you = null
-        })
+        draft.you = null
+        setWatcher(newcomer)
+        setView(draft)
       },
     ],
     [
