@@ -242,30 +242,20 @@ export default function PreviewPage() {
       'End the round',
       () =>
         change((d) => {
-          const total: Record<string, number> = { ann: 865, ben: 1210, cara: -35 }
-          for (const p of d.players) total[p.id] ??= 120
-          d.history.push({
-            round: d.history.length + 1,
-            endedBy: 'goingOut',
-            wentOut: 'ben',
-            breakdown: Object.fromEntries(
-              d.players.map((p) => [
-                p.id,
-                {
-                  meldPoints: total[p.id] - 300,
-                  canastaBonus: p.id === 'cara' ? 0 : 300,
-                  red3Points: 0,
-                  goingOutBonus: p.id === 'ben' ? 100 : 0,
-                  concealedBonus: 0,
-                  handPenalty: p.id === 'ben' ? 100 : 0,
-                  total: total[p.id],
-                },
-              ]),
-            ),
-            hands: { ann: d.you!.hand.slice(0, 4), ben: [], cara: [card('7c'), card('9d')] },
-          })
-          for (const p of d.players) p.score += total[p.id]
+          scoreRound(d, { ann: 865, ben: 1210, cara: -35 })
           d.status = 'roundOver'
+          syncYou(d)
+        }),
+    ],
+    [
+      'End the game',
+      () =>
+        change((d) => {
+          // Ben goes out with a big hand that takes him past the winning score.
+          scoreRound(d, { ann: 640, ben: 3300, cara: 415 })
+          const top = Math.max(...d.players.map((p) => p.score))
+          d.status = 'gameOver'
+          d.winners = d.players.filter((p) => p.score === top).map((p) => p.id)
           syncYou(d)
         }),
     ],
@@ -360,6 +350,33 @@ function extraPlayers(): PlayerView['players'] {
     turnsThisRound: 3,
     hasPickedUpPile: i % 2 === 1,
   }))
+}
+
+/** Scores a round in which Ben went out, adding it to the history and to everyone's total. */
+function scoreRound(d: PlayerView, totals: Record<string, number>) {
+  const total = { ...totals }
+  for (const p of d.players) total[p.id] ??= 120
+  d.history.push({
+    round: d.history.length + 1,
+    endedBy: 'goingOut',
+    wentOut: 'ben',
+    breakdown: Object.fromEntries(
+      d.players.map((p) => [
+        p.id,
+        {
+          meldPoints: total[p.id] - 300,
+          canastaBonus: p.id === 'cara' ? 0 : 300,
+          red3Points: 0,
+          goingOutBonus: p.id === 'ben' ? 100 : 0,
+          concealedBonus: 0,
+          handPenalty: p.id === 'ben' ? 100 : 0,
+          total: total[p.id],
+        },
+      ]),
+    ),
+    hands: { ann: d.you?.hand.slice(0, 4) ?? [], ben: [], cara: [card('7c'), card('9d')] },
+  })
+  for (const p of d.players) p.score += total[p.id]
 }
 
 /** Keeps your public seat in step with your private one. */
