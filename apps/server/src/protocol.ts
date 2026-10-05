@@ -77,6 +77,7 @@ export const clientMessageSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('leave') }),
   z.object({ type: z.literal('kick'), playerId }),
   z.object({ type: z.literal('reissue'), playerId }),
+  z.object({ type: z.literal('playAgain') }),
   z.object({ type: z.literal('chat'), text: chatText }),
 ])
 
@@ -109,10 +110,11 @@ export interface ChatLine {
   /** When the server got it (ms). */
   at: number
   /**
-   * Where the line falls among the game events: in this deal of this round (null in the
-   * lobby), after the first `after` events of its feed. A redeal starts a new feed.
+   * Where the line falls among the game events: in this game at the table, in this deal of
+   * this round (null in the lobby), after the first `after` events of its feed. A redeal
+   * starts a new feed, and Play again starts the rounds over.
    */
-  anchor: { round: number | null; redeals: number; after: number }
+  anchor: { game: number; round: number | null; redeals: number; after: number }
 }
 
 export type ServerMessage =

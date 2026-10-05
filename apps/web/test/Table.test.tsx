@@ -58,7 +58,7 @@ describe('Table, on a phone', () => {
     name: playerId === 'bob' ? 'Bob' : 'You',
     text: `line ${id}`,
     at: id,
-    anchor: { round: 1, redeals: 0, after: 0 },
+    anchor: { game: 1, round: 1, redeals: 0, after: 0 },
   })
 
   it('counts unread chat on the Scores button until the sheet opens', async () => {

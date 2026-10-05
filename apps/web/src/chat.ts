@@ -31,16 +31,19 @@ export function recentStart(events: readonly FeedEvent[]): number {
 
 /**
  * Table talk, oldest first: the recent game events (see `recentStart`) with chat lines placed
- * among them by their anchors. Lines from the lobby, an earlier deal, or before the recent
- * events go first. `deal` is null in the lobby.
+ * among them by their anchors. Lines from the lobby, an earlier deal or game, or before the
+ * recent events go first. `deal` is null in the lobby.
  */
 export function mergeTalk(
   events: readonly FeedEvent[],
   chat: readonly ChatLine[],
-  deal: { round: number; redeals: number } | null,
+  deal: { game: number; round: number; redeals: number } | null,
 ): TalkItem[] {
   const inDeal = (line: ChatLine) =>
-    deal !== null && line.anchor.round === deal.round && line.anchor.redeals === deal.redeals
+    deal !== null &&
+    line.anchor.game === deal.game &&
+    line.anchor.round === deal.round &&
+    line.anchor.redeals === deal.redeals
   const say = (line: ChatLine): TalkItem => ({ kind: 'chat', key: `c${line.id}`, line })
   const start = recentStart(events)
   const items = chat.filter((l) => !inDeal(l) || l.anchor.after <= start).map(say)

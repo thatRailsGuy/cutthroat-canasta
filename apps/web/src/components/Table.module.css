@@ -552,6 +552,68 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* Who is still connected at game over, for the player who can start the next game. */
+.stillHere {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.stillHereLabel {
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+}
+
+.stillHere ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.stillHere li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0 0.55rem;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  background: var(--paper);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.stillHere li::before {
+  content: '';
+  width: 0.65rem;
+  height: 0.65rem;
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+  background: #5fbf6f;
+}
+
+.waitLine {
+  margin: 0;
+  font-size: 0.92rem;
+  font-style: italic;
+  color: var(--muted);
+}
+
+.gameOverActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.playAgain:not(:disabled) {
+  background: var(--red);
+  color: var(--paper);
+}
+
 /* The game-over link home, drawn like the paper buttons around it. */
 .menuLink {
   display: inline-flex;

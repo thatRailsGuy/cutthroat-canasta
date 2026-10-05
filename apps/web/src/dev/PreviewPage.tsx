@@ -472,6 +472,7 @@ function startingView(): PlayerView {
     winners: [],
     quit: [],
     waiting: [],
+    gameNumber: 1,
   }
   return view
 }

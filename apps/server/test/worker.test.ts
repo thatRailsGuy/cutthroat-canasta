@@ -327,6 +327,31 @@ describe('seats', () => {
   })
 })
 
+describe('play again', () => {
+  it('takes everyone back to the lobby, and numbers chat by game', async () => {
+    const { code, ann, bob, annJoined } = await startedGame()
+    // Ending a game by play takes many turns, so end it in place.
+    const stub = env.GAME_ROOM.get(env.GAME_ROOM.idFromName(code))
+    await runInDurableObject(stub, async (instance) => {
+      ;(instance as unknown as { room: RoomState }).room.game.status = 'gameOver'
+    })
+
+    bob.send({ type: 'playAgain' })
+    expect(await bob.next()).toMatchObject({ type: 'error', code: 'NOT_HOST' })
+
+    ann.send({ type: 'playAgain' })
+    for (const client of [ann, bob]) {
+      const { view, hostId } = await nextState(client)
+      expect(view).toMatchObject({ status: 'lobby', gameNumber: 2, history: [] })
+      expect(view.players.map((p) => p.name)).toEqual(['Ann', 'Bob'])
+      expect(hostId).toBe(annJoined.playerId)
+    }
+
+    ann.send({ type: 'chat', text: 'again!' })
+    expect(((await ann.next()) as ChatMessage).line.anchor).toMatchObject({ game: 2, round: null })
+  })
+})
+
 describe('chat', () => {
   it('sends a line to every joined socket, and to nobody else', async () => {
     const { code, ann, bob, annJoined } = await lobbyGame()
@@ -338,7 +363,7 @@ describe('chat', () => {
       playerId: annJoined.playerId,
       name: 'Ann',
       text: 'hi all',
-      anchor: { round: null, redeals: 0, after: 0 },
+      anchor: { game: 1, round: null, redeals: 0, after: 0 },
     })
     expect(await bob.next()).toEqual({ type: 'chat', line })
     await watcher.expectQuiet()
@@ -358,6 +383,7 @@ describe('chat', () => {
     await nextState(ann)
     ann.send({ type: 'chat', text: 'good luck' })
     expect(((await ann.next()) as ChatMessage).line.anchor).toEqual({
+      game: 1,
       round: 1,
       redeals: 0,
       after: 1,

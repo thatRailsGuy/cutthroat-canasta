@@ -1,6 +1,7 @@
 import { DurableObject } from 'cloudflare:workers'
 import type { Seed } from '@canasta/engine'
 import { allowSend, appendLine, stampLine } from './chat'
+import { randomSeed } from './codes'
 import { isStale, lastSeen } from './presence'
 import {
   HEARTBEAT_PING,
@@ -21,6 +22,7 @@ interface Attachment {
 const ids: RoomIds = {
   newPlayerId: () => crypto.randomUUID(),
   newToken: () => crypto.randomUUID(),
+  newSeed: randomSeed,
 }
 
 export class GameRoom extends DurableObject<Env> {

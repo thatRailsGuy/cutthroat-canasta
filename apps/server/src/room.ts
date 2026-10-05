@@ -5,6 +5,7 @@ import {
   quitGame,
   redealRound,
   removePlayer,
+  restartGame,
   startGame,
   startNextRound,
   viewFor,
@@ -26,6 +27,8 @@ export interface RoomState {
 export interface RoomIds {
   newPlayerId(): string
   newToken(): string
+  /** A fresh shuffle for Play again. */
+  newSeed(): Seed
 }
 
 export interface Outcome {
@@ -88,6 +91,8 @@ export function handleMessage(
       return hostOnly(state, senderId, () => removeSeat(state, message.playerId, 'kicked'))
     case 'reissue':
       return hostOnly(state, senderId, () => reissue(state, message.playerId, ids, connected))
+    case 'playAgain':
+      return playAgain(state, senderId, ids, connected)
   }
 }
 
@@ -215,6 +220,30 @@ function reissue(
     announce: { type: 'seatReissued', playerId },
     changed: true,
     broadcast: false,
+  }
+}
+
+/**
+ * Takes a finished game back to the lobby with the same players. The host presses it, or
+ * anyone while the host is away; then they become host, since the lobby needs one to start.
+ */
+function playAgain(
+  state: RoomState,
+  senderId: string,
+  ids: RoomIds,
+  connected: readonly string[],
+): Outcome {
+  const hostHere = state.hostId !== null && connected.includes(state.hostId)
+  if (hostHere && senderId !== state.hostId) {
+    return protocolError(state, 'NOT_HOST', 'Only the host can start another game.')
+  }
+  const result = restartGame(state.game, ids.newSeed())
+  if (!result.ok) return ruleErrorOutcome(state, result.error)
+  return {
+    state: { ...state, game: result.game, hostId: senderId },
+    reply: [],
+    changed: true,
+    broadcast: true,
   }
 }
 

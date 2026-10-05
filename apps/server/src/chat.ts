@@ -34,8 +34,10 @@ export function stampLine(
   const { players, waiting = [], round } = game
   const sender = [...players, ...waiting].find((p) => p.id === playerId)
   if (!sender) return null
+  // `?? 1`: games saved before Play again existed.
+  const number = game.number ?? 1
   const anchor = round
-    ? { round: round.number, redeals: round.redeals ?? 0, after: round.feed.length }
-    : { round: null, redeals: 0, after: 0 }
+    ? { game: number, round: round.number, redeals: round.redeals ?? 0, after: round.feed.length }
+    : { game: number, round: null, redeals: 0, after: 0 }
   return { id, playerId, name: sender.name, text, at, anchor }
 }

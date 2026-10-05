@@ -28,25 +28,25 @@ describe('cleanChat', () => {
 })
 
 describe('mergeTalk', () => {
-  const deal = { round: 2, redeals: 0 }
+  const deal = { game: 1, round: 2, redeals: 0 }
 
   it('places lines among the deal’s events by their anchors, ties in id order', () => {
     const chat = [
-      line(1, { round: 2, redeals: 0, after: 1 }),
-      line(2, { round: 2, redeals: 0, after: 0 }),
-      line(3, { round: 2, redeals: 0, after: 1 }),
-      line(4, { round: 2, redeals: 0, after: 2 }),
+      line(1, { game: 1, round: 2, redeals: 0, after: 1 }),
+      line(2, { game: 1, round: 2, redeals: 0, after: 0 }),
+      line(3, { game: 1, round: 2, redeals: 0, after: 1 }),
+      line(4, { game: 1, round: 2, redeals: 0, after: 2 }),
     ]
     expect(keys(mergeTalk([drew, went], chat, deal))).toEqual(['c2', 'e0', 'c1', 'c3', 'e1', 'c4'])
   })
 
   it('puts lobby, earlier-round and earlier-deal lines first', () => {
     const chat = [
-      line(1, { round: null, redeals: 0, after: 0 }),
-      line(2, { round: 1, redeals: 0, after: 5 }),
-      line(3, { round: 2, redeals: 0, after: 1 }),
+      line(1, { game: 1, round: null, redeals: 0, after: 0 }),
+      line(2, { game: 1, round: 1, redeals: 0, after: 5 }),
+      line(3, { game: 1, round: 2, redeals: 0, after: 1 }),
     ]
-    expect(keys(mergeTalk([drew, went], chat, { round: 2, redeals: 1 }))).toEqual([
+    expect(keys(mergeTalk([drew, went], chat, { game: 1, round: 2, redeals: 1 }))).toEqual([
       'c1',
       'c2',
       'c3',
@@ -55,8 +55,21 @@ describe('mergeTalk', () => {
     ])
   })
 
+  it('puts lines from an earlier game first, even from the same round', () => {
+    const chat = [
+      line(1, { game: 1, round: 1, redeals: 0, after: 1 }),
+      line(2, { game: 2, round: 1, redeals: 0, after: 1 }),
+    ]
+    expect(keys(mergeTalk([drew, went], chat, { game: 2, round: 1, redeals: 0 }))).toEqual([
+      'c1',
+      'e0',
+      'c2',
+      'e1',
+    ])
+  })
+
   it('shows only chat in the lobby', () => {
-    const chat = [line(1, { round: null, redeals: 0, after: 0 })]
+    const chat = [line(1, { game: 1, round: null, redeals: 0, after: 0 })]
     expect(keys(mergeTalk([], chat, null))).toEqual(['c1'])
   })
 })
@@ -75,11 +88,11 @@ describe('recentStart', () => {
 describe('mergeTalk, once older turns drop out', () => {
   it('drops older events but keeps their chat, first', () => {
     const chat = [
-      line(1, { round: 1, redeals: 0, after: 1 }),
-      line(2, { round: 1, redeals: 0, after: 3 }),
+      line(1, { game: 1, round: 1, redeals: 0, after: 1 }),
+      line(2, { game: 1, round: 1, redeals: 0, after: 3 }),
     ]
     expect(
-      keys(mergeTalk([drew, tossed, drew, tossed, drew], chat, { round: 1, redeals: 0 })),
+      keys(mergeTalk([drew, tossed, drew, tossed, drew], chat, { game: 1, round: 1, redeals: 0 })),
     ).toEqual(['c1', 'e2', 'c2', 'e3', 'e4'])
   })
 })

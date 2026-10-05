@@ -86,7 +86,9 @@ export function startGame(game: Game): GameResult {
     return fail('NOT_ENOUGH_PLAYERS', `You need at least ${MIN_PLAYERS} players to start.`)
   }
   const next = cloneGame(game)
-  dealRound(next, 1, 0)
+  // The first seat deals, unless Play again named a dealer who is still at the table.
+  const dealer = next.players.findIndex((p) => p.id === game.firstDealer)
+  dealRound(next, 1, Math.max(dealer, 0))
   next.log.push({ event: 'startGame' })
   return { ok: true, game: next }
 }
@@ -100,6 +102,42 @@ export function startNextRound(game: Game): GameResult {
   seatWaiting(next)
   dealRound(next, previous.number + 1, (previous.dealer + 1) % next.players.length)
   next.log.push({ event: 'startNextRound' })
+  return { ok: true, game: next }
+}
+
+/**
+ * Play again: takes a finished game back to the lobby with the same players, so more can join
+ * before the host starts. Scores, rounds and quits start over, anyone waiting takes a seat,
+ * and the player after the last dealer deals first. `seed` must be new, or the deals repeat.
+ */
+export function restartGame(game: Game, seed: Seed): GameResult {
+  if (game.status !== 'gameOver') {
+    return fail('GAME_NOT_OVER', 'You can only play again once the game is over.')
+  }
+  const next = cloneGame(game)
+  const round = next.round
+  const firstDealer = round ? next.players[(round.dealer + 1) % next.players.length]?.id : undefined
+  seatWaiting(next)
+  for (const player of next.players) {
+    player.score = 0
+    player.hand = []
+    player.melds = []
+    player.red3s = []
+    player.hasPickedUpPile = false
+    player.turnsThisRound = 0
+    player.meldedBeforeThisTurn = false
+    player.drawnCard = null
+  }
+  next.round = null
+  next.history = []
+  next.status = 'lobby'
+  next.seed = seed
+  next.winners = []
+  next.quit = []
+  // `?? 1`: games saved before Play again existed were the table's first.
+  next.number = (game.number ?? 1) + 1
+  next.firstDealer = firstDealer
+  next.log.push({ event: 'restart' })
   return { ok: true, game: next }
 }
 

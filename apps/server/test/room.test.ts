@@ -8,7 +8,11 @@ const SEED: Seed = [42, 0, 0, 0]
 function sequentialIds(): RoomIds {
   let players = 0
   let tokens = 0
-  return { newPlayerId: () => `p${++players}`, newToken: () => `t${++tokens}` }
+  return {
+    newPlayerId: () => `p${++players}`,
+    newToken: () => `t${++tokens}`,
+    newSeed: () => [7, 7, 7, 7],
+  }
 }
 
 function roomWith(names: string[]): { state: RoomState; ids: RoomIds } {
@@ -375,6 +379,43 @@ describe('actions', () => {
     handleMessage(state, 'p2', draw, ids, [])
     handleMessage(state, null, { type: 'join', name: 'Ann', token: 't1' }, ids, [])
     expect(JSON.stringify(state)).toBe(before)
+  })
+})
+
+describe('playAgain', () => {
+  /** Ann (host, p1) and Bob (p2) at game over. */
+  function finished(): { state: RoomState; ids: RoomIds } {
+    const { state, ids } = started()
+    return { state: { ...state, game: { ...state.game, status: 'gameOver' } }, ids }
+  }
+
+  it('lets the host take the table back to the lobby with a new shuffle', () => {
+    const { state, ids } = finished()
+    const outcome = handleMessage(state, 'p1', { type: 'playAgain' }, ids, ['p1', 'p2'])
+    expect(outcome).toMatchObject({ changed: true, broadcast: true, reply: [] })
+    expect(outcome.state.game).toMatchObject({ status: 'lobby', number: 2, seed: [7, 7, 7, 7] })
+    expect(outcome.state.hostId).toBe('p1')
+    expect(outcome.state.tokens).toEqual(state.tokens)
+  })
+
+  it('refuses another player while the host is here', () => {
+    const { state, ids } = finished()
+    const outcome = handleMessage(state, 'p2', { type: 'playAgain' }, ids, ['p1', 'p2'])
+    expect(errorOf(outcome)).toMatchObject({ code: 'NOT_HOST' })
+    expect(outcome.changed).toBe(false)
+  })
+
+  it('lets anyone go while the host is away, and makes them host', () => {
+    const { state, ids } = finished()
+    const outcome = handleMessage(state, 'p2', { type: 'playAgain' }, ids, ['p2'])
+    expect(outcome.state.game.status).toBe('lobby')
+    expect(outcome.state.hostId).toBe('p2')
+  })
+
+  it('refuses before the game is over', () => {
+    const { state, ids } = started()
+    const outcome = handleMessage(state, 'p1', { type: 'playAgain' }, ids, ['p1', 'p2'])
+    expect(errorOf(outcome)).toMatchObject({ code: 'GAME_NOT_OVER' })
   })
 })
 

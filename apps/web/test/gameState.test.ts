@@ -143,7 +143,7 @@ describe('table talk', () => {
     name: playerId === 'you' ? 'You' : 'Bob',
     text: `line ${id}`,
     at: id,
-    anchor: { round: null, redeals: 0, after: 0 },
+    anchor: { game: 1, round: null, redeals: 0, after: 0 },
   })
   const seated = receive(initialGameState, {
     type: 'joined',

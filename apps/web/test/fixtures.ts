@@ -74,5 +74,6 @@ export function makeView(opts: {
     winners: [],
     quit: [],
     waiting: [],
+    gameNumber: 1,
   }
 }

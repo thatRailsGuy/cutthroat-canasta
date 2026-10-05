@@ -31,6 +31,11 @@ describe('viewFor', () => {
     expect(view.round?.discardTop).toEqual(game.round!.discard.at(-1))
   })
 
+  it('numbers the games at the table, counting from 1', () => {
+    expect(view.gameNumber).toBe(1)
+    expect(viewFor({ ...game, number: 3 }, 'p0').gameNumber).toBe(3)
+  })
+
   it('leaves out the seed and the action log', () => {
     expect(view).not.toHaveProperty('seed')
     expect(view).not.toHaveProperty('log')

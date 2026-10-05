@@ -39,6 +39,7 @@ export const RULE_ERROR_SECTIONS = {
   DUPLICATE_PLAYER: 'setup',
   NOT_ENOUGH_PLAYERS: 'setup',
   ROUND_NOT_OVER: 'scoring',
+  GAME_NOT_OVER: 'winning',
 } as const satisfies Record<string, RuleSection>
 
 export type RuleErrorCode = keyof typeof RULE_ERROR_SECTIONS

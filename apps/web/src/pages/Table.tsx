@@ -187,7 +187,7 @@ export function Table({ code, view, state, send, talk, coach, lit }: TableProps)
   const tableTalk = (
     <TableTalk
       events={round.feed}
-      deal={{ round: round.number, redeals: round.redeals }}
+      deal={{ game: view.gameNumber, round: round.number, redeals: round.redeals }}
       chat={state.chat}
       notices={state.notices}
       players={view.players}
@@ -270,7 +270,14 @@ export function Table({ code, view, state, send, talk, coach, lit }: TableProps)
           <>
             {/* The final round's breakdown and hands stay visible, with no Next round. */}
             {lastScoredThisRound && <RoundEnd view={view} />}
-            <GameOver view={view} />
+            <GameOver
+              view={view}
+              playerId={state.playerId}
+              hostId={state.hostId}
+              connected={state.connected}
+              offline={offline}
+              onPlayAgain={() => send({ type: 'playAgain' })}
+            />
           </>
         )}
 

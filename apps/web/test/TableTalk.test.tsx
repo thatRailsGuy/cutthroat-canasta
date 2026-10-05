@@ -28,7 +28,7 @@ const chat: ChatLine[] = [
     name: 'Bob',
     text: 'my turn',
     at: 1,
-    anchor: { round: 1, redeals: 0, after: 1 },
+    anchor: { game: 1, round: 1, redeals: 0, after: 1 },
   },
   {
     id: 2,
@@ -36,7 +36,7 @@ const chat: ChatLine[] = [
     name: 'Ann',
     text: 'nice one',
     at: 2,
-    anchor: { round: 1, redeals: 0, after: 2 },
+    anchor: { game: 1, round: 1, redeals: 0, after: 2 },
   },
 ]
 
@@ -51,7 +51,7 @@ function Talk({
   return (
     <TableTalk
       events={events}
-      deal={{ round: 1, redeals: 0 }}
+      deal={{ game: 1, round: 1, redeals: 0 }}
       chat={chat}
       notices={[]}
       players={players}

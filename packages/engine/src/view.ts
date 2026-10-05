@@ -48,6 +48,8 @@ export interface PlayerView {
   quit: QuitPlayer[]
   /** Players who joined mid-game and are dealt in with the next hand. */
   waiting: { id: string; name: string }[]
+  /** Which game this is at the table: 1 for the first, one more after each Play again. */
+  gameNumber: number
 }
 
 /**
@@ -93,5 +95,7 @@ export function viewFor(game: Game, playerId: string): PlayerView {
     quit: game.quit ?? [],
     // `?? []`: games saved before mid-game joining existed.
     waiting: (game.waiting ?? []).map((p) => ({ id: p.id, name: p.name })),
+    // `?? 1`: games saved before Play again existed.
+    gameNumber: game.number ?? 1,
   }
 }

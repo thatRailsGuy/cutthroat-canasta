@@ -13,6 +13,7 @@ export {
   quitGame,
   redealRound,
   removePlayer,
+  restartGame,
   startGame,
   startNextRound,
 } from './game'

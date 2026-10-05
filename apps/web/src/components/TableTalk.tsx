@@ -34,7 +34,7 @@ export interface TalkControls {
 export interface TableTalkProps {
   events: readonly FeedEvent[]
   /** The deal the events belong to, or null in the lobby. */
-  deal: { round: number; redeals: number } | null
+  deal: { game: number; round: number; redeals: number } | null
   chat: readonly ChatLine[]
   notices: readonly SeatNotice[]
   players: readonly PublicPlayer[]

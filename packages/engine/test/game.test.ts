@@ -4,11 +4,13 @@ import {
   createGame,
   quitGame,
   removePlayer,
+  restartGame,
   startGame,
   redealRound,
   startNextRound,
 } from '../src/game'
 import { isRed3, isWild } from '../src/cards'
+import type { Game } from '../src/types'
 import { countCards, lobby, makeGame, makePlayer, seedOf, unwrap } from './fixtures'
 
 describe('lobby', () => {
@@ -308,5 +310,65 @@ describe('quitGame', () => {
     const over = unwrap(quitGame(started(2), 'p0'))
     const result = quitGame(over, 'p1')
     expect(result.ok ? null : result.error.code).toBe('GAME_NOT_PLAYING')
+  })
+})
+
+describe('restartGame', () => {
+  /** Three players at game over, after a round that p1 dealt. p3 waits for a seat. */
+  function finished(): Game {
+    const game = unwrap(addPlayer(unwrap(startGame(lobby(3))), 'p3', 'Player 3'))
+    game.round!.dealer = 1
+    game.status = 'gameOver'
+    game.players[0].score = 5120
+    game.winners = ['p0']
+    game.history = [{ round: 1, endedBy: 'goingOut', wentOut: 'p0', breakdown: {}, hands: {} }]
+    game.quit = [{ id: 'gone', name: 'Gone', score: 40, round: 1 }]
+    return game
+  }
+
+  it('refuses before the game is over', () => {
+    const result = restartGame(unwrap(startGame(lobby(2))), seedOf(9))
+    expect(result.ok ? null : result.error.code).toBe('GAME_NOT_OVER')
+  })
+
+  it('goes back to the lobby with the same players, and everything else starts over', () => {
+    const next = unwrap(restartGame(finished(), seedOf(9)))
+    expect(next.status).toBe('lobby')
+    expect(next.round).toBeNull()
+    expect(next.players.map((p) => p.id)).toEqual(['p0', 'p1', 'p2', 'p3'])
+    expect(next.waiting).toEqual([])
+    expect(next.players.map((p) => [p.score, p.hand.length, p.melds.length])).toEqual([
+      [0, 0, 0],
+      [0, 0, 0],
+      [0, 0, 0],
+      [0, 0, 0],
+    ])
+    expect(next).toMatchObject({ history: [], winners: [], quit: [], seed: seedOf(9), number: 2 })
+    expect(next.log.at(-1)).toEqual({ event: 'restart' })
+  })
+
+  it('counts the games at the table', () => {
+    const second = unwrap(restartGame(finished(), seedOf(9)))
+    const third = unwrap(restartGame({ ...second, status: 'gameOver' }, seedOf(10)))
+    expect(third.number).toBe(3)
+  })
+
+  it('has the player after the last dealer deal first', () => {
+    const next = unwrap(startGame(unwrap(restartGame(finished(), seedOf(9)))))
+    expect(next.round!.dealer).toBe(2)
+    expect(next.players[next.round!.current].id).toBe('p3')
+  })
+
+  it('lets the first seat deal if that player has left the lobby', () => {
+    const lobbyAgain = unwrap(removePlayer(unwrap(restartGame(finished(), seedOf(9))), 'p2'))
+    expect(unwrap(startGame(lobbyAgain)).round!.dealer).toBe(0)
+  })
+
+  it('deals new hands with the new seed', () => {
+    // The same four players in a first game with the old seed.
+    const game = finished()
+    const before = unwrap(startGame(lobby(4))).players[0].hand.map((c) => c.id)
+    const after = unwrap(startGame(unwrap(restartGame(game, seedOf(9))))).players[0].hand
+    expect(after.map((c) => c.id)).not.toEqual(before)
   })
 })

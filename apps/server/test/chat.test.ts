@@ -9,7 +9,7 @@ const line = (id: number): ChatLine => ({
   name: 'Ann',
   text: `line ${id}`,
   at: id,
-  anchor: { round: null, redeals: 0, after: 0 },
+  anchor: { game: 1, round: null, redeals: 0, after: 0 },
 })
 
 function seated(...names: string[]): Game {
@@ -50,7 +50,7 @@ describe('stampLine', () => {
       name: 'Bob',
       text: 'hi',
       at: 123,
-      anchor: { round: null, redeals: 0, after: 0 },
+      anchor: { game: 1, round: null, redeals: 0, after: 0 },
     })
   })
 
@@ -61,6 +61,7 @@ describe('stampLine', () => {
     if (!joined.ok) throw new Error(joined.error.message)
     // Cat's arrival is the deal's first event.
     expect(stampLine(joined.game, 'p3', 'hello', 1, 0)?.anchor).toEqual({
+      game: 1,
       round: 1,
       redeals: 0,
       after: 1,
