@@ -194,18 +194,27 @@ function CopyField({ value, label }: { value: string; label: string }) {
   const [copyResult, setCopyResult] = useState<'copied' | 'manual' | null>(null)
   /**
    * The Clipboard API exists only in secure contexts, so it is missing over plain http on a LAN.
-   * Then the link is selected for the host to copy by hand.
+   * Then the old copy command copies the selected link, and if even that fails, the link stays
+   * selected for the host to copy by hand.
    */
   const copy = () => {
-    const manual = () => {
-      setCopyResult('manual')
-      inputRef.current?.select()
+    const fallback = () => {
+      const input = inputRef.current
+      input?.focus()
+      input?.select()
+      let copied = false
+      try {
+        copied = document.execCommand('copy')
+      } catch {
+        // Some browsers throw instead of returning false.
+      }
+      setCopyResult(copied ? 'copied' : 'manual')
     }
-    if (!navigator.clipboard) return manual()
+    if (!navigator.clipboard) return fallback()
     navigator.clipboard
       .writeText(value)
       .then(() => setCopyResult('copied'))
-      .catch(manual)
+      .catch(fallback)
   }
   return (
     <div className={styles.copy}>

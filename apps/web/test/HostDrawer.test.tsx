@@ -1,6 +1,6 @@
-import { render, within } from '@testing-library/react'
+import { fireEvent, render, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { HostDrawer, type HostDrawerProps } from '../src/components/HostDrawer'
 import { makeView } from './fixtures'
 
@@ -47,6 +47,38 @@ describe('HostDrawer', () => {
     expect(drawer.getByText('The table is full.')).toBeInTheDocument()
     expect(drawer.queryByRole('textbox', { name: 'Invite link', hidden: true })).toBeNull()
     expect(drawer.queryByText('A B C D')).toBeNull()
+  })
+
+  describe('without the Clipboard API, as over plain http on a LAN', () => {
+    const clipboard = Object.getOwnPropertyDescriptor(navigator, 'clipboard')
+    const execCommand = Object.getOwnPropertyDescriptor(document, 'execCommand')
+    function withoutClipboard(copies: boolean) {
+      Object.defineProperty(navigator, 'clipboard', { value: undefined, configurable: true })
+      const exec = vi.fn(() => copies)
+      Object.defineProperty(document, 'execCommand', { value: exec, configurable: true })
+      return exec
+    }
+    afterEach(() => {
+      if (clipboard) Object.defineProperty(navigator, 'clipboard', clipboard)
+      else delete (navigator as { clipboard?: unknown }).clipboard
+      if (execCommand) Object.defineProperty(document, 'execCommand', execCommand)
+      else delete (document as { execCommand?: unknown }).execCommand
+    })
+
+    it('copies the invite link with the copy command', () => {
+      const exec = withoutClipboard(true)
+      const { drawer, button } = setup()
+      fireEvent.click(button('Copy'))
+      expect(exec).toHaveBeenCalledWith('copy')
+      expect(drawer.getByText('Copied')).toBeInTheDocument()
+    })
+
+    it('leaves the link selected to copy by hand when the copy command fails', () => {
+      withoutClipboard(false)
+      const { drawer, button } = setup()
+      fireEvent.click(button('Copy'))
+      expect(drawer.getByText('Select and copy')).toBeInTheDocument()
+    })
   })
 
   it('asks before throwing out the hand', async () => {
