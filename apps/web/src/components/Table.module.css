@@ -165,6 +165,63 @@
   padding: 0.9rem 1.25rem 1.25rem;
 }
 
+/* In place of your panel while you wait for the next deal: an ice-blue hatched card, like the
+   waiting stop on the turn rail. */
+.watch {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1.25rem;
+  padding: 1rem 1.25rem;
+  border: 2px dashed var(--ice-ink);
+  border-radius: 16px;
+  background-color: var(--paper);
+  background-image: repeating-linear-gradient(
+    135deg,
+    rgb(191 227 245 / 0.45) 0 10px,
+    transparent 10px 20px
+  );
+}
+
+.watchChair {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 3rem;
+  height: 3rem;
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+  background: var(--ice);
+}
+
+.watchChair svg {
+  width: 1.6rem;
+  height: 1.6rem;
+  fill: none;
+  stroke: var(--ice-ink);
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.watchWords {
+  display: grid;
+  gap: 0.15rem;
+  flex: 1;
+  min-width: min(100%, 14rem);
+}
+
+.watchWords h2 {
+  margin: 0;
+  font-size: 1.3rem;
+  line-height: 1.1;
+}
+
+.watchWords p {
+  margin: 0;
+  font-size: 0.92rem;
+}
+
 .turnText {
   font-weight: 800;
   color: var(--red);

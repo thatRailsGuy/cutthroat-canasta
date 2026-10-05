@@ -13,13 +13,16 @@ export interface ScorePadProps {
  * The paper score pad beside the table: one handwritten line per scored round and the running
  * total underneath, with the leader underlined. Players who quit are left off; the full score
  * sheet still has them. A crowded table has no room for a column each, so the pad lists the
- * players down the page with their last round and total.
+ * players down the page with their last round and total. Players waiting for the next deal are
+ * pencilled in faintly at 0.
  */
 export function ScorePad({ view, onOpenSheet }: ScorePadProps) {
   const players = view.players
+  // `?? []`: a view from a server that predates mid-game joining.
+  const late = view.waiting ?? []
   const top = Math.max(...players.map((p) => p.score))
   const leaders = view.history.length > 0 ? players.filter((p) => p.score === top) : []
-  const columns = { '--cols': players.length } as CSSProperties
+  const columns = { '--cols': players.length + late.length } as CSSProperties
   if (isCrowded(view)) {
     const last = view.history.at(-1)
     return (
@@ -44,6 +47,15 @@ export function ScorePad({ view, onOpenSheet }: ScorePadProps) {
                 <td className={leaders.includes(p) ? styles.leader : undefined}>{p.score}</td>
               </tr>
             ))}
+            {late.map((p) => (
+              <tr key={p.id} aria-label={`${p.name}, dealt in next hand`} className={styles.late}>
+                <th scope="row" title={p.name}>
+                  {p.name}
+                </th>
+                <td />
+                <td>0</td>
+              </tr>
+            ))}
           </tbody>
         </table>
         {view.history.length === 0 && <p className={styles.none}>No rounds yet</p>}
@@ -63,12 +75,22 @@ export function ScorePad({ view, onOpenSheet }: ScorePadProps) {
                 {p.name}
               </th>
             ))}
+            {late.map((p) => (
+              <th
+                key={p.id}
+                scope="col"
+                title={`${p.name}, dealt in next hand`}
+                className={styles.late}
+              >
+                {p.name}
+              </th>
+            ))}
           </tr>
         </thead>
         <tbody>
           {view.history.length === 0 && (
             <tr>
-              <td colSpan={players.length} className={styles.none}>
+              <td colSpan={players.length + late.length} className={styles.none}>
                 No rounds yet
               </td>
             </tr>
@@ -78,6 +100,9 @@ export function ScorePad({ view, onOpenSheet }: ScorePadProps) {
               {players.map((p) => (
                 <td key={p.id}>{r.breakdown[p.id]?.total ?? '–'}</td>
               ))}
+              {late.map((p) => (
+                <td key={p.id} className={styles.late} />
+              ))}
             </tr>
           ))}
         </tbody>
@@ -86,6 +111,11 @@ export function ScorePad({ view, onOpenSheet }: ScorePadProps) {
             {players.map((p) => (
               <td key={p.id} className={leaders.includes(p) ? styles.leader : undefined}>
                 {p.score}
+              </td>
+            ))}
+            {late.map((p) => (
+              <td key={p.id} className={styles.late}>
+                0
               </td>
             ))}
           </tr>

@@ -7,16 +7,20 @@ import styles from './TurnRail.module.css'
 
 export interface TurnRailProps {
   view: PlayerView
+  /** Whose rail it is. A player waiting for the next hand isn't in `view.you`. */
+  playerId?: string | null
 }
 
 interface Stop {
-  player: PublicPlayer
+  player: Pick<PublicPlayer, 'id' | 'name'>
   seat: number
   name: string
   now: boolean
   isNext: boolean
   dealer: boolean
-  /** "Playing", "Next", "Dealer", or a mix, joined with dots. */
+  /** Joined mid-hand: sits this hand out, and is dealt in with the next one. */
+  waiting: boolean
+  /** "Playing", "Next", "Dealer", "Waiting · next hand", or a mix, joined with dots. */
   notes: string
 }
 
@@ -25,19 +29,30 @@ interface Stop {
  * you can see who is up, who is next, and how far it is back to you. Up to four players it is
  * one row. A crowded table is a loop like the seats round a table: you at the bottom between
  * the players after and before you, everyone else across the top.
+ *
+ * Players who joined mid-hand already show in the seats they take at the next deal, after
+ * everyone playing, marked as waiting. The gold stop passes them by until then.
  */
-export function TurnRail({ view }: TurnRailProps) {
+export function TurnRail({ view, playerId = view.you?.id ?? null }: TurnRailProps) {
   const round = view.round!
-  const yourSeat = view.players.findIndex((p) => p.id === view.you?.id)
+  // `?? []`: a view from a server that predates mid-game joining.
+  const seats = [...view.players, ...(view.waiting ?? [])]
+  const yourSeat = seats.findIndex((p) => p.id === playerId)
   const n = view.players.length
   const playing = view.status === 'playing'
   const next = (round.current + 1) % n
-  const stops: Stop[] = playOrder(view.players, yourSeat).map(({ player, seat }) => {
+  const stops: Stop[] = playOrder(seats, yourSeat).map(({ player, seat }) => {
+    const waiting = seat >= n
     const now = playing && seat === round.current
     // With two players the next one is always you, which the line under your name says.
     const isNext = playing && seat === next && seat !== yourSeat
     const dealer = seat === round.dealer
-    const notes = [now && 'Playing', isNext && 'Next', dealer && 'Dealer'].filter(Boolean)
+    const notes = [
+      now && 'Playing',
+      isNext && 'Next',
+      dealer && 'Dealer',
+      waiting && 'Waiting · next hand',
+    ].filter(Boolean)
     return {
       player,
       seat,
@@ -45,10 +60,11 @@ export function TurnRail({ view }: TurnRailProps) {
       now,
       isNext,
       dealer,
+      waiting,
       notes: notes.join(' · '),
     }
   })
-  const looped = n >= CROWDED_TABLE
+  const looped = stops.length >= CROWDED_TABLE
   return (
     <div className={`${styles.rail} ${looped ? styles.looped : ''}`}>
       <span className={styles.label} id="turn-order">
@@ -124,7 +140,7 @@ function Loop({ stops }: { stops: Stop[] }) {
 }
 
 function stopClass(stop: Stop): string {
-  return `${styles.stop} ${stop.now ? styles.now : ''} ${stop.isNext ? styles.next : ''} ${stop.notes ? '' : styles.plain}`
+  return `${styles.stop} ${stop.now ? styles.now : ''} ${stop.isNext ? styles.next : ''} ${stop.waiting ? styles.waiting : ''} ${stop.notes ? '' : styles.plain}`
 }
 
 function StopBody({ stop }: { stop: Stop }) {
@@ -133,9 +149,23 @@ function StopBody({ stop }: { stop: Stop }) {
       <Avatar name={stop.player.name} seat={stop.seat} small dealer={stop.dealer} />
       <span className={styles.text}>
         <span className={styles.name}>{stop.name}</span>
-        {stop.notes && <span className={styles.note}>{stop.notes}</span>}
+        {stop.notes && (
+          <span className={styles.note}>
+            {stop.waiting && <Chair />}
+            {stop.notes}
+          </span>
+        )}
       </span>
     </>
+  )
+}
+
+/** A chair pulled up to the table, for a player waiting to be dealt in. */
+function Chair() {
+  return (
+    <svg className={styles.chair} viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M7 3v10M17 3v10M7 7h10M5 13h14M6 13l-1 8M18 13l1 8M8 17h8" />
+    </svg>
   )
 }
 

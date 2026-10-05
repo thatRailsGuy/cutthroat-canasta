@@ -62,4 +62,34 @@ describe('TurnRail', () => {
       ['OOtisPlaying', 'YYou', 'MDMabelDealer'],
     ])
   })
+
+  it('shows a player who joined mid-hand in the seat they take next hand, marked as waiting', () => {
+    const view = fourSeats()
+    view.waiting = [{ id: 'zed', name: 'Zed' }]
+    render(<TurnRail view={view} />)
+    const stops = within(screen.getByRole('list', { name: 'Turn order' })).getAllByRole('listitem')
+    expect(stops.map((s) => s.textContent)).toEqual([
+      'You',
+      'Otis: Playing',
+      'Dot: Next',
+      'Zed: Waiting · next hand',
+      'Mabel: Dealer',
+    ])
+  })
+
+  it('starts with the waiting player on their own rail', () => {
+    const view = fourSeats()
+    view.you = null
+    view.players[1] = { ...view.players[1], name: 'Pat' }
+    view.waiting = [{ id: 'zed', name: 'Zed' }]
+    render(<TurnRail view={view} playerId="zed" />)
+    const stops = within(screen.getByRole('list', { name: 'Turn order' })).getAllByRole('listitem')
+    expect(stops.map((s) => s.textContent)).toEqual([
+      'You: Waiting · next hand',
+      'Mabel: Dealer',
+      'Pat',
+      'Otis: Playing',
+      'Dot: Next',
+    ])
+  })
 })

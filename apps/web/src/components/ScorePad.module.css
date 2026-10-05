@@ -65,6 +65,11 @@
   font-size: 1.65rem;
 }
 
+/* Waiting for the next deal: pencilled in faintly. */
+.late {
+  opacity: 0.5;
+}
+
 .leader {
   text-decoration: underline wavy var(--red);
   text-underline-offset: 4px;

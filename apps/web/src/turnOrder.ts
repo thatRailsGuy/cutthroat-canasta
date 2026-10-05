@@ -1,7 +1,7 @@
 import type { PlayerView, PublicPlayer } from '@canasta/engine'
 
-export interface Stop {
-  player: PublicPlayer
+export interface Stop<P = PublicPlayer> {
+  player: P
   seat: number
 }
 
@@ -9,7 +9,7 @@ export interface Stop {
  * Everyone in the order they play, starting from `firstSeat`. Play passes up the seat numbers,
  * which the rules call passing to the left.
  */
-export function playOrder(players: readonly PublicPlayer[], firstSeat: number): Stop[] {
+export function playOrder<P>(players: readonly P[], firstSeat: number): Stop<P>[] {
   const n = players.length
   return players.map((_, i) => {
     const seat = (((firstSeat + i) % n) + n) % n

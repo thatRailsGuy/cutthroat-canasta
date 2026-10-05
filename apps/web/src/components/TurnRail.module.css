@@ -70,6 +70,35 @@
   border-style: dashed;
 }
 
+/* Pulled up to the table but not dealt in: ice-blue hatching and a dotted edge, unlike the
+   dashed stop that's up next. */
+.waiting {
+  border-style: dotted;
+  border-color: var(--ice-ink);
+  background: repeating-linear-gradient(135deg, var(--ice) 0 6px, var(--paper) 6px 12px);
+}
+
+.waiting .note {
+  color: var(--ice-ink);
+}
+
+.waiting.stop + .stop::before,
+.stop + .waiting.stop::before {
+  border-color: var(--ice-ink);
+}
+
+.chair {
+  width: 0.85rem;
+  height: 0.85rem;
+  margin-right: 0.15rem;
+  vertical-align: -0.1rem;
+  fill: none;
+  stroke: var(--ice-ink);
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
 .text {
   display: grid;
   line-height: 1.1;

@@ -50,9 +50,10 @@ export interface TableProps {
 export function Table({ code, view, state, send, coach, lit }: TableProps) {
   const [staging, dispatch] = useStaging(view)
   const round = view.round!
-  const you = view.you!
+  // Null for a player who joined mid-hand: they watch until the next deal.
+  const you = view.you
   const currentId = view.players[round.current]?.id
-  const yourTurn = view.status === 'playing' && currentId === you.id
+  const yourTurn = view.status === 'playing' && you !== null && currentId === you.id
   const isHost = state.playerId === state.hostId
   const act = (action: Action) => send({ type: 'action', action })
   const offline = state.connection !== 'open'
@@ -62,10 +63,12 @@ export function Table({ code, view, state, send, coach, lit }: TableProps) {
   const inPlay = view.status === 'playing' || view.status === 'roundOver'
   // Point out the card you just drew from the stock, until you discard.
   const drawn =
-    yourTurn && round.phase === 'play' ? you.hand.find((c) => c.id === you.drawnCard) : undefined
+    you && yourTurn && round.phase === 'play'
+      ? you.hand.find((c) => c.id === you.drawnCard)
+      : undefined
   // A game that ended because the others quit has no final round breakdown to show.
   const lastScoredThisRound = view.history.at(-1)?.round === round.number
-  const yourSeat = view.players.findIndex((p) => p.id === you.id)
+  const yourSeat = view.players.findIndex((p) => p.id === you?.id)
   const crowded = isCrowded(view)
   // The root font size scales the whole page, so a crowded table marks the root to shrink it.
   useEffect(() => {
@@ -89,8 +92,9 @@ export function Table({ code, view, state, send, coach, lit }: TableProps) {
       { top: round.discardTop, pileFrozenForAll: round.pileFrozenForAll },
     )
   // Opponents in the order they play after you, so the row reads the same way as the turn order.
+  // Someone waiting sits after the last seat, so for them everyone starts from seat 0.
   const opponents = playOrder(view.players, yourSeat + 1).filter(
-    ({ player }) => player.id !== you.id,
+    ({ player }) => player.id !== you?.id,
   )
   const panel = (p: PublicPlayer, seat: number) => {
     return (
@@ -111,7 +115,7 @@ export function Table({ code, view, state, send, coach, lit }: TableProps) {
     )
   }
   const peeked = seatTiles ? opponents.find(({ player }) => player.id === peekId) : undefined
-  const hand = (
+  const hand = you && (
     <Hand
       cards={you.hand}
       selected={staging.selected}
@@ -122,14 +126,14 @@ export function Table({ code, view, state, send, coach, lit }: TableProps) {
       onToggle={(cardId) => dispatch({ type: 'toggle', cardId })}
     />
   )
-  const melds = (
+  const melds = you && (
     <MeldList
       melds={you.melds}
       red3s={you.red3s}
       onPick={(meldId) => dispatch({ type: 'stageAdd', meldId })}
     />
   )
-  const stagingArea = view.status === 'playing' && (
+  const stagingArea = you && view.status === 'playing' && (
     <StagingArea
       view={view}
       staging={staging}
@@ -152,7 +156,7 @@ export function Table({ code, view, state, send, coach, lit }: TableProps) {
           <h1 className={styles.logo}>
             <span className={styles.logoSmall}>Cutthroat</span> Canasta!
           </h1>
-          <TurnRail view={view} />
+          <TurnRail view={view} playerId={state.playerId} />
           {seatTiles ? (
             <div className={styles.seats} data-coach="opponents">
               {opponents.map(({ player, seat }) => (
@@ -197,7 +201,7 @@ export function Table({ code, view, state, send, coach, lit }: TableProps) {
         />
 
         {view.status === 'roundOver' && (
-          <RoundEnd view={view} onNextRound={() => send({ type: 'nextRound' })} />
+          <RoundEnd view={view} onNextRound={you ? () => send({ type: 'nextRound' }) : undefined} />
         )}
         {view.status === 'gameOver' && (
           <>
@@ -207,49 +211,53 @@ export function Table({ code, view, state, send, coach, lit }: TableProps) {
           </>
         )}
 
-        <section
-          className={`${styles.you} ${yourTurn ? styles.turn : ''}`}
-          aria-label="You"
-          data-player-id={you.id}
-        >
-          <header>
-            <Avatar
-              name={you.name}
-              seat={yourSeat}
-              active={yourTurn}
-              dealer={yourSeat === round.dealer}
-              frozen={phone && pileFrozen(you)}
-            />
-            <div className={styles.who}>
-              <span className={styles.nameLine}>
-                <strong>{you.name}</strong>
-                <span className={styles.score}>{you.score.toLocaleString('en-US')} pts</span>
-                <RoundPoints player={you} playing={view.status === 'playing'} />
-                {!phone && pileFrozen(you) && <FrozenChip name={you.name} />}
-              </span>
-              <span className={styles.turnText}>{turnText(view, yourTurn)}</span>
-            </div>
-            {drawn && <span className={styles.drewNote}>You drew the {cardLabel(drawn)}</span>}
-          </header>
-          {phone ? (
-            <>
-              {melds}
-              {/* On a phone the buttons sit under the hand, where a thumb reaches them. */}
-              {coach}
-              {hand}
-              {stagingArea}
-            </>
-          ) : (
-            <>
-              {/* Side by side, so the hand stays on screen without scrolling. */}
-              <div className={styles.tableau}>
-                {melds}
-                {stagingArea}
+        {you ? (
+          <section
+            className={`${styles.you} ${yourTurn ? styles.turn : ''}`}
+            aria-label="You"
+            data-player-id={you.id}
+          >
+            <header>
+              <Avatar
+                name={you.name}
+                seat={yourSeat}
+                active={yourTurn}
+                dealer={yourSeat === round.dealer}
+                frozen={phone && pileFrozen(you)}
+              />
+              <div className={styles.who}>
+                <span className={styles.nameLine}>
+                  <strong>{you.name}</strong>
+                  <span className={styles.score}>{you.score.toLocaleString('en-US')} pts</span>
+                  <RoundPoints player={you} playing={view.status === 'playing'} />
+                  {!phone && pileFrozen(you) && <FrozenChip name={you.name} />}
+                </span>
+                <span className={styles.turnText}>{turnText(view, yourTurn)}</span>
               </div>
-              {hand}
-            </>
-          )}
-        </section>
+              {drawn && <span className={styles.drewNote}>You drew the {cardLabel(drawn)}</span>}
+            </header>
+            {phone ? (
+              <>
+                {melds}
+                {/* On a phone the buttons sit under the hand, where a thumb reaches them. */}
+                {coach}
+                {hand}
+                {stagingArea}
+              </>
+            ) : (
+              <>
+                {/* Side by side, so the hand stays on screen without scrolling. */}
+                <div className={styles.tableau}>
+                  {melds}
+                  {stagingArea}
+                </div>
+                {hand}
+              </>
+            )}
+          </section>
+        ) : (
+          <WatchNote view={view} playerId={state.playerId} offline={offline} send={send} />
+        )}
       </div>
 
       {/* Fixed at the top, beside the Rules button. */}
@@ -266,7 +274,7 @@ export function Table({ code, view, state, send, coach, lit }: TableProps) {
             Host
           </button>
         )}
-        {inPlay && (
+        {you && inPlay && (
           <button
             type="button"
             className={styles.toolButton}
@@ -326,6 +334,46 @@ export function Table({ code, view, state, send, coach, lit }: TableProps) {
       <ScoreSheet view={view} open={scoresOpen} onClose={() => setScoresOpen(false)} />
       <TableEffects view={view} />
     </main>
+  )
+}
+
+/**
+ * Where your panel and hand go, for a player who joined mid-hand: they watch this hand, and
+ * are dealt in with the next one after everyone already playing.
+ */
+function WatchNote({
+  view,
+  playerId,
+  offline,
+  send,
+}: {
+  view: PlayerView
+  playerId: string | null
+  offline: boolean
+  send: (message: ClientMessage) => boolean
+}) {
+  const seats = [...view.players, ...view.waiting]
+  const index = seats.findIndex((p) => p.id === playerId)
+  const me = seats[index]
+  const before = seats[index - 1]
+  return (
+    <section className={styles.watch} aria-label="You">
+      <span className={styles.watchChair} aria-hidden="true">
+        <svg viewBox="0 0 24 24">
+          <path d="M7 3v10M17 3v10M7 7h10M5 13h14M6 13l-1 8M18 13l1 8M8 17h8" />
+        </svg>
+      </span>
+      <div className={styles.watchWords}>
+        <h2>Pull up a chair{me ? `, ${me.name}` : ''}</h2>
+        <p>
+          You're watching this hand. You'll be dealt in when the next one starts
+          {before ? `, and you'll play after ${before.name}` : ''}.
+        </p>
+      </div>
+      <button type="button" disabled={offline} onClick={() => send({ type: 'leave' })}>
+        Leave
+      </button>
+    </section>
   )
 }
 

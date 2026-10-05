@@ -23,6 +23,8 @@ import styles from './PreviewPage.module.css'
 export default function PreviewPage() {
   const [view, setView] = useState(startingView)
   const [rules, setRules] = useState<DrawerRequest | null>(null)
+  // Set to watch the table as a player who joined mid-hand, instead of as Ann.
+  const [watcher, setWatcher] = useState<string | null>(null)
   const change = (fn: (draft: PlayerView) => void) =>
     setView((v) => {
       const draft = structuredClone(v)
@@ -226,6 +228,17 @@ export default function PreviewPage() {
         }),
     ],
     [
+      'Watch as the newcomer',
+      () => {
+        const newcomer = view.waiting.at(-1)
+        if (!newcomer) return
+        setWatcher(newcomer.id)
+        change((d) => {
+          d.you = null
+        })
+      },
+    ],
+    [
       'End the round',
       () =>
         change((d) => {
@@ -260,7 +273,12 @@ export default function PreviewPage() {
 
   return (
     <>
-      <Table code="PREVIEW" view={view} state={previewState} send={send} />
+      <Table
+        code="PREVIEW"
+        view={view}
+        state={watcher ? { ...previewState, playerId: watcher } : previewState}
+        send={send}
+      />
       {/* The game page's Rules button, so the buttons beside it can be judged in place. */}
       <button
         type="button"
@@ -277,7 +295,13 @@ export default function PreviewPage() {
             {label}
           </button>
         ))}
-        <button type="button" onClick={() => setView(startingView())}>
+        <button
+          type="button"
+          onClick={() => {
+            setWatcher(null)
+            setView(startingView())
+          }}
+        >
           Reset
         </button>
       </details>
@@ -340,7 +364,9 @@ function extraPlayers(): PlayerView['players'] {
 
 /** Keeps your public seat in step with your private one. */
 function syncYou(view: PlayerView) {
-  const you = view.you!
+  // Watching as a newcomer: there's no private seat to copy from.
+  const you = view.you
+  if (!you) return
   const seat = view.players.find((p) => p.id === you.id)!
   seat.handCount = you.hand.length
   seat.melds = you.melds
