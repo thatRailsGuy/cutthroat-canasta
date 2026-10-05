@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { cardValue, deckCount, handSize, initialMeldMinimum } from '../src/constants'
+import { HAND_SIZE, cardValue, deckCount, initialMeldMinimum } from '../src/constants'
 import type { Card, Rank } from '../src/cards'
 
 const card = (rank: Rank): Card => ({ id: 0, rank, suit: rank === 'JOKER' ? null : 'spades' })
@@ -19,18 +19,21 @@ describe('cardValue', () => {
   })
 })
 
-describe('deckCount and handSize', () => {
+describe('deckCount', () => {
   it.each([
-    [2, 2, 15],
-    [3, 2, 13],
-    [4, 2, 13],
-    [5, 3, 13],
-    [6, 3, 13],
-    [7, 4, 13],
-    [8, 4, 13],
-  ])('%i players use %i decks and %i-card hands', (players, decks, hand) => {
+    [2, 2],
+    [3, 2],
+    [4, 2],
+    [5, 3],
+    [6, 3],
+    [7, 4],
+    [8, 4],
+  ])('%i players use %i decks', (players, decks) => {
     expect(deckCount(players)).toBe(decks)
-    expect(handSize(players)).toBe(hand)
+  })
+
+  it('deals 13-card hands at every table size', () => {
+    expect(HAND_SIZE).toBe(13)
   })
 })
 

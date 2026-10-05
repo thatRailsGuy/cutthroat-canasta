@@ -49,9 +49,8 @@ export function deckCount(players: number): number {
   return Math.max(2, Math.ceil(players / 2))
 }
 
-export function handSize(players: number): number {
-  return players === 2 ? 15 : 13
-}
+/** Every player is dealt 13 cards, whatever the table size (a house rule). */
+export const HAND_SIZE = 13
 
 export function initialMeldMinimum(score: number): number {
   const tier = INITIAL_MELD_TIERS.find((t) => t.below === null || score < t.below)

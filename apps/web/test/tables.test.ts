@@ -24,8 +24,7 @@ describe('rules tables', () => {
 
   it('group player counts by decks and hand size', () => {
     expect(tableSizeRows()).toEqual([
-      { players: '2', decks: 2, hand: 15 },
-      { players: '3–4', decks: 2, hand: 13 },
+      { players: '2–4', decks: 2, hand: 13 },
       { players: '5–6', decks: 3, hand: 13 },
       { players: '7–8', decks: 4, hand: 13 },
     ])

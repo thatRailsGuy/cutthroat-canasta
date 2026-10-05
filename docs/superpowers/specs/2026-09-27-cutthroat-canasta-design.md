@@ -45,7 +45,7 @@ This section combines the V3 sheet with the decisions from the design discussion
 ### 3.1 Setup
 
 - Standard 52-card decks, each with 2 Jokers. Deck count = `max(2, ceil(n / 2))`: 2 decks for 2–4 players, 3 for 5–6, and 4 for 7–8.
-- Hand size: 15 for 2 players, 13 for 3–8 players.
+- Hand size: 13 for every table size, 2–8 players.
 - Supported player counts: 2–8.
 - After the deal, each player lays out any Red 3s face up and draws replacements from the stock. Repeat until nobody holds a Red 3.
 - One card is turned up to start the discard pile. **[clarified]** If it is a Red 3 or a wild, it stays in the pile and freezes it for everyone. The client shows it sideways under the pile. A Red 3 picked up with the pile goes to the player's Red 3s, not their hand. (Changed 2026-09-30 after playtesting; it used to be buried in the stock.)

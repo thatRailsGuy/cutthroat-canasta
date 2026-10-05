@@ -1,5 +1,5 @@
 import { isRed3, isWild } from './cards'
-import { WINNING_SCORE, deckCount, handSize } from './constants'
+import { HAND_SIZE, WINNING_SCORE, deckCount } from './constants'
 import { buildDeck } from './deck'
 import { createRng, shuffle, type Seed } from './rng'
 import { scoreRound } from './scoring'
@@ -10,7 +10,7 @@ import type { Game } from './types'
 export function dealRound(game: Game, number: number, dealer: number, redeals = 0): void {
   const n = game.players.length
   const stock = shuffle(buildDeck(deckCount(n)), createRng(roundSeed(game.seed, number, redeals)))
-  const size = handSize(n)
+  const size = HAND_SIZE
 
   for (const player of game.players) {
     player.hand = stock.splice(stock.length - size, size)

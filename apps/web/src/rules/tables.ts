@@ -1,10 +1,10 @@
 import {
   CARD_VALUES,
+  HAND_SIZE,
   INITIAL_MELD_TIERS,
   MAX_PLAYERS,
   MIN_PLAYERS,
   deckCount,
-  handSize,
   type Rank,
 } from '@canasta/engine'
 
@@ -47,13 +47,13 @@ export function initialMeldRows(): { score: string; minimum: number }[] {
   })
 }
 
-/** Decks and hand size for each player count, from deckCount and handSize. */
+/** Decks and hand size for each player count, from deckCount and HAND_SIZE. */
 export function tableSizeRows(): { players: string; decks: number; hand: number }[] {
   const rows: { from: number; to: number; decks: number; hand: number }[] = []
   for (let n = MIN_PLAYERS; n <= MAX_PLAYERS; n++) {
     const last = rows.at(-1)
-    if (last && last.decks === deckCount(n) && last.hand === handSize(n)) last.to = n
-    else rows.push({ from: n, to: n, decks: deckCount(n), hand: handSize(n) })
+    if (last && last.decks === deckCount(n)) last.to = n
+    else rows.push({ from: n, to: n, decks: deckCount(n), hand: HAND_SIZE })
   }
   return rows.map((r) => ({
     players: r.from === r.to ? `${r.from}` : `${r.from}–${r.to}`,

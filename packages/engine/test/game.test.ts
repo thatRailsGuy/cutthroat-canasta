@@ -96,7 +96,7 @@ describe('lobby', () => {
 
 describe('dealing', () => {
   it.each([
-    [2, 108, 15],
+    [2, 108, 13],
     [3, 108, 13],
     [4, 108, 13],
     [5, 162, 13],
@@ -231,7 +231,7 @@ describe('startNextRound', () => {
     expect(next.round!.dealer).toBe(1)
     expect(next.round!.current).toBe(0)
     expect(next.players.map((p) => p.score)).toEqual([100, -50])
-    expect(next.players.every((p) => p.hand.length === 15 && p.melds.length === 0)).toBe(true)
+    expect(next.players.every((p) => p.hand.length === 13 && p.melds.length === 0)).toBe(true)
     expect(countCards(next)).toBe(108)
   })
 })
@@ -295,7 +295,7 @@ describe('quitGame', () => {
     game.status = 'roundOver'
     const next = unwrap(startNextRound(unwrap(quitGame(game, 'p1'))))
     expect(next.players.map((p) => p.id)).toEqual(['p0', 'p2'])
-    expect(next.players.every((p) => p.hand.length === 15)).toBe(true)
+    expect(next.players.every((p) => p.hand.length === 13)).toBe(true)
   })
 
   it('ends the game when only one player is left, and that player wins', () => {

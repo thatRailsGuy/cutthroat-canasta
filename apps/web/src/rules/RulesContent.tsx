@@ -2,6 +2,7 @@ import {
   CANASTA_SIZE,
   CONCEALED_HAND_BONUS,
   GOING_OUT_BONUS,
+  HAND_SIZE,
   MAX_PLAYERS,
   MIN_MELD_SIZE,
   MIN_PLAYERS,
@@ -129,6 +130,10 @@ export function RulesContent() {
           everyone. It lies sideways under the pile, so everyone can see why the pile is frozen.
           Nobody can pick up the pile while it is on top. A Red 3 picked up with the pile is laid
           face up like any other Red 3.
+        </House>
+        <House>
+          Everyone is dealt {HAND_SIZE} cards, even in a two-player game, where standard Canasta
+          deals 15.
         </House>
         <House>The sheet's Perfect Cut Bonus is not used online.</House>
       </Section>
@@ -356,6 +361,7 @@ export function RulesContent() {
 
 const HOUSE_DIFFERENCES: [string, string][] = [
   ['Everyone plays for themselves', 'Two partnerships share melds and scores'],
+  [`Everyone is dealt ${HAND_SIZE} cards`, '11 cards each (15 in a two-player game)'],
   ['Wilds may not outnumber naturals in a meld', 'At most 3 wilds in a meld'],
   ['3s can never be melded', 'Black 3s can be melded when going out'],
   [`Red 3s are a flat ${RED_THREE_BONUS} each`, 'All four Red 3s score double'],
