@@ -1,0 +1,251 @@
+.root {
+  display: flex;
+}
+
+/* Only the speaker, so it takes the same room on a phone as on a desktop. */
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  padding: 0 0.7rem;
+}
+
+.button svg {
+  width: 1.3rem;
+  height: 1.3rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Dropped down under the top buttons, like the "Are you sure?" for Quit game. */
+.panel {
+  position: fixed;
+  top: 3.75rem;
+  right: 0.5rem;
+  z-index: 6;
+  width: min(22rem, calc(100vw - 1rem));
+  display: grid;
+  gap: 0.7rem;
+  padding: 0.9rem 1rem 1rem;
+  border: 2px solid var(--ink);
+  border-radius: 16px;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: var(--shadow);
+}
+
+.panel h2 {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 1.2rem;
+  color: var(--red);
+}
+
+.levels {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.label {
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--teal-dark);
+}
+
+.levels input {
+  width: 100%;
+  height: 1.6rem;
+  margin: 0;
+  border: none;
+  accent-color: var(--red);
+  cursor: pointer;
+}
+
+/* The stops are words under the track, so the slider reads without the hint. */
+.stops {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: var(--muted);
+}
+
+.stops span {
+  text-align: center;
+}
+
+.stops span:first-child {
+  text-align: left;
+}
+
+.stops span:last-child {
+  text-align: right;
+}
+
+.stops .on {
+  color: var(--ink);
+}
+
+.hint {
+  min-height: 2.7em;
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--muted);
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.panel .link {
+  min-height: 40px;
+  padding: 0;
+  border: none;
+  background: none;
+  box-shadow: none;
+  color: var(--teal-dark);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.panel .link:active {
+  transform: none;
+  box-shadow: none;
+}
+
+.chart {
+  width: min(40rem, calc(100% - 2rem));
+  max-height: min(85dvh, 44rem);
+  padding: 1rem 1.2rem 1.2rem;
+  border: 2px solid var(--ink);
+  border-radius: 16px;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: var(--shadow);
+}
+
+.chart::backdrop {
+  background: rgb(43 35 32 / 0.5);
+}
+
+.chartHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.4rem;
+}
+
+.chartHead h2 {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 1.15rem;
+  color: var(--red);
+}
+
+.chartNote {
+  margin: 0 0 0.6rem;
+  font-size: 0.88rem;
+  color: var(--muted);
+}
+
+.chart table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+
+.chart th,
+.chart td {
+  padding: 0.4rem 0.5rem;
+  border-bottom: 1.5px solid #ddd0b8;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.chart th[scope='row'] {
+  font-weight: 400;
+  text-align: left;
+}
+
+.chart thead th {
+  border-bottom: 2px solid var(--ink);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--muted);
+}
+
+.chart thead th:first-child {
+  text-align: left;
+}
+
+.chart .group th {
+  padding-top: 0.9rem;
+  border-bottom: none;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-align: left;
+  text-transform: uppercase;
+  color: var(--teal-dark);
+}
+
+.chart .shaded {
+  background: #fdf0c8;
+}
+
+.chart thead .shaded {
+  color: var(--red);
+}
+
+.yes::before {
+  content: '●';
+  font-size: 1.1rem;
+  color: var(--teal-dark);
+}
+
+.no::before {
+  content: '–';
+  color: #9aa0a6;
+}
+
+/* On a phone the chart slides up as a sheet, like the score pad's. */
+@media (max-width: 600px) {
+  .chart {
+    width: 100%;
+    max-width: none;
+    margin: auto 0 0;
+    padding-bottom: calc(1.2rem + env(safe-area-inset-bottom));
+    border-bottom: none;
+    border-radius: 22px 22px 0 0;
+  }
+
+  .chart table {
+    font-size: 0.75rem;
+  }
+
+  .chart th,
+  .chart td {
+    padding: 0.3rem 0.25rem;
+  }
+
+  .chart thead th {
+    font-size: 0.62rem;
+    letter-spacing: 0.02em;
+    white-space: normal;
+  }
+}

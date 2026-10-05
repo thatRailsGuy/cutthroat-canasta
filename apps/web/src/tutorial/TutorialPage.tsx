@@ -3,6 +3,7 @@ import type { ClientMessage } from '@canasta/server/protocol'
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { describeEvent } from '../feed'
+import { TableSounds } from '../components/TableSounds'
 import { initialGameState, type GameState } from '../gameState'
 import { Table } from '../pages/Table'
 import { Coach } from './Coach'
@@ -87,23 +88,26 @@ export function TutorialPage() {
   }
 
   return (
-    <Table
-      code="LESSON"
-      view={view}
-      state={lessonState}
-      send={send}
-      lit={focus.cards}
-      coach={
-        <Coach
-          step={step}
-          hint={hint}
-          refusals={refusals}
-          focus={focus}
-          moves={moves}
-          onNext={() => setLesson({ ...lesson, step: advance(step + 1, game), hint: null })}
-          onRestart={() => setLesson(start())}
-        />
-      }
-    />
+    <>
+      <Table
+        code="LESSON"
+        view={view}
+        state={lessonState}
+        send={send}
+        lit={focus.cards}
+        coach={
+          <Coach
+            step={step}
+            hint={hint}
+            refusals={refusals}
+            focus={focus}
+            moves={moves}
+            onNext={() => setLesson({ ...lesson, step: advance(step + 1, game), hint: null })}
+            onRestart={() => setLesson(start())}
+          />
+        }
+      />
+      <TableSounds view={view} live />
+    </>
   )
 }

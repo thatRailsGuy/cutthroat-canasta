@@ -10,6 +10,7 @@ import {
 import type { ClientMessage } from '@canasta/server/protocol'
 import { useState } from 'react'
 import { RulesDrawer } from '../components/RulesDrawer'
+import { TableSounds } from '../components/TableSounds'
 import { initialGameState, type GameState } from '../gameState'
 import pageStyles from '../pages/Pages.module.css'
 import { Table } from '../pages/Table'
@@ -18,7 +19,8 @@ import styles from './PreviewPage.module.css'
 
 /**
  * Dev only (`/dev/table`): the table with a made-up three-player game, and buttons that act
- * out moments on it, for working on the look and the animations without playing a game.
+ * out moments on it, for working on the look, the animations and the sounds without playing a
+ * game.
  */
 export default function PreviewPage() {
   const [view, setView] = useState(startingView)
@@ -269,6 +271,7 @@ export default function PreviewPage() {
         state={watcher ? { ...previewState, playerId: watcher } : previewState}
         send={send}
       />
+      <TableSounds view={view} live />
       {/* The game page's Rules button, so the buttons beside it can be judged in place. */}
       <button
         type="button"

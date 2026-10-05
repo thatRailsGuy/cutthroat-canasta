@@ -1,6 +1,9 @@
+import { DEFAULT_SOUND_LEVEL, type SoundLevel } from './sounds'
+
 const tokenKey = (code: string) => `canasta:token:${code}`
 const NAME_KEY = 'canasta:name'
 const HAND_LAYOUT_KEY = 'canasta:handLayout'
+const SOUND_LEVEL_KEY = 'canasta:soundLevel'
 
 /** localStorage can throw (private mode, blocked storage). The game still works without it. */
 function read(key: string): string | null {
@@ -30,6 +33,11 @@ export function loadHandLayout(): 'spread' | 'line' | null {
   return layout === 'spread' || layout === 'line' ? layout : null
 }
 export const saveHandLayout = (layout: 'spread' | 'line') => write(HAND_LAYOUT_KEY, layout)
+export function loadSoundLevel(): SoundLevel {
+  const level = Number(read(SOUND_LEVEL_KEY) ?? NaN)
+  return level === 0 || level === 1 || level === 2 || level === 3 ? level : DEFAULT_SOUND_LEVEL
+}
+export const saveSoundLevel = (level: SoundLevel) => write(SOUND_LEVEL_KEY, String(level))
 
 /** Reads `#token=…` from a rejoin link. */
 export function tokenFromHash(hash: string): string | null {

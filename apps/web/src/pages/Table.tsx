@@ -22,6 +22,7 @@ import { RoundPoints } from '../components/RoundPoints'
 import { ScorePad } from '../components/ScorePad'
 import { ScoreSheet } from '../components/ScoreSheet'
 import { SideSheet } from '../components/SideSheet'
+import { SoundButton } from '../components/SoundButton'
 import { FrozenChip } from '../components/Snowflake'
 import { StagingArea } from '../components/StagingArea'
 import { TableEffects } from '../components/TableEffects'
@@ -34,6 +35,7 @@ import { unreadChat, type GameState } from '../gameState'
 import { arrangeHand, moveCard } from '../handOrder'
 import { isCrowded, usePhone } from '../layout'
 import { pickupHelpers, stagedIds, useStaging } from '../staging'
+import { useSoundLevel } from '../soundLevel'
 import { loadHandLayout, saveHandLayout } from '../storage'
 import { playOrder, turnText } from '../turnOrder'
 
@@ -66,6 +68,7 @@ export function Table({ code, view, state, send, talk, coach, lit }: TableProps)
   const [scoresOpen, setScoresOpen] = useState(false)
   const [confirmQuit, setConfirmQuit] = useState(false)
   const [hostOpen, setHostOpen] = useState(false)
+  const [soundLevel, setSoundLevel] = useSoundLevel()
   const inPlay = view.status === 'playing' || view.status === 'roundOver'
   // Point out the card you just drew from the stock, until you discard.
   const drawn =
@@ -374,6 +377,11 @@ export function Table({ code, view, state, send, talk, coach, lit }: TableProps)
             )}
           </button>
         )}
+        <SoundButton
+          level={soundLevel}
+          onLevel={setSoundLevel}
+          onOpen={() => setConfirmQuit(false)}
+        />
       </div>
       {confirmQuit && (
         <div className={styles.toolConfirm} role="alertdialog" aria-label="Quit the game?">

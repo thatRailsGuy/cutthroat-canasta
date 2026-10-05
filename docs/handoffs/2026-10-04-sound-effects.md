@@ -1,13 +1,12 @@
 # Sound effects: handoff
 
-The design and every sound are decided. No code is written yet. Pick up from **Build plan** below.
+The design and every sound are decided, and steps 1 to 6 of the **Build plan** are built and tested. What is left is step 7: listen on a real phone, then mark the todo item done.
 
 ## Status
 
 - **Design approved.** Mockup with a working demo: https://claude.ai/artifact/6DJfMm1ZiFyGrHEKqNzBuK (private, open it while signed in).
 - **Sounds picked** on the sound board: https://claude.ai/artifact/DSQVAyes9jh6dmDUVALJW3 (private). Its page source holds the exact recipes, and an Artifact `read` of that URL returns it.
-- **The todo** (`docs/todo.md`, the "Add sound effects" item) has the decisions. That edit is **not committed yet**.
-- **Git:** `main` is one commit ahead of `origin` (`3600a83`, Main menu frees the seat). It is not pushed.
+- **The todo** (`docs/todo.md`, the "Add sound effects" item) has the decisions. It stays open until the phone check.
 
 ## Decisions
 
@@ -128,7 +127,12 @@ const vibesTaDa = () => {
 
 ## Build plan
 
-This was the plan when work stopped. Nothing below exists yet.
+Steps 1 to 6 are done. Where the build differs from the plan:
+
+- **The level is one store for the page** (`soundLevel.ts`, `useSoundLevel`), not state in `Table`. `GamePage` remounts `Table` with each deal, so `TableSounds` sits in `GamePage` (and `TutorialPage`), above the table, and the button and the sounds share the store.
+- **A reconnect stays quiet:** while the connection is down, `TableSounds` forgets its snapshot, and it ignores the stale view still showing when the connection comes back.
+- **The tutorial gets the button and the sounds.**
+- **iOS:** the player sets `navigator.audioSession.type = 'ambient'` where it exists, so the silent switch mutes the page and other apps' music keeps playing.
 
 1. **Cues: `apps/web/src/sounds.ts`, pure and unit tested.**
    - **Snapshot:** `snapshotOf(view)` records the deal (round number and redeals), the feed length, the status, and whose turn it is.

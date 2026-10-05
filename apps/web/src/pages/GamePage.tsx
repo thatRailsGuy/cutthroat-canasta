@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate, useParams } from 'react-router'
 import { gameExists, normalizeCode } from '../api'
 import type { ConnectionStatus } from '../connection'
 import { RulesDrawer } from '../components/RulesDrawer'
+import { TableSounds } from '../components/TableSounds'
 import { Toasts } from '../components/Toasts'
 import { RulesDrawerContext, type DrawerRequest } from '../rules/drawer'
 import type { PageSection } from '../rules/sections'
@@ -170,6 +171,8 @@ function Session({ code, linkToken, autoJoinName, joinsByItself }: SessionProps)
     <RulesDrawerContext.Provider value={openRules}>
       <ConnectionBanner connection={state.connection} failures={state.failures} code={code} />
       {body}
+      {/* Outside the table, which remounts with each deal, so the deal itself can play a sound. */}
+      {view && state.playerId && <TableSounds view={view} live={state.connection === 'open'} />}
       <button type="button" className={styles.rulesButton} onClick={() => openRules('overview')}>
         Rules
       </button>
