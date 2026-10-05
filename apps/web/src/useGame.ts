@@ -17,6 +17,12 @@ export interface GameControls {
   join(name: string): void
   /** Returns false, and shows a toast, if the socket isn't open, so the message was not sent. */
   send(message: ClientMessage): boolean
+  /** Updates what the player is typing in table talk. */
+  typeChat(text: string): void
+  /** Sends a line of table talk and clears the input. Returns false, like `send`, if not sent. */
+  sendChat(text: string): boolean
+  /** Marks every line so far as seen. */
+  readChat(): void
   dismissToast(id: number): void
 }
 
@@ -94,7 +100,19 @@ export function useGame(code: string, { linkToken, autoJoinName }: GameOptions):
     return sent
   }, [])
 
+  const sendChat = useCallback(
+    (text: string) => {
+      const sent = send({ type: 'chat', text })
+      if (sent) dispatch({ type: 'chatSent', text })
+      return sent
+    },
+    [send],
+  )
+
+  const typeChat = useCallback((text: string) => dispatch({ type: 'chatText', text }), [])
+  const readChat = useCallback(() => dispatch({ type: 'readChat' }), [])
+
   const dismissToast = useCallback((id: number) => dispatch({ type: 'dismissToast', id }), [])
 
-  return { state, join, send, dismissToast }
+  return { state, join, send, typeChat, sendChat, readChat, dismissToast }
 }

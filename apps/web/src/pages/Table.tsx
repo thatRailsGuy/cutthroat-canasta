@@ -12,7 +12,6 @@ import { rejoinLink } from '../api'
 import { cardLabel } from '../cards'
 import { Avatar } from '../components/Avatar'
 import { CenterPile } from '../components/CenterPile'
-import { Feed } from '../components/Feed'
 import { GameOver } from '../components/GameOver'
 import { HostDrawer } from '../components/HostDrawer'
 import { Hand, type HandLayout } from '../components/Hand'
@@ -26,11 +25,12 @@ import { SideSheet } from '../components/SideSheet'
 import { FrozenChip } from '../components/Snowflake'
 import { StagingArea } from '../components/StagingArea'
 import { TableEffects } from '../components/TableEffects'
+import { TableTalk, type TalkControls } from '../components/TableTalk'
 import { TurnRail } from '../components/TurnRail'
 import styles from '../components/Table.module.css'
 import { useCardDrag } from '../cardDrag'
 import { dropVerdict, joinsStagedMeld } from '../drops'
-import type { GameState } from '../gameState'
+import { unreadChat, type GameState } from '../gameState'
 import { arrangeHand, moveCard } from '../handOrder'
 import { isCrowded, usePhone } from '../layout'
 import { pickupHelpers, stagedIds, useStaging } from '../staging'
@@ -42,6 +42,8 @@ export interface TableProps {
   view: PlayerView
   state: GameState
   send: (message: ClientMessage) => boolean
+  /** Chat at the table. The tutorial has none. */
+  talk?: TalkControls
   /**
    * The tutorial's lesson card. On a phone it sits above your hand; on a wider screen it
    * places itself over the table.
@@ -51,7 +53,7 @@ export interface TableProps {
   lit?: readonly CardId[]
 }
 
-export function Table({ code, view, state, send, coach, lit }: TableProps) {
+export function Table({ code, view, state, send, talk, coach, lit }: TableProps) {
   const [staging, dispatch] = useStaging(view)
   const round = view.round!
   // Null for a player who joined mid-hand: they watch until the next deal.
@@ -84,6 +86,9 @@ export function Table({ code, view, state, send, coach, lit }: TableProps) {
   }, [crowded])
   const phone = usePhone()
   const [sideOpen, setSideOpen] = useState(false)
+  const unread = phone ? unreadChat(state) : 0
+  // Unread lines put table talk first in the sheet. Set when it opens, since opening reads them.
+  const [talkFirst, setTalkFirst] = useState(false)
   // A crowded table on a phone shows opponents as seat tiles; tapping one opens its panel.
   const seatTiles = phone && crowded
   const [peekId, setPeekId] = useState<string | null>(null)
@@ -178,12 +183,34 @@ export function Table({ code, view, state, send, coach, lit }: TableProps) {
       onAction={act}
     />
   )
-  const side = (
-    <>
-      <ScorePad view={view} onOpenSheet={() => setScoresOpen(true)} />
-      <Feed events={round.feed} notices={state.notices} players={view.players} quit={view.quit} />
-    </>
+  const scorePad = <ScorePad view={view} onOpenSheet={() => setScoresOpen(true)} />
+  const tableTalk = (
+    <TableTalk
+      events={round.feed}
+      deal={{ round: round.number, redeals: round.redeals }}
+      chat={state.chat}
+      notices={state.notices}
+      players={view.players}
+      waiting={view.waiting}
+      quit={view.quit}
+      playerId={state.playerId}
+      offline={offline}
+      visible={!phone || sideOpen}
+      talk={talk}
+    />
   )
+  const side =
+    phone && talkFirst ? (
+      <>
+        {tableTalk}
+        {scorePad}
+      </>
+    ) : (
+      <>
+        {scorePad}
+        {tableTalk}
+      </>
+    )
 
   return (
     <main className={styles.table}>
@@ -321,8 +348,22 @@ export function Table({ code, view, state, send, coach, lit }: TableProps) {
           </button>
         )}
         {phone && (
-          <button type="button" onClick={() => setSideOpen(true)} data-coach="side">
+          <button
+            type="button"
+            className={styles.scoresButton}
+            onClick={() => {
+              setTalkFirst(unread > 0)
+              setSideOpen(true)
+            }}
+            aria-label={unread > 0 ? `Scores, ${unread} unread` : undefined}
+            data-coach="side"
+          >
             Scores
+            {unread > 0 && (
+              <span className={styles.unread} aria-hidden="true">
+                {unread}
+              </span>
+            )}
           </button>
         )}
       </div>

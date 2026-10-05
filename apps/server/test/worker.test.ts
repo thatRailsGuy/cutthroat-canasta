@@ -5,6 +5,7 @@ import type { RoomState } from '../src/room'
 
 type Joined = Extract<ServerMessage, { type: 'joined' }>
 type StateMessage = Extract<ServerMessage, { type: 'state' }>
+type ChatMessage = Extract<ServerMessage, { type: 'chat' }>
 
 interface Client {
   send(message: unknown): void
@@ -73,10 +74,12 @@ async function connect(code: string, { halfOpen = false } = {}): Promise<Client>
   }
 }
 
+/** Joins, and reads past the chat backlog that follows `joined`. */
 async function join(client: Client, name: string, token?: string): Promise<Joined> {
   client.send(token ? { type: 'join', name, token } : { type: 'join', name })
   const message = await client.next()
   expect(message.type).toBe('joined')
+  expect((await client.next()).type).toBe('chatLog')
   return message as Joined
 }
 
@@ -321,6 +324,82 @@ describe('seats', () => {
     const { ann, bobJoined } = await startedGame()
     ann.send({ type: 'reissue', playerId: bobJoined.playerId })
     expect(await ann.next()).toMatchObject({ type: 'error', code: 'PLAYER_CONNECTED' })
+  })
+})
+
+describe('chat', () => {
+  it('sends a line to every joined socket, and to nobody else', async () => {
+    const { code, ann, bob, annJoined } = await lobbyGame()
+    const watcher = await connect(code)
+    ann.send({ type: 'chat', text: '  hi   all ' })
+    const line = ((await ann.next()) as ChatMessage).line
+    expect(line).toMatchObject({
+      id: 1,
+      playerId: annJoined.playerId,
+      name: 'Ann',
+      text: 'hi all',
+      anchor: { round: null, redeals: 0, after: 0 },
+    })
+    expect(await bob.next()).toEqual({ type: 'chat', line })
+    await watcher.expectQuiet()
+  })
+
+  it('refuses a socket that has not joined', async () => {
+    const code = await createGame()
+    const watcher = await connect(code)
+    watcher.send({ type: 'chat', text: 'hello' })
+    expect(await watcher.next()).toMatchObject({ type: 'error', code: 'NOT_JOINED' })
+  })
+
+  it('anchors a line after the events of the deal so far', async () => {
+    const { ann, bob } = await startedGame()
+    bob.send({ type: 'action', action: { type: 'drawStock' } })
+    await nextState(bob)
+    await nextState(ann)
+    ann.send({ type: 'chat', text: 'good luck' })
+    expect(((await ann.next()) as ChatMessage).line.anchor).toEqual({
+      round: 1,
+      redeals: 0,
+      after: 1,
+    })
+  })
+
+  it('sends the backlog to a returning player, and keeps it in storage', async () => {
+    const { code, ann, bob, bobJoined } = await lobbyGame()
+    ann.send({ type: 'chat', text: 'one' })
+    bob.send({ type: 'chat', text: 'two' })
+    await ann.next()
+    await ann.next()
+    bob.close()
+    await nextState(ann)
+
+    const again = await connect(code)
+    again.send({ type: 'join', name: 'Bob', token: bobJoined.token })
+    expect((await again.next()).type).toBe('joined')
+    const log = await again.next()
+    expect(log.type).toBe('chatLog')
+    const lines = (log as Extract<ServerMessage, { type: 'chatLog' }>).lines
+    expect(lines.map((l) => [l.id, l.name, l.text])).toEqual([
+      [1, 'Ann', 'one'],
+      [2, 'Bob', 'two'],
+    ])
+
+    const stub = env.GAME_ROOM.get(env.GAME_ROOM.idFromName(code))
+    await runInDurableObject(stub, async (_instance, state) => {
+      expect(await state.storage.get('chat')).toEqual(lines)
+    })
+  })
+
+  it('refuses a sixth line within ten seconds', async () => {
+    const { ann, bob } = await lobbyGame()
+    for (let i = 1; i <= 5; i++) {
+      ann.send({ type: 'chat', text: `line ${i}` })
+      expect(((await ann.next()) as ChatMessage).line.text).toBe(`line ${i}`)
+      await bob.next()
+    }
+    ann.send({ type: 'chat', text: 'line 6' })
+    expect(await ann.next()).toMatchObject({ type: 'error', code: 'CHAT_TOO_FAST' })
+    await bob.expectQuiet()
   })
 })
 

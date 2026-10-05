@@ -3,6 +3,9 @@ import type { Action, PlayerView, RuleErrorCode } from '@canasta/engine'
 
 export const MAX_MESSAGE_LENGTH = 16_384
 export const MAX_NAME_LENGTH = 20
+export const MAX_CHAT_LENGTH = 200
+/** How many chat lines a room keeps. */
+export const CHAT_LOG_SIZE = 50
 
 /**
  * Heartbeat. The Durable Object answers `HEARTBEAT_PING` with `HEARTBEAT_PONG` through a
@@ -44,6 +47,21 @@ const joinName = z
   )
   .pipe(z.string().min(1).max(MAX_NAME_LENGTH))
 
+/**
+ * Cleaned like a join name, but control characters and runs of whitespace become one space.
+ * The zero-width joiner stays, since emoji such as 👨‍👩‍👧 are built with it.
+ */
+const chatText = z
+  .string()
+  .transform((text) =>
+    text
+      .normalize('NFKC')
+      .replace(/(?!\u200d)[\p{Cc}\p{Cf}]/gu, ' ')
+      .replace(/\s+/g, ' ')
+      .trim(),
+  )
+  .pipe(z.string().min(1).max(MAX_CHAT_LENGTH))
+
 const playerId = z.string().min(1).max(64)
 
 export const clientMessageSchema = z.discriminatedUnion('type', [
@@ -59,6 +77,7 @@ export const clientMessageSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('leave') }),
   z.object({ type: z.literal('kick'), playerId }),
   z.object({ type: z.literal('reissue'), playerId }),
+  z.object({ type: z.literal('chat'), text: chatText }),
 ])
 
 export type ClientMessage = z.infer<typeof clientMessageSchema>
@@ -76,7 +95,25 @@ export type ProtocolErrorCode =
   | 'NO_SUCH_PLAYER'
   | 'PLAYER_CONNECTED'
   | 'UNKNOWN_TOKEN'
+  | 'CHAT_TOO_FAST'
 export type ServerErrorCode = RuleErrorCode | ProtocolErrorCode
+
+/** One line of table talk, as the server stamped it. */
+export interface ChatLine {
+  /** Increases with each line in a room. */
+  id: number
+  playerId: string
+  /** The sender's name when they sent it, so the line still reads right after they quit. */
+  name: string
+  text: string
+  /** When the server got it (ms). */
+  at: number
+  /**
+   * Where the line falls among the game events: in this deal of this round (null in the
+   * lobby), after the first `after` events of its feed. A redeal starts a new feed.
+   */
+  anchor: { round: number | null; redeals: number; after: number }
+}
 
 export type ServerMessage =
   | { type: 'joined'; code: string; playerId: string; token: string }
@@ -87,6 +124,9 @@ export type ServerMessage =
   | { type: 'seatReissued'; playerId: string }
   /** A player quit a started game. The name is sent too, since they are no longer seated. */
   | { type: 'playerQuit'; playerId: string; name: string }
+  | { type: 'chat'; line: ChatLine }
+  /** The room's recent chat, sent once after `joined`, so a reconnect gets the backlog. */
+  | { type: 'chatLog'; lines: ChatLine[] }
   /** The heartbeat reply. The runtime's auto-response sends it, never the room handler. */
   | { type: 'pong' }
 

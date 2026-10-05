@@ -1,11 +1,13 @@
 import { DurableObject } from 'cloudflare:workers'
 import type { Seed } from '@canasta/engine'
+import { allowSend, appendLine, stampLine } from './chat'
 import { isStale, lastSeen } from './presence'
 import {
   HEARTBEAT_PING,
   HEARTBEAT_PONG,
   STALE_CLOSE_CODE,
   parseClientMessage,
+  type ChatLine,
   type ServerMessage,
 } from './protocol'
 import { createRoom, handleMessage, stateMessage, type RoomIds, type RoomState } from './room'
@@ -23,12 +25,20 @@ const ids: RoomIds = {
 
 export class GameRoom extends DurableObject<Env> {
   private room: RoomState | null = null
+  /** Kept under its own key, so a line doesn't rewrite the game and a move doesn't rewrite chat. */
+  private chat: ChatLine[] = []
+  /**
+   * Each player's recent send times, for the rate limit. Only in memory: hibernation clears it,
+   * which is fine, because a room only hibernates once it has gone quiet.
+   */
+  private chatTimes = new Map<string, number[]>()
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env)
     ctx.setWebSocketAutoResponse(new WebSocketRequestResponsePair(HEARTBEAT_PING, HEARTBEAT_PONG))
     ctx.blockConcurrencyWhile(async () => {
       this.room = (await ctx.storage.get<RoomState>('room')) ?? null
+      this.chat = (await ctx.storage.get<ChatLine[]>('chat')) ?? []
     })
   }
 
@@ -67,6 +77,11 @@ export class GameRoom extends DurableObject<Env> {
       if (droppedPlayer) this.broadcast()
       return
     }
+    if (parsed.message.type === 'chat') {
+      await this.addChat(ws, playerId, parsed.message.text)
+      if (droppedPlayer) this.broadcast()
+      return
+    }
 
     const outcome = handleMessage(this.room, playerId, parsed.message, ids, this.connected())
     if (outcome.changed) {
@@ -80,11 +95,9 @@ export class GameRoom extends DurableObject<Env> {
       } satisfies Attachment)
     }
     for (const message of outcome.reply) send(ws, message)
-    if (outcome.announce) {
-      for (const socket of this.ctx.getWebSockets()) {
-        if ((socket.deserializeAttachment() as Attachment).playerId) send(socket, outcome.announce)
-      }
-    }
+    // The backlog goes to a socket that just took a seat, before its first state.
+    if (outcome.bindPlayerId) send(ws, { type: 'chatLog', lines: this.chat })
+    if (outcome.announce) this.announce(outcome.announce)
     if (outcome.detach) {
       const { playerId: gone, reason } = outcome.detach
       for (const socket of this.ctx.getWebSockets()) {
@@ -110,6 +123,40 @@ export class GameRoom extends DurableObject<Env> {
   async webSocketError(ws: WebSocket): Promise<void> {
     this.dropStaleSockets()
     this.broadcast(ws)
+  }
+
+  private async addChat(ws: WebSocket, playerId: string | null, text: string): Promise<void> {
+    if (!this.room || !playerId) {
+      send(ws, { type: 'error', code: 'NOT_JOINED', message: 'Join the game first.' })
+      return
+    }
+    const now = Date.now()
+    const times = allowSend(this.chatTimes.get(playerId) ?? [], now)
+    if (!times) {
+      send(ws, {
+        type: 'error',
+        code: 'CHAT_TOO_FAST',
+        message: 'Slow down. Wait a few seconds before you send more.',
+      })
+      return
+    }
+    const id = (this.chat.at(-1)?.id ?? 0) + 1
+    const line = stampLine(this.room.game, playerId, text, id, now)
+    if (!line) {
+      send(ws, { type: 'error', code: 'NOT_JOINED', message: 'Join the game first.' })
+      return
+    }
+    this.chatTimes.set(playerId, times)
+    this.chat = appendLine(this.chat, line)
+    await this.ctx.storage.put('chat', this.chat)
+    this.announce({ type: 'chat', line })
+  }
+
+  /** Sends `message` to every socket bound to a player. */
+  private announce(message: ServerMessage): void {
+    for (const socket of this.ctx.getWebSockets()) {
+      if ((socket.deserializeAttachment() as Attachment).playerId) send(socket, message)
+    }
   }
 
   /**

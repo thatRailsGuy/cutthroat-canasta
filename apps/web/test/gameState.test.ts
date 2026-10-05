@@ -4,10 +4,11 @@ import {
   gameReducer,
   initialGameState,
   sectionFor,
+  unreadChat,
   type GameState,
 } from '../src/gameState'
 import { makeView } from './fixtures'
-import type { ServerMessage } from '@canasta/server/protocol'
+import type { ChatLine, ServerMessage } from '@canasta/server/protocol'
 
 const receive = (state: GameState, message: ServerMessage, joinFailed = false) =>
   gameReducer(state, { type: 'message', message, joinFailed })
@@ -132,5 +133,65 @@ describe('sectionFor', () => {
   it('maps rule errors to rules sections and protocol errors to null', () => {
     expect(sectionFor('FROZEN_NEEDS_NATURAL_PAIR')).toBe('pickup')
     expect(sectionFor('BAD_MESSAGE')).toBeNull()
+  })
+})
+
+describe('table talk', () => {
+  const line = (id: number, playerId = 'bob'): ChatLine => ({
+    id,
+    playerId,
+    name: playerId === 'you' ? 'You' : 'Bob',
+    text: `line ${id}`,
+    at: id,
+    anchor: { round: null, redeals: 0, after: 0 },
+  })
+  const seated = receive(initialGameState, {
+    type: 'joined',
+    code: 'ABCDEF',
+    playerId: 'you',
+    token: 't',
+  })
+
+  it('counts nothing in the first backlog as unread', () => {
+    const state = receive(seated, { type: 'chatLog', lines: [line(1), line(2)] })
+    expect(state.chat).toHaveLength(2)
+    expect(unreadChat(state)).toBe(0)
+  })
+
+  it('counts new lines from others until they are read', () => {
+    let state = receive(seated, { type: 'chatLog', lines: [] })
+    state = receive(state, { type: 'chat', line: line(1) })
+    state = receive(state, { type: 'chat', line: line(2, 'you') })
+    state = receive(state, { type: 'chat', line: line(3) })
+    expect(unreadChat(state)).toBe(2)
+    state = gameReducer(state, { type: 'readChat' })
+    expect(unreadChat(state)).toBe(0)
+  })
+
+  it('ignores a line it already has', () => {
+    const state = receive(seated, { type: 'chatLog', lines: [line(1), line(2)] })
+    expect(receive(state, { type: 'chat', line: line(2) })).toBe(state)
+  })
+
+  it('counts lines that came in during a reconnect as unread', () => {
+    let state = receive(seated, { type: 'chatLog', lines: [line(1)] })
+    state = receive(state, { type: 'chatLog', lines: [line(1), line(2), line(3)] })
+    expect(unreadChat(state)).toBe(2)
+  })
+
+  it('clears the input on send, and puts a refused line back', () => {
+    let state = gameReducer(seated, { type: 'chatText', text: 'hello' })
+    state = gameReducer(state, { type: 'chatSent', text: 'hello' })
+    expect(state.chatText).toBe('')
+    state = receive(state, { type: 'error', code: 'CHAT_TOO_FAST', message: 'Slow down.' })
+    expect(state.chatText).toBe('hello')
+    expect(state.toasts.at(-1)?.message).toBe('Slow down.')
+  })
+
+  it('leaves a new draft alone when an earlier line is refused', () => {
+    let state = gameReducer(seated, { type: 'chatSent', text: 'hello' })
+    state = gameReducer(state, { type: 'chatText', text: 'and' })
+    state = receive(state, { type: 'error', code: 'CHAT_TOO_FAST', message: 'Slow down.' })
+    expect(state.chatText).toBe('and')
   })
 })

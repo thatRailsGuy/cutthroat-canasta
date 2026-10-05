@@ -1,7 +1,8 @@
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router'
-import { describe, expect, it, vi } from 'vitest'
+import type { ChatLine } from '@canasta/server/protocol'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { initialGameState } from '../src/gameState'
 import { Table } from '../src/pages/Table'
 import { makeView } from './fixtures'
@@ -43,5 +44,56 @@ describe('Table, for a player waiting for the next hand', () => {
     watching()
     const pad = screen.getByRole('region', { name: 'Score pad' })
     expect(within(pad).getByTitle('Zed, dealt in next hand')).toBeInTheDocument()
+  })
+})
+
+describe('Table, on a phone', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  const line = (id: number, playerId: string): ChatLine => ({
+    id,
+    playerId,
+    name: playerId === 'bob' ? 'Bob' : 'You',
+    text: `line ${id}`,
+    at: id,
+    anchor: { round: 1, redeals: 0, after: 0 },
+  })
+
+  it('counts unread chat on the Scores button until the sheet opens', async () => {
+    vi.stubGlobal(
+      'matchMedia',
+      (query: string) =>
+        ({
+          matches: query.includes('max-width'),
+          addEventListener: () => {},
+          removeEventListener: () => {},
+        }) as unknown as MediaQueryList,
+    )
+    const view = makeView({ hand: [], phase: 'draw' })
+    const state = {
+      ...initialGameState,
+      playerId: 'you',
+      view,
+      connection: 'open' as const,
+      chat: [line(1, 'bob'), line(2, 'you'), line(3, 'bob')],
+      chatSeen: 0,
+    }
+    const onRead = vi.fn()
+    render(
+      <MemoryRouter>
+        <Table
+          code="HT7KM4"
+          view={view}
+          state={state}
+          send={vi.fn(() => true)}
+          talk={{ text: '', onType: vi.fn(), onSend: vi.fn(() => true), onRead }}
+        />
+      </MemoryRouter>,
+    )
+    expect(onRead).not.toHaveBeenCalled()
+    await userEvent.click(screen.getByRole('button', { name: 'Scores, 2 unread' }))
+    expect(onRead).toHaveBeenCalled()
   })
 })

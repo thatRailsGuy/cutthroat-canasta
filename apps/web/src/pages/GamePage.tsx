@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router'
 import { gameExists, normalizeCode } from '../api'
 import type { ConnectionStatus } from '../connection'
@@ -104,7 +104,14 @@ function Game({ code }: { code: string }) {
 
 function Session({ code, linkToken, autoJoinName, joinsByItself }: SessionProps) {
   const navigate = useNavigate()
-  const { state, join, send, dismissToast } = useGame(code, { linkToken, autoJoinName })
+  const { state, join, send, typeChat, sendChat, readChat, dismissToast } = useGame(code, {
+    linkToken,
+    autoJoinName,
+  })
+  const talk = useMemo(
+    () => ({ text: state.chatText, onType: typeChat, onSend: sendChat, onRead: readChat }),
+    [state.chatText, typeChat, sendChat, readChat],
+  )
   // The drawer lives here, inside the session, so opening it never unmounts the connection.
   const [drawer, setDrawer] = useState<DrawerRequest | null>(null)
   const openRules = useCallback(
@@ -146,14 +153,17 @@ function Session({ code, linkToken, autoJoinName, joinsByItself }: SessionProps)
         playerId={state.playerId}
         hostId={state.hostId}
         connected={state.connected}
+        chat={state.chat}
+        offline={state.connection !== 'open'}
         send={send}
+        talk={talk}
       />
     )
   } else {
     // A new key each round, and each new hand of a round, remounts the table, which resets
     // staging: card ids repeat per deal.
     const deal = view.round ? `${view.round.number}.${view.round.redeals}` : undefined
-    body = <Table key={deal} code={code} view={view} state={state} send={send} />
+    body = <Table key={deal} code={code} view={view} state={state} send={send} talk={talk} />
   }
 
   return (

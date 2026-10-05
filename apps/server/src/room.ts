@@ -56,11 +56,14 @@ export function stateMessage(
   return { type: 'state', view: viewFor(state.game, playerId), hostId: state.hostId, connected }
 }
 
+/** Chat is handled by the Durable Object, which has the clock and the chat log. */
+export type RoomMessage = Exclude<ClientMessage, { type: 'chat' }>
+
 /** `connected` lists the players with an open connection, including the sender. */
 export function handleMessage(
   state: RoomState,
   senderId: string | null,
-  message: ClientMessage,
+  message: RoomMessage,
   ids: RoomIds,
   connected: readonly string[],
 ): Outcome {

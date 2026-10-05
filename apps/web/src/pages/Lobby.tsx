@@ -1,8 +1,9 @@
-import type { ClientMessage } from '@canasta/server/protocol'
+import type { ChatLine, ClientMessage } from '@canasta/server/protocol'
 import type { PlayerView } from '@canasta/engine'
 import { MIN_PLAYERS } from '@canasta/engine'
 import { GameCode } from '../components/GameCode'
 import { QrCode } from '../components/QrCode'
+import { TableTalk, type TalkControls } from '../components/TableTalk'
 import styles from './Pages.module.css'
 
 export interface LobbyProps {
@@ -11,10 +12,23 @@ export interface LobbyProps {
   playerId: string
   hostId: string | null
   connected: string[]
+  chat: readonly ChatLine[]
+  offline: boolean
   send: (message: ClientMessage) => void
+  talk: TalkControls
 }
 
-export function Lobby({ code, view, playerId, hostId, connected, send }: LobbyProps) {
+export function Lobby({
+  code,
+  view,
+  playerId,
+  hostId,
+  connected,
+  chat,
+  offline,
+  send,
+  talk,
+}: LobbyProps) {
   const isHost = playerId === hostId
   const shareLink = `${window.location.origin}/g/${code}`
   return (
@@ -44,6 +58,16 @@ export function Lobby({ code, view, playerId, hostId, connected, send }: LobbyPr
           </li>
         ))}
       </ul>
+      <TableTalk
+        events={[]}
+        deal={null}
+        chat={chat}
+        notices={[]}
+        players={view.players}
+        playerId={playerId}
+        offline={offline}
+        talk={talk}
+      />
       {isHost ? (
         <button
           type="button"

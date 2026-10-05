@@ -1,5 +1,11 @@
 import { RULE_ERROR_SECTIONS, type PlayerView, type RuleSection } from '@canasta/engine'
-import type { RemovedReason, ServerErrorCode, ServerMessage } from '@canasta/server/protocol'
+import type {
+  ChatLine,
+  RemovedReason,
+  ServerErrorCode,
+  ServerMessage,
+} from '@canasta/server/protocol'
+import { CHAT_LINES } from './chat'
 import type { ConnectionStatus } from './connection'
 
 export interface Toast {
@@ -34,6 +40,14 @@ export interface GameState {
   /** Host only: the latest rejoin token for each reissued seat. */
   rejoinTokens: Record<string, string>
   removed: RemovedReason | null
+  /** Table talk, oldest first: the backlog from `chatLog`, then each new line. */
+  chat: ChatLine[]
+  /** The newest line id the player has seen, or null before the first backlog arrives. */
+  chatSeen: number | null
+  /** What the player is typing. Kept here, so it outlives the table's remount at each deal. */
+  chatText: string
+  /** The text of the last line this player sent, until it comes back or is refused. */
+  chatSent: string | null
   nextId: number
 }
 
@@ -45,6 +59,10 @@ export type GameEvent =
   /** A message the client couldn't send, because the socket isn't open. */
   | { type: 'notSent' }
   | { type: 'joining' }
+  | { type: 'chatText'; text: string }
+  | { type: 'chatSent'; text: string }
+  /** Table talk is on screen, so every line so far has been seen. */
+  | { type: 'readChat' }
 
 export const initialGameState: GameState = {
   connection: 'connecting',
@@ -59,6 +77,10 @@ export const initialGameState: GameState = {
   notices: [],
   rejoinTokens: {},
   removed: null,
+  chat: [],
+  chatSeen: null,
+  chatText: '',
+  chatSent: null,
   nextId: 1,
 }
 
@@ -70,6 +92,13 @@ export function sectionFor(code: ServerErrorCode): RuleSection | null {
   return Object.hasOwn(RULE_ERROR_SECTIONS, code)
     ? RULE_ERROR_SECTIONS[code as keyof typeof RULE_ERROR_SECTIONS]
     : null
+}
+
+/** Other players' lines the player hasn't seen yet. */
+export function unreadChat(state: GameState): number {
+  const seen = state.chatSeen
+  if (seen === null) return 0
+  return state.chat.filter((l) => l.id > seen && l.playerId !== state.playerId).length
 }
 
 export function gameReducer(state: GameState, event: GameEvent): GameState {
@@ -84,6 +113,14 @@ export function gameReducer(state: GameState, event: GameEvent): GameState {
       return addToast(state, NOT_SENT_MESSAGE, null)
     case 'message':
       return onMessage(state, event.message, event.joinFailed)
+    case 'chatText':
+      return { ...state, chatText: event.text }
+    case 'chatSent':
+      return { ...state, chatText: '', chatSent: event.text }
+    case 'readChat': {
+      const newest = state.chat.at(-1)?.id ?? 0
+      return newest > (state.chatSeen ?? 0) ? { ...state, chatSeen: newest } : state
+    }
   }
 }
 
@@ -128,7 +165,14 @@ function onMessage(state: GameState, message: ServerMessage, joinFailed: boolean
       }
       // Two players can press Next round together; the second one's ROUND_NOT_OVER is noise.
       if (message.code === 'ROUND_NOT_OVER') return state
-      return addToast(state, message.message, sectionFor(message.code))
+      const toasted = addToast(state, message.message, sectionFor(message.code))
+      if (message.code !== 'CHAT_TOO_FAST' || state.chatSent === null) return toasted
+      // Put the refused line back, unless the player has started typing another.
+      return {
+        ...toasted,
+        chatText: state.chatText || state.chatSent,
+        chatSent: null,
+      }
     }
     case 'removed':
       return { ...state, removed: message.reason, playerId: null }
@@ -149,6 +193,21 @@ function onMessage(state: GameState, message: ServerMessage, joinFailed: boolean
       // The one who quit is on their way out; everyone else gets a toast.
       if (message.playerId === state.playerId) return state
       return addToast(state, `${message.name} quit the game.`, null)
+    case 'chatLog': {
+      // The first backlog was all said before the player arrived, so none of it is unread.
+      // After a reconnect, lines that came in while they were away are.
+      const newest = message.lines.at(-1)?.id ?? 0
+      return { ...state, chat: message.lines, chatSeen: state.chatSeen ?? newest }
+    }
+    case 'chat': {
+      if (message.line.id <= (state.chat.at(-1)?.id ?? 0)) return state
+      const mine = message.line.playerId === state.playerId
+      return {
+        ...state,
+        chat: [...state.chat, message.line].slice(-CHAT_LINES),
+        chatSent: mine ? null : state.chatSent,
+      }
+    }
     case 'pong':
       return state
   }
