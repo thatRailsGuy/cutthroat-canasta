@@ -18,6 +18,8 @@ export interface PublicPlayer {
   melds: Meld[]
   red3s: Card[]
   turnsThisRound: number
+  /** Until a player's first pickup of the round, the pile is frozen for them. */
+  hasPickedUpPile: boolean
 }
 
 export interface RoundView {
@@ -65,6 +67,7 @@ export function viewFor(game: Game, playerId: string): PlayerView {
       melds: p.melds,
       red3s: p.red3s,
       turnsThisRound: p.turnsThisRound,
+      hasPickedUpPile: p.hasPickedUpPile,
     })),
     round: round
       ? {

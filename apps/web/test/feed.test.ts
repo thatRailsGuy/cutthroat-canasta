@@ -4,7 +4,16 @@ import { describeEvent } from '../src/feed'
 import { card } from './fixtures'
 
 const players: PublicPlayer[] = [
-  { id: 'a', name: 'Ann', score: 0, handCount: 0, melds: [], red3s: [], turnsThisRound: 1 },
+  {
+    id: 'a',
+    name: 'Ann',
+    score: 0,
+    handCount: 0,
+    melds: [],
+    red3s: [],
+    turnsThisRound: 1,
+    hasPickedUpPile: true,
+  },
 ]
 
 describe('describeEvent', () => {

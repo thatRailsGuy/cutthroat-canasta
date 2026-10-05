@@ -2,6 +2,7 @@ import { isBlack3, isPileFrozenFor, isRed3, type CardId, type PlayerView } from 
 import { cardLabel } from '../cards'
 import { Card, CardBack } from './Card'
 import styles from './CenterPile.module.css'
+import { Snowflake } from './Snowflake'
 
 export interface CenterPileProps {
   view: PlayerView
@@ -97,9 +98,7 @@ export function CenterPile(props: CenterPileProps) {
               </span>
               {frozen && (
                 <span className={styles.snowflake} aria-hidden="true">
-                  <svg viewBox="0 0 24 24" fill="none" strokeWidth="2.4" strokeLinecap="round">
-                    <path d="M12 2v20M4.9 6.5l14.2 11M19.1 6.5 4.9 17.5M9.5 3.5 12 6l2.5-2.5M9.5 20.5 12 18l2.5 2.5" />
-                  </svg>
+                  <Snowflake />
                 </span>
               )}
             </span>

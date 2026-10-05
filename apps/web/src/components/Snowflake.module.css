@@ -1,0 +1,19 @@
+/* The same ice blue as the ring around a frozen pile. */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0 0.5rem 0 0.35rem;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  background: var(--ice);
+  color: var(--ice-ink);
+  font-size: 0.7rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.chip svg {
+  width: 0.8rem;
+  stroke: var(--ice-ink);
+}

@@ -1,4 +1,5 @@
 import styles from './Avatar.module.css'
+import { Snowflake } from './Snowflake'
 
 /** One colour per seat, so no two players at a table of up to eight share one. */
 const TINTS = [
@@ -22,10 +23,19 @@ export interface AvatarProps {
   small?: boolean
   /** This player dealt the round: a "D" chip sits on the badge. */
   dealer?: boolean
+  /** The pile is frozen for this player: a snowflake sits on the badge's other corner. */
+  frozen?: boolean
 }
 
 /** A round badge with the player's initial. */
-export function Avatar({ name, seat, active = false, small = false, dealer = false }: AvatarProps) {
+export function Avatar({
+  name,
+  seat,
+  active = false,
+  small = false,
+  dealer = false,
+  frozen = false,
+}: AvatarProps) {
   return (
     <span
       className={`${styles.avatar} ${TINTS[seat % TINTS.length]} ${active ? styles.active : ''} ${small ? styles.small : ''}`}
@@ -41,6 +51,11 @@ export function Avatar({ name, seat, active = false, small = false, dealer = fal
       {dealer && (
         <span className={styles.dealer} title="Dealer">
           D
+        </span>
+      )}
+      {frozen && (
+        <span className={styles.frozen} title="The pile is frozen for this player">
+          <Snowflake />
         </span>
       )}
     </span>

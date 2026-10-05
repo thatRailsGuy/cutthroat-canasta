@@ -16,6 +16,13 @@ describe('viewFor', () => {
     expect(view.players[1].handCount).toBe(game.players[1].hand.length)
   })
 
+  it("shows whether each player has picked up the pile, so others can see who it's frozen for", () => {
+    const picked = structuredClone(game)
+    picked.players[1].hasPickedUpPile = true
+    const seen = viewFor(picked, 'p0')
+    expect(seen.players.map((p) => p.hasPickedUpPile)).toEqual([false, true, false])
+  })
+
   it('shows the stock only as a count, and just the top discard', () => {
     expect(view.round).not.toHaveProperty('stock')
     expect(view.round?.stockCount).toBe(game.round!.stock.length)

@@ -3,6 +3,7 @@ import { Avatar } from './Avatar'
 import { CardBack } from './Card'
 import { MeldList } from './MeldList'
 import { RoundPoints } from './RoundPoints'
+import { FrozenChip } from './Snowflake'
 import styles from './Table.module.css'
 
 export interface OpponentPanelProps {
@@ -20,6 +21,11 @@ export interface OpponentPanelProps {
   crowded?: boolean
   /** Overrides whether melds show as chips; by default they do on a crowded panel. */
   chips?: boolean
+  /**
+   * The pile is frozen for this player: a labelled chip on a roomy panel, a snowflake on the
+   * avatar of a crowded one.
+   */
+  pileFrozen?: boolean
 }
 
 export function OpponentPanel(props: OpponentPanelProps) {
@@ -27,14 +33,21 @@ export function OpponentPanel(props: OpponentPanelProps) {
   const isDealer = props.isDealer ?? false
   const crowded = props.crowded ?? false
   const chips = props.chips ?? crowded
+  const pileFrozen = props.pileFrozen ?? false
   return (
     <section
       className={`${styles.opponent} ${crowded ? styles.crowded : ''} ${isTurn ? styles.turn : ''}`}
-      aria-label={`${player.name}${isTurn ? ', playing now' : ''}${isDealer ? ', dealer' : ''}`}
+      aria-label={`${player.name}${isTurn ? ', playing now' : ''}${isDealer ? ', dealer' : ''}${pileFrozen ? ', pile frozen' : ''}`}
       data-player-id={player.id}
     >
       <header>
-        <Avatar name={player.name} seat={seat} active={isTurn} dealer={isDealer} />
+        <Avatar
+          name={player.name}
+          seat={seat}
+          active={isTurn}
+          dealer={isDealer}
+          frozen={pileFrozen && crowded}
+        />
         <div className={styles.who}>
           <span className={styles.nameLine}>
             <strong>{player.name}</strong>
@@ -45,6 +58,7 @@ export function OpponentPanel(props: OpponentPanelProps) {
               title={isConnected ? 'Online' : 'Offline'}
             />
             {isHost && <span className={styles.badge}>Host</span>}
+            {pileFrozen && !crowded && <FrozenChip name={player.name} />}
           </span>
           <RoundPoints player={player} playing={playing} />
         </div>

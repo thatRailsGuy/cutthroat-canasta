@@ -312,6 +312,7 @@ function extraPlayers(): PlayerView['players'] {
     ),
     red3s: i % 2 === 0 ? [card('3h')] : [],
     turnsThisRound: 3,
+    hasPickedUpPile: i % 2 === 1,
   }))
 }
 
@@ -355,6 +356,7 @@ function startingView(): PlayerView {
         melds: yourMelds,
         red3s: you.red3s,
         turnsThisRound: 3,
+        hasPickedUpPile: you.hasPickedUpPile,
       },
       {
         id: 'ben',
@@ -364,6 +366,7 @@ function startingView(): PlayerView {
         melds: [meld(['Ks', 'Kh', 'Kd', 'Kc', 'Ks', 'Kh', 'Kd']), meld(['9c', '9d', '9s', '2s'])],
         red3s: [],
         turnsThisRound: 3,
+        hasPickedUpPile: true,
       },
       {
         id: 'cara',
@@ -373,6 +376,7 @@ function startingView(): PlayerView {
         melds: [meld(['Js', 'Jh', 'Jc'])],
         red3s: [],
         turnsThisRound: 3,
+        hasPickedUpPile: false,
       },
       ...extraPlayers(),
     ],

@@ -81,6 +81,26 @@
   line-height: 1;
 }
 
+/* The pile is frozen for this player: a snowflake on the top right, clear of the dealer's chip. */
+.frozen {
+  position: absolute;
+  right: -0.5rem;
+  top: -0.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.35rem;
+  height: 1.35rem;
+  border-radius: 50%;
+  border: 2px solid var(--ink);
+  background: var(--ice);
+}
+
+.frozen svg {
+  width: 0.8rem;
+  stroke: var(--ice-ink);
+}
+
 .active {
   box-shadow:
     0 0 0 3px var(--gold),

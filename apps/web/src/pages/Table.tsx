@@ -1,5 +1,6 @@
 import {
   MAX_PLAYERS,
+  isPileFrozenFor,
   type Action,
   type CardId,
   type PlayerView,
@@ -22,6 +23,7 @@ import { RoundPoints } from '../components/RoundPoints'
 import { ScorePad } from '../components/ScorePad'
 import { ScoreSheet } from '../components/ScoreSheet'
 import { SideSheet } from '../components/SideSheet'
+import { FrozenChip } from '../components/Snowflake'
 import { StagingArea } from '../components/StagingArea'
 import { TableEffects } from '../components/TableEffects'
 import { TurnRail } from '../components/TurnRail'
@@ -79,6 +81,13 @@ export function Table({ code, view, state, send, coach, lit }: TableProps) {
   const seatTiles = phone && crowded
   const [peekId, setPeekId] = useState<string | null>(null)
   const isTurn = (p: PublicPlayer) => p.id === currentId && view.status === 'playing'
+  // `?? true`: a view from a server that predates `hasPickedUpPile` shows no marker.
+  const pileFrozen = (p: Pick<PublicPlayer, 'hasPickedUpPile'>) =>
+    view.status === 'playing' &&
+    isPileFrozenFor(
+      { hasPickedUpPile: p.hasPickedUpPile ?? true },
+      { top: round.discardTop, pileFrozenForAll: round.pileFrozenForAll },
+    )
   // Opponents in the order they play after you, so the row reads the same way as the turn order.
   const opponents = playOrder(view.players, yourSeat + 1).filter(
     ({ player }) => player.id !== you.id,
@@ -95,6 +104,7 @@ export function Table({ code, view, state, send, coach, lit }: TableProps) {
         isDealer={seat === round.dealer}
         playing={view.status === 'playing'}
         crowded={crowded || phone}
+        pileFrozen={pileFrozen(p)}
         // The panel opened from a seat tile has the room to show the melds' cards.
         chips={seatTiles ? false : undefined}
       />
@@ -152,6 +162,7 @@ export function Table({ code, view, state, send, coach, lit }: TableProps) {
                   seat={seat}
                   isTurn={isTurn(player)}
                   isDealer={seat === round.dealer}
+                  pileFrozen={pileFrozen(player)}
                   open={player.id === peekId}
                   onToggle={() => setPeekId(player.id === peekId ? null : player.id)}
                 />
@@ -207,12 +218,14 @@ export function Table({ code, view, state, send, coach, lit }: TableProps) {
               seat={yourSeat}
               active={yourTurn}
               dealer={yourSeat === round.dealer}
+              frozen={phone && pileFrozen(you)}
             />
             <div className={styles.who}>
               <span className={styles.nameLine}>
                 <strong>{you.name}</strong>
                 <span className={styles.score}>{you.score.toLocaleString('en-US')} pts</span>
                 <RoundPoints player={you} playing={view.status === 'playing'} />
+                {!phone && pileFrozen(you) && <FrozenChip name={you.name} />}
               </span>
               <span className={styles.turnText}>{turnText(view, yourTurn)}</span>
             </div>
@@ -322,6 +335,7 @@ function SeatTile({
   seat,
   isTurn,
   isDealer,
+  pileFrozen,
   open,
   onToggle,
 }: {
@@ -329,6 +343,7 @@ function SeatTile({
   seat: number
   isTurn: boolean
   isDealer: boolean
+  pileFrozen: boolean
   open: boolean
   onToggle: () => void
 }) {
@@ -338,11 +353,17 @@ function SeatTile({
       className={`${styles.seat} ${isTurn ? styles.turn : ''} ${open ? styles.seatOpen : ''}`}
       aria-expanded={open}
       aria-controls={open ? 'peeked-seat' : undefined}
-      aria-label={`${player.name}${isTurn ? ', playing now' : ''}${isDealer ? ', dealer' : ''}: ${player.score.toLocaleString('en-US')} points, ${player.handCount} cards`}
+      aria-label={`${player.name}${isTurn ? ', playing now' : ''}${isDealer ? ', dealer' : ''}${pileFrozen ? ', pile frozen' : ''}: ${player.score.toLocaleString('en-US')} points, ${player.handCount} cards`}
       data-player-id={player.id}
       onClick={onToggle}
     >
-      <Avatar name={player.name} seat={seat} active={isTurn} dealer={isDealer} />
+      <Avatar
+        name={player.name}
+        seat={seat}
+        active={isTurn}
+        dealer={isDealer}
+        frozen={pileFrozen}
+      />
       <span className={styles.seatName}>{player.name}</span>
       <span className={styles.seatLine}>{player.score.toLocaleString('en-US')}</span>
       <span className={styles.seatLine} data-hand-target="">

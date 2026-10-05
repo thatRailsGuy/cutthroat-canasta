@@ -12,7 +12,7 @@ export function pileStateOf(round: Round): PileState {
   return { top: round.discard.at(-1) ?? null, pileFrozenForAll: round.pileFrozenForAll }
 }
 
-export function isPileFrozenFor(player: Player, pile: PileState): boolean {
+export function isPileFrozenFor(player: Pick<Player, 'hasPickedUpPile'>, pile: PileState): boolean {
   return !player.hasPickedUpPile || pile.pileFrozenForAll
 }
 
