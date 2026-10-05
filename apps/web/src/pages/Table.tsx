@@ -15,7 +15,7 @@ import { CenterPile } from '../components/CenterPile'
 import { Feed } from '../components/Feed'
 import { GameOver } from '../components/GameOver'
 import { HostDrawer } from '../components/HostDrawer'
-import { Hand } from '../components/Hand'
+import { Hand, type HandLayout } from '../components/Hand'
 import { MeldList } from '../components/MeldList'
 import { OpponentPanel } from '../components/OpponentPanel'
 import { RoundEnd } from '../components/RoundEnd'
@@ -28,9 +28,13 @@ import { StagingArea } from '../components/StagingArea'
 import { TableEffects } from '../components/TableEffects'
 import { TurnRail } from '../components/TurnRail'
 import styles from '../components/Table.module.css'
+import { useCardDrag } from '../cardDrag'
+import { dropVerdict, joinsStagedMeld } from '../drops'
 import type { GameState } from '../gameState'
+import { arrangeHand, moveCard } from '../handOrder'
 import { isCrowded, usePhone } from '../layout'
 import { pickupHelpers, stagedIds, useStaging } from '../staging'
+import { loadHandLayout, saveHandLayout } from '../storage'
 import { playOrder, turnText } from '../turnOrder'
 
 export interface TableProps {
@@ -115,6 +119,29 @@ export function Table({ code, view, state, send, coach, lit }: TableProps) {
     )
   }
   const peeked = seatTiles ? opponents.find(({ player }) => player.id === peekId) : undefined
+  // Your own order of the hand lasts the round: the table remounts with each deal.
+  const [order, setOrder] = useState<CardId[] | null>(null)
+  const [savedLayout, setSavedLayout] = useState(loadHandLayout)
+  const layout: HandLayout = savedLayout ?? (phone ? 'line' : 'spread')
+  const arranged = () => arrangeHand(you?.hand ?? [], order)
+  const startDrag = useCardDrag({
+    carry: (cardId) =>
+      staging.selected.includes(cardId)
+        ? arranged()
+            .filter((c) => staging.selected.includes(c.id))
+            .map((c) => c.id)
+        : [cardId],
+    judge: (target, cardIds) => dropVerdict(view, staging, target, cardIds),
+    onDrop: (target, cardIds, before) => {
+      if (target.kind === 'hand') setOrder(moveCard(arranged(), cardIds[0], before))
+      else if (target.kind === 'pile') act({ type: 'discard', cardId: cardIds[0] })
+      else {
+        const meldId = target.kind === 'meld' ? target.meldId : null
+        const join = meldId === null ? joinsStagedMeld(view, staging, cardIds) : undefined
+        dispatch({ type: 'stageCards', cardIds, meldId, join })
+      }
+    },
+  })
   const hand = you && (
     <Hand
       cards={you.hand}
@@ -123,6 +150,15 @@ export function Table({ code, view, state, send, coach, lit }: TableProps) {
       fresh={drawn?.id ?? null}
       lit={lit}
       rows={phone}
+      order={order}
+      layout={layout}
+      onLayout={(next) => {
+        setSavedLayout(next)
+        saveHandLayout(next)
+      }}
+      onSort={() => setOrder(null)}
+      onMove={(cardId, before) => setOrder(moveCard(arranged(), cardId, before))}
+      onDragStart={startDrag}
       onToggle={(cardId) => dispatch({ type: 'toggle', cardId })}
     />
   )

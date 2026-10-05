@@ -27,6 +27,25 @@ describe('staging reducer', () => {
     expect(staging).toEqual({ selected: [], groups: [{ meldId: null, cardIds: [1, 3] }] })
   })
 
+  it('stages dropped cards onto a meld or as a new meld, taking them out of the selection', () => {
+    const staging = run(
+      { type: 'toggle', cardId: 1 },
+      { type: 'toggle', cardId: 2 },
+      { type: 'stageCards', cardIds: [1], meldId: 'm1' },
+      { type: 'stageCards', cardIds: [3], meldId: 'm1' },
+      { type: 'stageCards', cardIds: [4, 5], meldId: null },
+      { type: 'stageCards', cardIds: [4], meldId: null },
+      { type: 'stageCards', cardIds: [6], meldId: null, join: 1 },
+      { type: 'stageCards', cardIds: [7], meldId: null },
+    )
+    expect(staging.selected).toEqual([2])
+    expect(staging.groups).toEqual([
+      { meldId: 'm1', cardIds: [1, 3] },
+      { meldId: null, cardIds: [4, 5, 6] },
+      { meldId: null, cardIds: [7] },
+    ])
+  })
+
   it('merges additions to the same meld and ignores staged cards when toggled', () => {
     const staging = run(
       { type: 'toggle', cardId: 1 },

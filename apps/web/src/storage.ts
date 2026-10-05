@@ -1,5 +1,6 @@
 const tokenKey = (code: string) => `canasta:token:${code}`
 const NAME_KEY = 'canasta:name'
+const HAND_LAYOUT_KEY = 'canasta:handLayout'
 
 /** localStorage can throw (private mode, blocked storage). The game still works without it. */
 function read(key: string): string | null {
@@ -24,6 +25,11 @@ export const saveToken = (code: string, token: string) => write(tokenKey(code), 
 export const clearToken = (code: string) => write(tokenKey(code), null)
 export const loadName = () => read(NAME_KEY) ?? ''
 export const saveName = (name: string) => write(NAME_KEY, name)
+export function loadHandLayout(): 'spread' | 'line' | null {
+  const layout = read(HAND_LAYOUT_KEY)
+  return layout === 'spread' || layout === 'line' ? layout : null
+}
+export const saveHandLayout = (layout: 'spread' | 'line') => write(HAND_LAYOUT_KEY, layout)
 
 /** Reads `#token=…` from a rejoin link. */
 export function tokenFromHash(hash: string): string | null {

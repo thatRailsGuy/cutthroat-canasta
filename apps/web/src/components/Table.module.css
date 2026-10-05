@@ -259,6 +259,87 @@
   flex-wrap: wrap;
   gap: 0.5rem;
   padding-top: 1.25rem;
+  /* A vertical swipe still scrolls; a press and hold starts a drag (cardDrag.ts). */
+  touch-action: pan-y;
+  -webkit-touch-callout: none;
+  user-select: none;
+}
+
+/* One line: every card in one row, overlapping more as the hand grows, never wider than the
+   panel. */
+.handLine {
+  flex-wrap: nowrap;
+  gap: 0;
+}
+
+.handLine > * + * {
+  margin-left: min(0.5rem, calc((100% - var(--card-w)) / (var(--count) - 1) - var(--card-w)));
+}
+
+.handArea {
+  display: grid;
+  min-width: 0;
+}
+
+.handBar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.75rem;
+}
+
+.handLabel {
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.orderNote {
+  font-family: var(--hand);
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--teal-dark);
+}
+
+.handTool {
+  min-height: 34px;
+  padding: 0 0.85rem;
+  font-size: 0.85rem;
+}
+
+/* Spread / One line: two halves of one pill, the chosen one inked in. */
+.layoutSwitch {
+  display: inline-flex;
+  margin-left: auto;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  overflow: hidden;
+  box-shadow: 0 2px 0 var(--ink);
+}
+
+.layoutSwitch button {
+  min-height: 34px;
+  padding: 0 0.85rem;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  font-size: 0.85rem;
+}
+
+.layoutSwitch button + button {
+  border-left: 2px solid var(--ink);
+}
+
+.layoutSwitch button[aria-pressed='true'] {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.layoutSwitch button:active:not(:disabled) {
+  transform: none;
+  box-shadow: none;
 }
 
 /* The right column clears the fixed Rules button. */

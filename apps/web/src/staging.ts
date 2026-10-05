@@ -30,6 +30,11 @@ export type StagingAction =
   | { type: 'toggle'; cardId: CardId; also?: readonly CardId[] }
   | { type: 'stageNew' }
   | { type: 'stageAdd'; meldId: string }
+  /**
+   * Dragged cards dropped on a meld (`meldId`) or on the staging area (`null`): a new meld, or
+   * the staged new meld at index `join`.
+   */
+  | { type: 'stageCards'; cardIds: readonly CardId[]; meldId: string | null; join?: number }
   | { type: 'unstage'; cardId: CardId }
   | { type: 'clear' }
 
@@ -96,6 +101,22 @@ export function stagingReducer(staging: Staging, action: StagingAction): Staging
           )
         : [...staging.groups, { meldId: action.meldId, cardIds: staging.selected }]
       return { selected: [], groups }
+    }
+    case 'stageCards': {
+      const staged = stagedIds(staging)
+      const cardIds = action.cardIds.filter((id) => !staged.has(id))
+      if (cardIds.length === 0) return staging
+      const selected = staging.selected.filter((id) => !cardIds.includes(id))
+      const existing =
+        action.meldId === null
+          ? staging.groups[action.join ?? -1]
+          : staging.groups.find((g) => g.meldId === action.meldId)
+      const groups = existing
+        ? staging.groups.map((g) =>
+            g === existing ? { ...g, cardIds: [...g.cardIds, ...cardIds] } : g,
+          )
+        : [...staging.groups, { meldId: action.meldId, cardIds }]
+      return { selected, groups }
     }
     case 'unstage': {
       const groups = staging.groups

@@ -57,7 +57,7 @@ export function StagingArea({
   const target = selectionTarget(view, staging.selected)
 
   return (
-    <section className={styles.staging} aria-label="Staging area">
+    <section className={styles.staging} aria-label="Staging area" data-drop="new">
       <div className={styles.groups}>
         {staging.groups.map((group, i) => (
           <div key={i} className={styles.group}>

@@ -68,7 +68,11 @@ export function CenterPile(props: CenterPileProps) {
       </div>
 
       <div className={styles.spot}>
-        <div className={`${styles.pile} ${frozen ? styles.frozen : ''}`} data-pile="">
+        <div
+          className={`${styles.pile} ${frozen ? styles.frozen : ''}`}
+          data-pile=""
+          data-drop="pile"
+        >
           {top ? (
             <span className={styles.pileStack}>
               {Array.from({ length: under }, (_, i) => (

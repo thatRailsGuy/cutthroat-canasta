@@ -1,4 +1,5 @@
 import type { Card as CardValue } from '@canasta/engine'
+import type { KeyboardEvent, PointerEvent } from 'react'
 import { SUIT_SYMBOLS, cardName, isRed } from '../cards'
 import styles from './Card.module.css'
 
@@ -12,6 +13,9 @@ export interface CardProps {
   lit?: boolean
   /** Makes the card a toggle button. Without it the card is a picture. */
   onClick?: () => void
+  /** For a card in your hand: starts a drag. */
+  onPointerDown?: (event: PointerEvent<HTMLButtonElement>) => void
+  onKeyDown?: (event: KeyboardEvent<HTMLButtonElement>) => void
 }
 
 export function Card({
@@ -21,6 +25,8 @@ export function Card({
   fresh = false,
   lit = false,
   onClick,
+  onPointerDown,
+  onKeyDown,
 }: CardProps) {
   const className = [
     styles.card,
@@ -56,6 +62,8 @@ export function Card({
       aria-label={fresh ? `${cardName(card)}, just drawn` : cardName(card)}
       aria-pressed={selected}
       onClick={onClick}
+      onPointerDown={onPointerDown}
+      onKeyDown={onKeyDown}
       data-card-id={card.id}
     >
       {face}

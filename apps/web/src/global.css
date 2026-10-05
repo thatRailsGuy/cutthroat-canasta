@@ -182,3 +182,93 @@ a:hover {
     transition-duration: 0.01ms !important;
   }
 }
+
+/*
+ * Dragging cards (cardDrag.ts). Places that would take the dragged cards get a dashed gold
+ * outline; the one under the pointer turns solid gold, or red when the move isn't allowed.
+ */
+[data-drop-state='can'] {
+  outline: 2px dashed var(--gold);
+  outline-offset: 3px;
+}
+
+[data-drop-state='ok'] {
+  outline: 3px solid var(--gold);
+  outline-offset: 3px;
+  background-color: rgb(242 178 51 / 0.18);
+}
+
+[data-drop-state='no'] {
+  outline: 3px solid var(--bad);
+  outline-offset: 3px;
+}
+
+/* The cards being dragged stay in place, faded, until they're dropped. */
+[data-lifted] {
+  opacity: 0.25;
+}
+
+.card-ghost {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 60;
+  display: flex;
+  pointer-events: none;
+  transform-origin: 30% 20%;
+  filter: drop-shadow(0 10px 8px rgb(43 35 32 / 0.35));
+}
+
+.card-ghost > [data-card-id] {
+  transform: none !important;
+  opacity: 1 !important;
+}
+
+.card-ghost > [data-card-id] + [data-card-id] {
+  margin-left: calc(var(--card-w) * -0.65);
+}
+
+.card-ghost-count {
+  position: absolute;
+  top: -0.7rem;
+  right: -0.7rem;
+  display: grid;
+  place-items: center;
+  min-width: 1.6rem;
+  height: 1.6rem;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  background: var(--gold);
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+/* Why the place under the pointer won't take the cards, pinned under them. */
+.card-ghost-why {
+  position: absolute;
+  top: calc(100% + 0.4rem);
+  left: 0;
+  width: max-content;
+  max-width: 16rem;
+  padding: 0.2rem 0.5rem;
+  border: 2px solid var(--ink);
+  border-radius: 8px;
+  background: var(--paper);
+  color: var(--bad);
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.card-ghost-why:empty {
+  display: none;
+}
+
+.card-slot-marker {
+  position: fixed;
+  z-index: 60;
+  width: 5px;
+  border-radius: 3px;
+  background: var(--gold);
+  box-shadow: 0 0 0 2px var(--ink);
+  pointer-events: none;
+}

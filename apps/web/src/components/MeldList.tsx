@@ -90,6 +90,7 @@ export function MeldList({ melds, red3s, onPick, compact = false, chips = false 
             data-meld-id={meld.id}
             data-rank={meld.rank}
             data-canasta={canasta || undefined}
+            data-drop={`meld:${meld.id}`}
             aria-label={`Add selected cards to your ${rankPlural(meld.rank)} (${label})`}
             onClick={() => onPick(meld.id)}
           >

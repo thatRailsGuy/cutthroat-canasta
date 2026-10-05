@@ -1,5 +1,6 @@
-import { render, screen, within } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { fireEvent, render, screen, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { describe, expect, it, vi } from 'vitest'
 import { Hand, ROW_LIMIT } from '../src/components/Hand'
 import { card } from './fixtures'
 
@@ -47,5 +48,73 @@ describe('Hand', () => {
       />,
     )
     expect(rowSizes()).toEqual([10])
+  })
+
+  it('shows your own order, and a Sort button to go back to sorted', async () => {
+    const cards = hand(3)
+    const onSort = vi.fn()
+    const { rerender } = render(
+      <Hand cards={cards} selected={[]} hidden={new Set()} onSort={onSort} onToggle={() => {}} />,
+    )
+    expect(screen.queryByRole('button', { name: 'Sort' })).toBeNull()
+    rerender(
+      <Hand
+        cards={cards}
+        selected={[]}
+        hidden={new Set()}
+        order={[1, 3, 2]}
+        onSort={onSort}
+        onToggle={() => {}}
+      />,
+    )
+    const section = screen.getByRole('region', { name: 'Your hand' })
+    expect(
+      within(section)
+        .getAllByRole('button')
+        .map((b) => b.dataset.cardId),
+    ).toEqual(['1', '3', '2'])
+    expect(screen.getByText('your order')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Sort' }))
+    expect(onSort).toHaveBeenCalledOnce()
+  })
+
+  it('switches between Spread and One line', async () => {
+    const onLayout = vi.fn()
+    render(
+      <Hand
+        cards={hand(5)}
+        selected={[]}
+        hidden={new Set()}
+        layout="line"
+        onLayout={onLayout}
+        onToggle={() => {}}
+      />,
+    )
+    expect(screen.getByRole('button', { name: 'One line' })).toHaveAttribute('aria-pressed', 'true')
+    await userEvent.click(screen.getByRole('button', { name: 'Spread' }))
+    expect(onLayout).toHaveBeenCalledWith('spread')
+  })
+
+  it('moves the focused card with Alt and the arrow keys', () => {
+    const onMove = vi.fn()
+    render(
+      <Hand
+        cards={hand(3)}
+        selected={[]}
+        hidden={new Set()}
+        order={[1, 2, 3]}
+        onMove={onMove}
+        onToggle={() => {}}
+      />,
+    )
+    const [first, second] = within(screen.getByRole('region', { name: 'Your hand' })).getAllByRole(
+      'button',
+    )
+    fireEvent.keyDown(first, { key: 'ArrowRight', altKey: true })
+    expect(onMove).toHaveBeenLastCalledWith(1, 3)
+    fireEvent.keyDown(second, { key: 'ArrowLeft', altKey: true })
+    expect(onMove).toHaveBeenLastCalledWith(2, 1)
+    fireEvent.keyDown(second, { key: 'ArrowLeft' })
+    expect(onMove).toHaveBeenCalledTimes(2)
   })
 })
