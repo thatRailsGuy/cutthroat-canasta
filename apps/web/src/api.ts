@@ -1,4 +1,7 @@
-/** Game codes use the server's alphabet: no I, L, O, 0 or 1. */
+/**
+ * Game codes use the server's accepted alphabet: no I, L, O, 0 or 1. New codes also leave out
+ * B, 8, Z, 2, S and 5, but older codes with them still name live rooms.
+ */
 const CODE_PATTERN = /^[ABCDEFGHJKMNPQRSTUVWXYZ23456789]{6}$/
 
 export function normalizeCode(input: string): string | null {

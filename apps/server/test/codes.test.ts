@@ -10,6 +10,10 @@ describe('randomCode', () => {
     }
   })
 
+  it('leaves out the lookalikes B/8, Z/2 and S/5', () => {
+    for (const ch of 'B8Z2S5') expect(CODE_ALPHABET).not.toContain(ch)
+  })
+
   it('uses the random source it is given', () => {
     expect(randomCode(() => 0)).toBe('AAAAAA')
     expect(randomCode((max) => max - 1)).toBe('999999')
@@ -18,7 +22,11 @@ describe('randomCode', () => {
 
 describe('normalizeCode', () => {
   it('uppercases and trims valid codes', () => {
-    expect(normalizeCode(' abc234 ')).toBe('ABC234')
+    expect(normalizeCode(' acd347 ')).toBe('ACD347')
+  })
+
+  it('still accepts codes made before the lookalikes were dropped', () => {
+    expect(normalizeCode('B8Z2S5')).toBe('B8Z2S5')
   })
 
   it.each(['', 'ABC23', 'ABC2345', 'ABCD1O', 'ABCDEI', 'ABC-23'])('rejects %j', (input) => {

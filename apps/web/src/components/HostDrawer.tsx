@@ -1,6 +1,7 @@
 import type { PublicPlayer } from '@canasta/engine'
 import { useEffect, useRef, useState } from 'react'
 import { Avatar } from './Avatar'
+import { GameCode } from './GameCode'
 import styles from './HostDrawer.module.css'
 import { QrCode } from './QrCode'
 
@@ -78,6 +79,7 @@ export function HostDrawer(props: HostDrawerProps) {
               ) : (
                 <>
                   <p>Anyone who joins now sits out this hand and is dealt in with the next one.</p>
+                  <GameCode code={code} small />
                   <CopyField value={invite} label="Invite link" />
                   <QrCode text={invite} label={`QR code for ${invite}`} />
                 </>

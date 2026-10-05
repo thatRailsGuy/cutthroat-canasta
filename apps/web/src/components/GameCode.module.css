@@ -1,0 +1,59 @@
+.code {
+  display: grid;
+  justify-items: start;
+  gap: 0.35rem;
+}
+
+.label {
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+}
+
+.tiles {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+/* Word-game tiles: one character each, in the body font, which keeps every character distinct. */
+.tiles > span:not(.dash) {
+  display: grid;
+  place-items: center;
+  width: 2.4rem;
+  height: 2.8rem;
+  font-family: var(--font);
+  font-weight: 800;
+  font-size: 1.6rem;
+  line-height: 1;
+  background: #f6e2b3;
+  border: 2px solid var(--ink);
+  border-radius: 7px;
+  box-shadow: 0 3px 0 var(--ink);
+}
+
+.small .tiles > span:not(.dash) {
+  width: 1.95rem;
+  height: 2.3rem;
+  font-size: 1.3rem;
+}
+
+.dash {
+  width: 0.5rem;
+  height: 3px;
+  margin: 0 0.1rem;
+  border-radius: 2px;
+  background: var(--ink);
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

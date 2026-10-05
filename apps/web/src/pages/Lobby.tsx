@@ -1,6 +1,7 @@
 import type { ClientMessage } from '@canasta/server/protocol'
 import type { PlayerView } from '@canasta/engine'
 import { MIN_PLAYERS } from '@canasta/engine'
+import { GameCode } from '../components/GameCode'
 import { QrCode } from '../components/QrCode'
 import styles from './Pages.module.css'
 
@@ -18,9 +19,10 @@ export function Lobby({ code, view, playerId, hostId, connected, send }: LobbyPr
   const shareLink = `${window.location.origin}/g/${code}`
   return (
     <main className={styles.lobby}>
-      <h1>Game {code}</h1>
+      <h1>Pull up a chair</h1>
+      <GameCode code={code} />
       <p>
-        Share the code or this link: <a href={shareLink}>{shareLink}</a>
+        Or share this link: <a href={shareLink}>{shareLink}</a>
       </p>
       <QrCode text={shareLink} label={`QR code for ${shareLink}`} />
       <ul className={styles.seats}>

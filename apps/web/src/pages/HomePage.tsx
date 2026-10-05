@@ -34,7 +34,7 @@ export function HomePage() {
     event.preventDefault()
     const normalized = normalizeCode(code)
     if (normalized) go(normalized)
-    else setError('Game codes are 6 letters and numbers, like ABC234.')
+    else setError('Game codes are 6 letters and numbers, like HT7KM4.')
   }
 
   return (

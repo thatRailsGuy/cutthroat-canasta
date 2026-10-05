@@ -40,11 +40,13 @@ describe('HostDrawer', () => {
       `${window.location.origin}/g/ABCD`,
     )
     expect(drawer.getByRole('img', { name: /QR code/, hidden: true })).toBeInTheDocument()
+    expect(drawer.getByText('A B C D')).toBeInTheDocument()
     expect(drawer.getByText('Dealt in next hand: Zed')).toBeInTheDocument()
 
     rerender(<HostDrawer {...props} full />)
     expect(drawer.getByText('The table is full.')).toBeInTheDocument()
     expect(drawer.queryByRole('textbox', { name: 'Invite link', hidden: true })).toBeNull()
+    expect(drawer.queryByText('A B C D')).toBeNull()
   })
 
   it('asks before throwing out the hand', async () => {
