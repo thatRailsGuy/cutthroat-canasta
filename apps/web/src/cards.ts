@@ -73,3 +73,18 @@ export function sortHand(cards: readonly Card[]): Card[] {
     (a, b) => rankIndex(a.rank) - rankIndex(b.rank) || suitIndex(a) - suitIndex(b) || a.id - b.id,
   )
 }
+
+/**
+ * A sorted hand in runs of one rank, such as [7♥ 7♣] [3♣]. Each wild is a run of its own:
+ * jokers and 2s are different cards with different penalties, so they don't pair up.
+ */
+export function rankGroups(cards: readonly Card[]): Card[][] {
+  const groups: Card[][] = []
+  for (const c of sortHand(cards)) {
+    const last = groups.at(-1)
+    const wild = c.rank === 'JOKER' || c.rank === '2'
+    if (last && !wild && last[0].rank === c.rank) last.push(c)
+    else groups.push([c])
+  }
+  return groups
+}

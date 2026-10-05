@@ -1,6 +1,7 @@
 import type { PlayerView } from '@canasta/engine'
 import { BreakdownTable } from './BreakdownTable'
-import { CardRow } from './Card'
+import { rankGroups } from '../cards'
+import { Card } from './Card'
 import { CountUp } from './CountUp'
 import styles from './Table.module.css'
 
@@ -40,7 +41,16 @@ export function RoundEnd({ view, onNextRound }: RoundEndProps) {
                 />
               </td>
               <td>
-                <CardRow cards={last.hands[p.id] ?? []} />
+                <span className={styles.leftover}>
+                  {/* Sorted like a hand, with cards of one rank fanned together. */}
+                  {rankGroups(last.hands[p.id] ?? []).map((group) => (
+                    <span key={group[0].id} className={styles.fan}>
+                      {group.map((c) => (
+                        <Card key={c.id} card={c} size="small" />
+                      ))}
+                    </span>
+                  ))}
+                </span>
               </td>
             </tr>
           ))}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { cardLabel, cardName, rankIndex, rankPlural, sortHand } from '../src/cards'
+import { cardLabel, cardName, rankGroups, rankIndex, rankPlural, sortHand } from '../src/cards'
 import { card } from './fixtures'
 
 describe('card helpers', () => {
@@ -31,5 +31,11 @@ describe('card helpers', () => {
       card('Kc', 6),
     ]
     expect(sortHand(hand).map(cardLabel)).toEqual(['Joker', '2♦', 'A♥', 'K♣', '4♣', '3♠'])
+  })
+
+  it('groups a sorted hand into runs of one rank, with each wild on its own', () => {
+    const hand = ['7h', 'Ks', '3c', '2d', '7c', 'JK', '9h', '2s', 'JK'].map((c, i) => card(c, i))
+    const codes = rankGroups(hand).map((g) => g.map(cardLabel).join(' '))
+    expect(codes).toEqual(['Joker', 'Joker', '2♠', '2♦', 'K♠', '9♥', '7♥ 7♣', '3♣'])
   })
 })
