@@ -1,4 +1,40 @@
 Card sounds: "Casino Audio" (1.1) by Kenney Vleugels (www.kenney.nl)
 License: Creative Commons Zero (CC0), http://creativecommons.org/publicdomain/zero/1.0/
 
-The clips are converted to mono MP3 with the silence at the start trimmed.
+The clips (card-place-1 to 4, and cards-take-out-1 and 2 from cards-pack-take-out) are
+converted to mono MP3 with the silence at the start trimmed.
+
+turn-bell.mp3: "Restaurant Bell" by Diego25, https://freesound.org/people/Diego25/sounds/394625/
+License: Creative Commons Attribution 4.0 (CC BY 4.0), https://creativecommons.org/licenses/by/4.0/
+
+Changed: converted to mono MP3, the silence at the start trimmed, and cut to 2 seconds with a
+fade-out.
+
+pencil-tally.mp3: "Pencil write words" by Trtle.T, https://freesound.org/people/Trtle.T/sounds/809941/
+License: Creative Commons Zero (CC0), http://creativecommons.org/publicdomain/zero/1.0/
+
+Changed: a 1.1-second stretch (from 1.98 s) mixed to mono, boosted 24.5 dB, with fades at each
+end.
+
+pencil-drop-1 to 4: "pencil drop.wav" by toddcircle, https://freesound.org/people/toddcircle/sounds/451649/
+License: Creative Commons Zero (CC0), http://creativecommons.org/publicdomain/zero/1.0/
+
+Changed: the four drops, each with its bounces (0.66 s from 0.14, 2.115, 3.87 and 7.715 s),
+brought to the same peak level with a fade-out, converted to mono 44.1 kHz MP3.
+
+card-shuffle.mp3: "Riffle Card Shuffle" by Kodack, https://freesound.org/people/Kodack/sounds/256508/
+License: Creative Commons Zero (CC0), http://creativecommons.org/publicdomain/zero/1.0/
+
+Changed: the riffle (0.28 to 1.78 s) and the bridge (3.10 to 3.88 s, 6 dB quieter) joined with
+a short gap, converted to mono MP3.
+
+cash-register.mp3: "Cash Register" by kiddpark, https://freesound.org/people/kiddpark/sounds/201159/
+License: Creative Commons Attribution 4.0 (CC BY 4.0), https://creativecommons.org/licenses/by/4.0/
+
+Changed: 1.37 seconds from 0.08 s, mixed to mono, raised 3.6 dB, with a fade-out.
+
+game-over.mp3: "Jingle_Achievement_00.wav" by LittleRobotSoundFactory, https://freesound.org/people/LittleRobotSoundFactory/sounds/270404/
+License: Creative Commons Attribution 4.0 (CC BY 4.0), https://creativecommons.org/licenses/by/4.0/
+
+Changed: mixed to mono, lowered 1 dB, with a fade at the end of the tail, converted to 44.1 kHz
+MP3.

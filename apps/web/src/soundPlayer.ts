@@ -1,21 +1,42 @@
 import type { Cue, Sound } from './sounds'
-import cardFan2 from './sounds/card-fan-2.mp3'
 import cardPlace1 from './sounds/card-place-1.mp3'
 import cardPlace2 from './sounds/card-place-2.mp3'
 import cardPlace3 from './sounds/card-place-3.mp3'
 import cardPlace4 from './sounds/card-place-4.mp3'
 import cardShuffle from './sounds/card-shuffle.mp3'
+import cardsTakeOut1 from './sounds/cards-take-out-1.mp3'
+import cardsTakeOut2 from './sounds/cards-take-out-2.mp3'
+import cashRegister from './sounds/cash-register.mp3'
+import gameOverJingle from './sounds/game-over.mp3'
+import pencilDrop1 from './sounds/pencil-drop-1.mp3'
+import pencilDrop2 from './sounds/pencil-drop-2.mp3'
+import pencilDrop3 from './sounds/pencil-drop-3.mp3'
+import pencilDrop4 from './sounds/pencil-drop-4.mp3'
+import pencilTally from './sounds/pencil-tally.mp3'
+import turnBell from './sounds/turn-bell.mp3'
 
 const CLIPS = {
   place1: cardPlace1,
   place2: cardPlace2,
   place3: cardPlace3,
   place4: cardPlace4,
-  fan: cardFan2,
+  takeOut1: cardsTakeOut1,
+  takeOut2: cardsTakeOut2,
   shuffle: cardShuffle,
+  bell: turnBell,
+  pencil: pencilTally,
+  drop1: pencilDrop1,
+  drop2: pencilDrop2,
+  drop3: pencilDrop3,
+  drop4: pencilDrop4,
+  register: cashRegister,
+  jingle: gameOverJingle,
 }
 type Clip = keyof typeof CLIPS
 const PLACES: Clip[] = ['place1', 'place2', 'place3', 'place4']
+const TAKE_OUTS: Clip[] = ['takeOut1', 'takeOut2']
+const DROPS: Clip[] = ['drop1', 'drop2', 'drop3', 'drop4']
+const pick = (clips: Clip[]) => clips[Math.floor(Math.random() * clips.length)]
 
 /** Everything the player needs once the browser lets it make sound. */
 interface Audio {
@@ -124,10 +145,13 @@ class Voice {
     return this.audio.ctx
   }
 
-  /** A recorded clip, with a little pitch wobble so repeats don't sound mechanical. */
-  clip(clip: Clip, offset = 0, gain = 1, rate = 1) {
+  /**
+   * A recorded clip, with a little pitch wobble so repeats don't sound mechanical. False if
+   * the clip didn't load.
+   */
+  clip(clip: Clip, offset = 0, gain = 1, rate = 1): boolean {
     const buffer = this.audio.buffers[clip]
-    if (!buffer) return
+    if (!buffer) return false
     const src = this.ctx.createBufferSource()
     const g = this.ctx.createGain()
     src.buffer = buffer
@@ -135,10 +159,11 @@ class Voice {
     g.gain.value = gain
     src.connect(g).connect(this.out)
     src.start(this.at + offset)
+    return true
   }
 
   place(offset = 0, gain = 1, rate = 1) {
-    this.clip(PLACES[Math.floor(Math.random() * PLACES.length)], offset, gain, rate)
+    this.clip(pick(PLACES), offset, gain, rate)
   }
 
   /** A struck tone with inharmonic partials, like a bell. */
@@ -223,20 +248,29 @@ const NOTE = { G4: 392, C5: 523.25, E5: 659.25, G5: 783.99, C6: 1046.5 }
 
 /** Each sound plays on a voice and returns how long until the next cue may start, in seconds. */
 const SOUNDS: Record<Sound, (voice: Voice, cue: Cue) => number> = {
-  // A diner counter bell.
+  // A diner counter bell, tapped twice, or a made one if the recording didn't load.
   turn: (v) => {
-    v.bell(1480, 0, 0.3, 1.6)
-    return 0.6
+    if (!v.clip('bell', 0, 0.7)) v.bell(1480, 0, 0.3, 1.6)
+    return 0.8
   },
-  // A pencil tallying the score, then a shuffle for the next deal.
+  // A pencil tallying the score and put down, then a shuffle for the next deal.
   roundOver: (v) => {
+    if (v.clip('pencil')) {
+      // The 1.1-second tally, the pencil dropped on the table, a pause, then the shuffle.
+      v.clip(pick(DROPS), 1.25, 0.8)
+      v.clip('shuffle', 2.1)
+      return 4.5
+    }
+    // The recording didn't load: a made tally, shorter, so the shuffle comes sooner.
     for (const offset of [0, 0.1, 0.2, 0.3]) v.noise(offset, 0.07, 0.35, 'bandpass', 3600, 0.8)
     v.noise(0.45, 0.16, 0.35, 'bandpass', 3000, 0.7)
     v.clip('shuffle', 0.75)
-    return 2
+    return 3.15
   },
-  // A vibraphone ta-da.
+  // An orchestral jingle, or a vibraphone ta-da if the recording didn't load.
   gameOver: (v) => {
+    // Dense and loud next to the card clips, so it plays quieter.
+    if (v.clip('jingle', 0, 0.6)) return 3.6
     ;[NOTE.G4, NOTE.C5, NOTE.E5, NOTE.G5].forEach((f, i) => v.vibe(f, i * 0.11, 0.18, 1.2))
     for (const f of [NOTE.C5, NOTE.E5, NOTE.G5, NOTE.C6]) v.vibe(f, 0.6, 0.14, 2.4)
     return 2.5
@@ -250,26 +284,26 @@ const SOUNDS: Record<Sound, (voice: Voice, cue: Cue) => number> = {
     v.place()
     return 0.3
   },
-  // One tap per card, closing up as the meld goes down.
+  // One tap per card, a little unevenly spaced, as a hand lays them down.
   meld: (v, cue) => {
     let offset = 0
-    let gap = 0.23
     for (let i = 0; i < Math.max(1, cue.cards ?? 1); i++) {
       v.place(offset, 0.7)
-      offset += gap
-      gap = Math.max(0.06, gap * 0.72)
+      offset += 0.22 + Math.random() * 0.08
     }
     return offset + 0.1
   },
-  // A big fan, then two taps squaring the deck.
+  // The pile slid off the table, then two taps squaring it.
   pickup: (v) => {
-    v.clip('fan')
+    v.clip(pick(TAKE_OUTS))
     v.place(0.55, 0.45, 1.2)
     v.place(0.68, 0.45, 1.2)
     return 0.9
   },
-  // A cash register: key clunk, "cha-ching", drawer thump.
+  // An old cash register: the drawer opens and the bell rings.
   canasta: (v) => {
+    if (v.clip('register')) return 1
+    // The recording didn't load: a made one, with a key clunk, "cha-ching" and drawer thump.
     v.noise(0, 0.05, 0.6, 'lowpass', 900)
     v.noise(0.05, 0.09, 0.4, 'lowpass', 500)
     v.bell(2093, 0.12, 0.2, 1.1)
