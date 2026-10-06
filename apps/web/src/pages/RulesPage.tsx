@@ -3,6 +3,10 @@ import { Link, useLocation } from 'react-router'
 import styles from '../rules/Rules.module.css'
 import { RulesContent } from '../rules/RulesContent'
 import { PAGE_SECTIONS } from '../rules/sections'
+import { SoundCredits } from '../rules/SoundCredits'
+
+// The credits are on this page only, so they aren't a section the Rules drawer can open.
+const CONTENTS = [...PAGE_SECTIONS, { id: 'sound-credits', title: 'Sound credits' }]
 
 export function RulesPage() {
   const { hash } = useLocation()
@@ -26,7 +30,7 @@ export function RulesPage() {
         <details open>
           <summary>Contents</summary>
           <ol>
-            {PAGE_SECTIONS.map((s) => (
+            {CONTENTS.map((s) => (
               <li key={s.id}>
                 <a href={`#${s.id}`}>{s.title}</a>
               </li>
@@ -36,6 +40,7 @@ export function RulesPage() {
       </nav>
       <main className={styles.content}>
         <RulesContent />
+        <SoundCredits />
       </main>
     </div>
   )
