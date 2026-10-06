@@ -119,16 +119,16 @@ export function playCues(cues: readonly Cue[]): void {
 }
 
 /**
- * Plays one cue now, for the panel's test button. The press that calls this may be the one
- * that starts the audio, so it waits for the browser to let it play.
+ * Plays cues now, for the panel's test button and the dev soundboard. The press that calls
+ * this may be the one that starts the audio, so it waits for the browser to let it play.
  */
-export function playTest(cue: Cue): void {
+export function playTest(...cues: Cue[]): void {
   unlock()
   if (!audio) return
   void Promise.all([audio.ctx.resume(), audio.loaded])
     .then(() => {
       nextFree = 0
-      playCues([cue])
+      playCues(cues)
     })
     .catch(() => {})
 }

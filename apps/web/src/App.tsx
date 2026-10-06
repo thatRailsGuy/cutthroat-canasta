@@ -7,6 +7,8 @@ import { TutorialPage } from './tutorial/TutorialPage'
 
 // Dev only: the table with a made-up game, for working on its look. Left out of builds.
 const PreviewPage = import.meta.env.DEV ? lazy(() => import('./dev/PreviewPage')) : null
+// Dev only: every sound on its own button. Left out of builds.
+const SoundboardPage = import.meta.env.DEV ? lazy(() => import('./dev/SoundboardPage')) : null
 
 export function App() {
   return (
@@ -21,6 +23,16 @@ export function App() {
           element={
             <Suspense>
               <PreviewPage />
+            </Suspense>
+          }
+        />
+      )}
+      {SoundboardPage && (
+        <Route
+          path="/dev/sounds"
+          element={
+            <Suspense>
+              <SoundboardPage />
             </Suspense>
           }
         />
