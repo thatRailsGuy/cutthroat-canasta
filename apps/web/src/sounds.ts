@@ -156,4 +156,8 @@ export const SOUND_CHART: readonly {
       { label: 'Someone makes a canasta', step: 3 },
     ],
   },
+  {
+    group: 'Table talk',
+    rows: [{ label: 'Someone else chats (if the clink is on)', step: 1 }],
+  },
 ]

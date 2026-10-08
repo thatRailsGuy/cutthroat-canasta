@@ -100,6 +100,30 @@
   color: var(--muted);
 }
 
+.chat {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 44px;
+  padding-top: 0.35rem;
+  border-top: 1.5px solid #ddd0b8;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.chat input {
+  width: 1.25rem;
+  height: 1.25rem;
+  margin: 0;
+  accent-color: var(--red);
+  cursor: inherit;
+}
+
+.chat:has(input:disabled) {
+  color: var(--muted);
+  cursor: not-allowed;
+}
+
 .row {
   display: flex;
   flex-wrap: wrap;

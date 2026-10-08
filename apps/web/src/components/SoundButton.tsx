@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState } from 'react'
+import { useChatSound } from '../soundLevel'
 import { playTest } from '../soundPlayer'
 import { SOUND_CHART, SOUND_LEVELS, type Cue, type SoundLevel } from '../sounds'
 import styles from './SoundButton.module.css'
@@ -28,11 +29,13 @@ const TEST_CUES: Record<SoundLevel, Cue | null> = {
 
 /**
  * The speaker button beside Rules, and the panel it opens: a slider from Off to Whole table,
- * a test sound, and a chart of what each step plays.
+ * the chat clink's switch (the same one as the bell on Table talk), a test sound, and a chart
+ * of what each step plays.
  */
 export function SoundButton({ level, onLevel, onOpen }: SoundButtonProps) {
   const [open, setOpen] = useState(false)
   const [chartOpen, setChartOpen] = useState(false)
+  const [chatOn, setChatOn] = useChatSound()
   const root = useRef<HTMLDivElement>(null)
   const chart = useRef<HTMLDialogElement>(null)
   const id = useId()
@@ -111,6 +114,16 @@ export function SoundButton({ level, onLevel, onOpen }: SoundButtonProps) {
           <p id={`${id}-hint`} className={styles.hint}>
             {SOUND_LEVELS[level].hint}
           </p>
+          {/* Off silences it too, so it's greyed out but keeps its tick for later. */}
+          <label className={styles.chat}>
+            <input
+              type="checkbox"
+              checked={chatOn}
+              disabled={level === 0}
+              onChange={(e) => setChatOn(e.target.checked)}
+            />
+            Clink for new chat lines
+          </label>
           <div className={styles.row}>
             <button type="button" disabled={!test} onClick={() => test && playTest(test)}>
               Play a test sound

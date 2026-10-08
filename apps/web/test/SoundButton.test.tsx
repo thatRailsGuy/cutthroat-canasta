@@ -60,4 +60,20 @@ describe('SoundButton', () => {
         .map((c) => c.ariaLabel),
     ).toEqual(['Silent', 'Plays', 'Plays', 'Plays'])
   })
+
+  it('turns the chat clink off, and greys it out while all sound is off', async () => {
+    render(<Harness />)
+    await userEvent.click(screen.getByRole('button', { name: /^Sound/ }))
+    const clink = screen.getByRole('checkbox', { name: 'Clink for new chat lines' })
+    expect(clink).toBeChecked()
+    await userEvent.click(clink)
+    expect(clink).not.toBeChecked()
+    expect(localStorage.getItem('canasta:chatSound')).toBe('off')
+    await userEvent.click(clink)
+
+    fireEvent.change(screen.getByRole('slider'), { target: { value: '0' } })
+    expect(clink).toBeDisabled()
+    expect(clink).toBeChecked()
+    localStorage.clear()
+  })
 })
