@@ -4,6 +4,7 @@ import { useEffect, useLayoutEffect, useRef, type FormEvent } from 'react'
 import { CHAT_COUNT_FROM, CHAT_LENGTH, cleanChat, mergeTalk } from '../chat'
 import { describeEvent } from '../feed'
 import type { SeatNotice } from '../gameState'
+import { useChatSound, useSoundLevel } from '../soundLevel'
 import styles from './Table.module.css'
 
 /** One name colour per seat, matching the avatars, but dark enough to read as text. */
@@ -95,6 +96,10 @@ export function TableTalk({
 
   return (
     <section className={styles.feed} aria-label="Table talk">
+      <div className={styles.feedHead}>
+        <span aria-hidden="true">Table talk</span>
+        {talk && <ChatBell />}
+      </div>
       {/* One live region, always present, so screen readers announce each new notice once. */}
       <div role="status">
         {notices.map((n) => (
@@ -154,5 +159,40 @@ export function TableTalk({
         </>
       )}
     </section>
+  )
+}
+
+/** The bell on the header that turns the clink for new chat lines on or off. */
+function ChatBell() {
+  const [on, setOn] = useChatSound()
+  const [level] = useSoundLevel()
+  // With all sound off it can't clink, so the bell shows that and keeps the choice for later.
+  const muted = level === 0
+  return (
+    <button
+      type="button"
+      className={`${styles.chatBell} ${muted ? styles.muted : ''}`}
+      aria-label={muted ? 'Chat sound, off because all sound is off' : 'Chat sound'}
+      aria-pressed={muted ? undefined : on}
+      aria-disabled={muted || undefined}
+      title={
+        muted
+          ? 'All sound is off. Turn it on with the speaker button.'
+          : `Chat sound: ${on ? 'on' : 'off'}`
+      }
+      onClick={() => {
+        if (!muted) setOn(!on)
+      }}
+    >
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M6 16v-5a6 6 0 0 1 12 0v5l1.5 2h-15z" />
+        <path d="M10 20.5a2 2 0 0 0 4 0" />
+        {on && !muted ? (
+          <path d="M2.5 9a9 9 0 0 1 2.5-5M21.5 9a9 9 0 0 0-2.5-5" />
+        ) : (
+          <path d="M3 3l18 18" />
+        )}
+      </svg>
+    </button>
   )
 }

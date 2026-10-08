@@ -179,6 +179,15 @@ describe('table talk', () => {
     expect(unreadChat(state)).toBe(2)
   })
 
+  it('hears only lines that come in live, not a backlog', () => {
+    let state = receive(seated, { type: 'chatLog', lines: [line(1), line(2)] })
+    expect(state.chatHeard).toBeNull()
+    state = receive(state, { type: 'chat', line: line(3) })
+    expect(state.chatHeard?.id).toBe(3)
+    state = receive(state, { type: 'chatLog', lines: [line(1), line(2), line(3), line(4)] })
+    expect(state.chatHeard?.id).toBe(3)
+  })
+
   it('clears the input on send, and puts a refused line back', () => {
     let state = gameReducer(seated, { type: 'chatText', text: 'hello' })
     state = gameReducer(state, { type: 'chatSent', text: 'hello' })

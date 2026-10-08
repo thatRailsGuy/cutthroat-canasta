@@ -135,6 +135,13 @@ const TILES: { sound: Sound; name: string; what: string; when: string; both: boo
     when: 'A meld reaches seven cards.',
     both: true,
   },
+  {
+    sound: 'chat',
+    name: 'Chat',
+    what: 'Teaspoon on an empty wine glass',
+    when: 'Someone else’s chat line comes in.',
+    both: false,
+  },
 ]
 
 const SEQUENCES: [string, Cue[]][] = [

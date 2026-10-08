@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react
 import { Link, useLocation, useNavigate, useParams } from 'react-router'
 import { gameExists, normalizeCode } from '../api'
 import type { ConnectionStatus } from '../connection'
+import { ChatSounds } from '../components/ChatSounds'
 import { RulesDrawer } from '../components/RulesDrawer'
 import { TableSounds } from '../components/TableSounds'
 import { Toasts } from '../components/Toasts'
@@ -173,6 +174,7 @@ function Session({ code, linkToken, autoJoinName, joinsByItself }: SessionProps)
       {body}
       {/* Outside the table, which remounts with each deal, so the deal itself can play a sound. */}
       {view && state.playerId && <TableSounds view={view} live={state.connection === 'open'} />}
+      {state.playerId && <ChatSounds heard={state.chatHeard} playerId={state.playerId} />}
       <button type="button" className={styles.rulesButton} onClick={() => openRules('overview')}>
         Rules
       </button>

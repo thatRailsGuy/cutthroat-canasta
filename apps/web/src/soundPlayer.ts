@@ -7,6 +7,7 @@ import cardShuffle from './sounds/card-shuffle.mp3'
 import cardsTakeOut1 from './sounds/cards-take-out-1.mp3'
 import cardsTakeOut2 from './sounds/cards-take-out-2.mp3'
 import cashRegister from './sounds/cash-register.mp3'
+import chatClink from './sounds/chat-clink.mp3'
 import gameOverJingle from './sounds/game-over.mp3'
 import pencilDrop1 from './sounds/pencil-drop-1.mp3'
 import pencilDrop2 from './sounds/pencil-drop-2.mp3'
@@ -31,6 +32,7 @@ const CLIPS = {
   drop4: pencilDrop4,
   register: cashRegister,
   jingle: gameOverJingle,
+  clink: chatClink,
 }
 type Clip = keyof typeof CLIPS
 const PLACES: Clip[] = ['place1', 'place2', 'place3', 'place4']
@@ -310,5 +312,14 @@ const SOUNDS: Record<Sound, (voice: Voice, cue: Cue) => number> = {
     v.bell(2637, 0.12, 0.14, 1.1)
     v.noise(0.35, 0.18, 0.4, 'lowpass', 400)
     return 0.7
+  },
+  // A teaspoon tapping an empty wine glass, or a made glass ping if the recording didn't load.
+  chat: (v) => {
+    if (!v.clip('clink', 0, 0.5))
+      v.bell(2349, 0, 0.12, 1, [
+        [1, 1],
+        [2.32, 0.3],
+      ])
+    return 0.4
   },
 }

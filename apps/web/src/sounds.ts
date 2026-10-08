@@ -23,7 +23,7 @@ export const SOUND_LEVELS: readonly { name: string; hint: string }[] = [
 export const DEFAULT_SOUND_LEVEL: SoundLevel = 2
 
 export type Sound =
-  'turn' | 'roundOver' | 'gameOver' | 'draw' | 'discard' | 'meld' | 'pickup' | 'canasta'
+  'turn' | 'roundOver' | 'gameOver' | 'draw' | 'discard' | 'meld' | 'pickup' | 'canasta' | 'chat'
 
 /** A sound to play for something that just happened. */
 export interface Cue {
@@ -116,10 +116,19 @@ function eventCues(event: FeedEvent, youId: string | null): Cue[] {
 /** The lowest step that plays a cue. */
 export function stepFor(cue: Pick<Cue, 'sound' | 'mine'>): SoundLevel {
   if (cue.sound === 'turn' || cue.sound === 'roundOver' || cue.sound === 'gameOver') return 1
+  // A chat line has its own switch, so it plays at every step but Off.
+  if (cue.sound === 'chat') return 1
   return cue.mine ? 2 : 3
 }
 
 export const audible = (cue: Cue, level: SoundLevel) => level >= stepFor(cue)
+
+/** The shortest gap between two chat clinks, in milliseconds, so a burst of lines clinks once. */
+export const CHAT_CLINK_GAP = 4000
+
+/** Whether a chat line heard at `now` clinks, given when the last clink played. */
+export const clinkDue = (lastAt: number | null, now: number) =>
+  lastAt === null || now - lastAt >= CHAT_CLINK_GAP
 
 /** The rows of the "What each step plays" chart. */
 export const SOUND_CHART: readonly {

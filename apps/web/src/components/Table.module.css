@@ -358,11 +358,49 @@
   font-size: 0.9rem;
 }
 
-.feed::before {
-  content: 'Table talk';
+.feedHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
   font-family: var(--display);
   font-size: 1.1rem;
   color: var(--red);
+}
+
+/* Only a bell, like the speaker button beside Rules. */
+.chatBell {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  padding: 0 0.7rem;
+}
+
+.chatBell svg {
+  width: 1.3rem;
+  height: 1.3rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.chatBell[aria-pressed='false'] {
+  color: var(--muted);
+}
+
+/* All sound is off: the bell can't be pressed, and says so in its tooltip. */
+.chatBell.muted {
+  border-style: dashed;
+  box-shadow: none;
+  color: var(--muted);
+  cursor: default;
+}
+
+.chatBell.muted:active {
+  transform: none;
 }
 
 .feed [role='status']:empty {

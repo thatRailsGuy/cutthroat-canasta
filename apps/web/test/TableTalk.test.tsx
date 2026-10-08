@@ -5,6 +5,7 @@ import userEvent from '@testing-library/user-event'
 import { useState } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 import { TableTalk } from '../src/components/TableTalk'
+import { useSoundLevel } from '../src/soundLevel'
 
 const player = (id: string, name: string): PublicPlayer => ({
   id,
@@ -110,5 +111,45 @@ describe('TableTalk', () => {
     render(<Talk offline />)
     await userEvent.type(screen.getByRole('textbox', { name: 'Message to the table' }), 'hi')
     expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled()
+  })
+
+  it('turns the chat clink off and on with the bell, unless all sound is off', async () => {
+    function Speaker() {
+      const [, setLevel] = useSoundLevel()
+      return (
+        <>
+          <button type="button" onClick={() => setLevel(0)}>
+            Sound off
+          </button>
+          <button type="button" onClick={() => setLevel(2)}>
+            Sound on
+          </button>
+        </>
+      )
+    }
+    render(
+      <>
+        <Talk />
+        <Speaker />
+      </>,
+    )
+    const bell = screen.getByRole('button', { name: 'Chat sound' })
+    expect(bell).toHaveAttribute('aria-pressed', 'true')
+    await userEvent.click(bell)
+    expect(bell).toHaveAttribute('aria-pressed', 'false')
+    expect(localStorage.getItem('canasta:chatSound')).toBe('off')
+
+    await userEvent.click(screen.getByRole('button', { name: 'Sound off' }))
+    const muted = screen.getByRole('button', { name: /off because all sound is off/ })
+    expect(muted).toHaveAttribute('aria-disabled', 'true')
+    await userEvent.click(muted)
+    await userEvent.click(screen.getByRole('button', { name: 'Sound on' }))
+    // The choice made before the sound went off comes back.
+    await userEvent.click(screen.getByRole('button', { name: 'Chat sound' }))
+    expect(screen.getByRole('button', { name: 'Chat sound' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+    localStorage.clear()
   })
 })

@@ -1,8 +1,8 @@
 import type { FeedEvent, PlayerView } from '@canasta/engine'
 import { afterEach, describe, expect, it } from 'vitest'
 import { MAX_ANIMATED_EVENTS } from '../src/effects'
-import { audible, cuesFor, snapshotOf, type Cue } from '../src/sounds'
-import { loadSoundLevel, saveSoundLevel } from '../src/storage'
+import { audible, CHAT_CLINK_GAP, clinkDue, cuesFor, snapshotOf, type Cue } from '../src/sounds'
+import { loadChatSound, loadSoundLevel, saveChatSound, saveSoundLevel } from '../src/storage'
 import { card, makeView } from './fixtures'
 
 const noPlay = { newMelds: [], additions: [] }
@@ -137,6 +137,36 @@ describe('audible', () => {
     expect(heard(1)).toEqual([true, true, false, false])
     expect(heard(2)).toEqual([true, true, true, false])
     expect(heard(3)).toEqual([true, true, true, true])
+  })
+})
+
+describe('the chat clink', () => {
+  it('plays at every step but Off', () => {
+    const chat: Cue = { sound: 'chat', mine: true }
+    expect([0, 1, 2, 3].map((level) => audible(chat, level as 0 | 1 | 2 | 3))).toEqual([
+      false,
+      true,
+      true,
+      true,
+    ])
+  })
+
+  it('clinks once for a burst of lines', () => {
+    expect(clinkDue(null, 500)).toBe(true)
+    expect(clinkDue(500, 500 + CHAT_CLINK_GAP - 1)).toBe(false)
+    expect(clinkDue(500, 500 + CHAT_CLINK_GAP)).toBe(true)
+  })
+})
+
+describe('the chat sound in storage', () => {
+  afterEach(() => localStorage.clear())
+
+  it('starts on, and keeps the choice', () => {
+    expect(loadChatSound()).toBe(true)
+    saveChatSound(false)
+    expect(loadChatSound()).toBe(false)
+    saveChatSound(true)
+    expect(localStorage.getItem('canasta:chatSound')).toBeNull()
   })
 })
 

@@ -44,6 +44,8 @@ export interface GameState {
   chat: ChatLine[]
   /** The newest line id the player has seen, or null before the first backlog arrives. */
   chatSeen: number | null
+  /** The newest line that came in live, not in a backlog. The chat sound plays for it. */
+  chatHeard: ChatLine | null
   /** What the player is typing. Kept here, so it outlives the table's remount at each deal. */
   chatText: string
   /** The text of the last line this player sent, until it comes back or is refused. */
@@ -79,6 +81,7 @@ export const initialGameState: GameState = {
   removed: null,
   chat: [],
   chatSeen: null,
+  chatHeard: null,
   chatText: '',
   chatSent: null,
   nextId: 1,
@@ -205,6 +208,7 @@ function onMessage(state: GameState, message: ServerMessage, joinFailed: boolean
       return {
         ...state,
         chat: [...state.chat, message.line].slice(-CHAT_LINES),
+        chatHeard: message.line,
         chatSent: mine ? null : state.chatSent,
       }
     }

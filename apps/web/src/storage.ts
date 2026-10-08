@@ -4,6 +4,7 @@ const tokenKey = (code: string) => `canasta:token:${code}`
 const NAME_KEY = 'canasta:name'
 const HAND_LAYOUT_KEY = 'canasta:handLayout'
 const SOUND_LEVEL_KEY = 'canasta:soundLevel'
+const CHAT_SOUND_KEY = 'canasta:chatSound'
 
 /** localStorage can throw (private mode, blocked storage). The game still works without it. */
 function read(key: string): string | null {
@@ -38,6 +39,9 @@ export function loadSoundLevel(): SoundLevel {
   return level === 0 || level === 1 || level === 2 || level === 3 ? level : DEFAULT_SOUND_LEVEL
 }
 export const saveSoundLevel = (level: SoundLevel) => write(SOUND_LEVEL_KEY, String(level))
+/** The chat clink is on unless the player turned it off. */
+export const loadChatSound = () => read(CHAT_SOUND_KEY) !== 'off'
+export const saveChatSound = (on: boolean) => write(CHAT_SOUND_KEY, on ? null : 'off')
 
 /** Reads `#token=…` from a rejoin link. */
 export function tokenFromHash(hash: string): string | null {

@@ -68,6 +68,17 @@ const CREDITS: {
     license: CC0,
   },
   {
+    moment: 'Chat',
+    works: [
+      {
+        title: 'medium wine glass',
+        author: 'Tairblenn',
+        url: 'https://freesound.org/people/Tairblenn/sounds/549900/',
+      },
+    ],
+    license: CC0,
+  },
+  {
     moment: 'Cards',
     works: [
       { title: 'Casino Audio', author: 'Kenney', url: 'https://kenney.nl/assets/casino-audio' },
