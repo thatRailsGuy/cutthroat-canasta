@@ -38,3 +38,8 @@ License: Creative Commons Attribution 4.0 (CC BY 4.0), https://creativecommons.o
 
 Changed: mixed to mono, lowered 1 dB, with a fade at the end of the tail, converted to 44.1 kHz
 MP3.
+
+chat-clink.mp3: "medium wine glass" by Tairblenn, https://freesound.org/people/Tairblenn/sounds/549900/
+License: Creative Commons Zero (CC0), http://creativecommons.org/publicdomain/zero/1.0/
+
+Changed: mixed to mono, lowered 1 dB, with a fade at the end, converted to 44.1 kHz MP3.
