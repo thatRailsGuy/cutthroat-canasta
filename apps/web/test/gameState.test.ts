@@ -20,8 +20,15 @@ describe('gameReducer', () => {
     state = receive(state, { type: 'joined', code: 'ABCDEF', playerId: 'you', token: 't' })
     expect(state).toMatchObject({ playerId: 'you', joining: false })
     const view = makeView({ hand: [], phase: 'draw' })
-    state = receive(state, { type: 'state', view, hostId: 'you', connected: ['you'] })
-    expect(state).toMatchObject({ view, hostId: 'you', connected: ['you'] })
+    state = receive(state, {
+      type: 'state',
+      view,
+      hostId: 'you',
+      connected: ['you'],
+      public: true,
+      kicked: [],
+    })
+    expect(state).toMatchObject({ view, hostId: 'you', connected: ['you'], isPublic: true })
   })
 
   it('turns rule errors into toasts that link to their section', () => {
@@ -61,7 +68,14 @@ describe('gameReducer', () => {
       token: 't',
     })
     const view = makeView({ hand: [], phase: 'draw' })
-    state = receive(state, { type: 'state', view, hostId: 'you', connected: ['you', 'bob'] })
+    state = receive(state, {
+      type: 'state',
+      view,
+      hostId: 'you',
+      connected: ['you', 'bob'],
+      public: false,
+      kicked: [],
+    })
     // The socket dropped and the host reissued the seat; the reconnect's join fails.
     state = gameReducer(state, { type: 'joining' })
     state = receive(
@@ -81,12 +95,33 @@ describe('gameReducer', () => {
 
   it('clears seat notices when a new round starts', () => {
     const view = makeView({ hand: [], phase: 'draw' })
-    let state = receive(initialGameState, { type: 'state', view, hostId: 'you', connected: [] })
+    let state = receive(initialGameState, {
+      type: 'state',
+      view,
+      hostId: 'you',
+      connected: [],
+      public: false,
+      kicked: [],
+    })
     state = receive(state, { type: 'seatReissued', playerId: 'bob' })
-    state = receive(state, { type: 'state', view, hostId: 'you', connected: [] })
+    state = receive(state, {
+      type: 'state',
+      view,
+      hostId: 'you',
+      connected: [],
+      public: false,
+      kicked: [],
+    })
     expect(state.notices).toHaveLength(1)
     const nextRound = { ...view, round: { ...view.round!, number: 2 } }
-    state = receive(state, { type: 'state', view: nextRound, hostId: 'you', connected: [] })
+    state = receive(state, {
+      type: 'state',
+      view: nextRound,
+      hostId: 'you',
+      connected: [],
+      public: false,
+      kicked: [],
+    })
     expect(state.notices).toEqual([])
   })
 

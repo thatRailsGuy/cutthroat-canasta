@@ -78,6 +78,8 @@ export const clientMessageSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('kick'), playerId }),
   z.object({ type: z.literal('reissue'), playerId }),
   z.object({ type: z.literal('playAgain') }),
+  z.object({ type: z.literal('unkick'), playerId }),
+  z.object({ type: z.literal('setPublic'), public: z.boolean() }),
   z.object({ type: z.literal('chat'), text: chatText }),
 ])
 
@@ -97,6 +99,7 @@ export type ProtocolErrorCode =
   | 'PLAYER_CONNECTED'
   | 'UNKNOWN_TOKEN'
   | 'CHAT_TOO_FAST'
+  | 'BLOCKED'
 export type ServerErrorCode = RuleErrorCode | ProtocolErrorCode
 
 /** One line of table talk, as the server stamped it. */
@@ -119,7 +122,16 @@ export interface ChatLine {
 
 export type ServerMessage =
   | { type: 'joined'; code: string; playerId: string; token: string }
-  | { type: 'state'; view: PlayerView; hostId: string | null; connected: string[] }
+  | {
+      type: 'state'
+      view: PlayerView
+      hostId: string | null
+      connected: string[]
+      /** Whether the host listed the room on the home page. */
+      public: boolean
+      /** Players the host kicked and can let back in. Empty for everyone but the host. */
+      kicked: { playerId: string; name: string }[]
+    }
   | { type: 'error'; code: ServerErrorCode; message: string }
   | { type: 'removed'; reason: RemovedReason }
   | { type: 'reissued'; playerId: string; token: string }
@@ -131,6 +143,16 @@ export type ServerMessage =
   | { type: 'chatLog'; lines: ChatLine[] }
   /** The heartbeat reply. The runtime's auto-response sends it, never the room handler. */
   | { type: 'pong' }
+
+/** A public lobby, as the home page lists it. */
+export interface OpenTable {
+  code: string
+  host: string
+  /** Everyone else seated, in seat order. */
+  others: string[]
+  seats: number
+  maxSeats: number
+}
 
 /** Why a socket's seat went away: it left the lobby, quit a started game, or was kicked. */
 export type RemovedReason = 'left' | 'quit' | 'kicked'

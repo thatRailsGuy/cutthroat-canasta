@@ -1,3 +1,5 @@
+import type { OpenTable } from '@canasta/server/protocol'
+
 /**
  * Game codes use the server's accepted alphabet: no I, L, O, 0 or 1. New codes also leave out
  * B, 8, Z, 2, S and 5, but older codes with them still name live rooms.
@@ -14,6 +16,17 @@ export async function createGame(): Promise<string> {
   if (response.status !== 201) throw new Error(`Could not create a game (${response.status}).`)
   const { code } = (await response.json()) as { code: string }
   return code
+}
+
+/** The public lobbies, newest first, or null if the server couldn't be asked. */
+export async function listTables(): Promise<OpenTable[] | null> {
+  try {
+    const response = await fetch('/api/tables')
+    if (response.status !== 200) return null
+    return ((await response.json()) as { tables: OpenTable[] }).tables
+  } catch {
+    return null
+  }
 }
 
 /**

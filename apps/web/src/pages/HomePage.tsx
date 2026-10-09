@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router'
 import { createGame, normalizeCode } from '../api'
+import { OpenTables } from '../components/OpenTables'
 import { loadName, saveName } from '../storage'
 import type { GamePageState } from './GamePage'
 import styles from './Pages.module.css'
@@ -63,6 +64,7 @@ export function HomePage() {
         </button>
       </form>
       {error && <p className={styles.error}>{error}</p>}
+      <OpenTables canJoin={trimmed.length > 0} onJoin={go} />
       <p className={styles.links}>
         <Link to="/learn">Learn to play</Link> · <Link to="/rules">Read the rules</Link>
       </p>

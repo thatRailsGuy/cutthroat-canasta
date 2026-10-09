@@ -1,6 +1,11 @@
-import { SELF, env, runInDurableObject } from 'cloudflare:test'
+import { SELF, env, runDurableObjectAlarm, runInDurableObject } from 'cloudflare:test'
 import { describe, expect, it } from 'vitest'
-import { HEARTBEAT_PING, STALE_CLOSE_CODE, type ServerMessage } from '../src/protocol'
+import {
+  HEARTBEAT_PING,
+  STALE_CLOSE_CODE,
+  type OpenTable,
+  type ServerMessage,
+} from '../src/protocol'
 import type { RoomState } from '../src/room'
 
 type Joined = Extract<ServerMessage, { type: 'joined' }>
@@ -26,12 +31,15 @@ async function createGame(): Promise<string> {
 
 /**
  * `halfOpen` makes the client skip the reply to a server's Close frame, as a dead phone would,
- * so the room never gets a close event for it.
+ * so the room never gets a close event for it. `ip` is the address Cloudflare would report.
  */
-async function connect(code: string, { halfOpen = false } = {}): Promise<Client> {
-  const response = await SELF.fetch(`http://example.com/api/games/${code}/ws`, {
-    headers: { Upgrade: 'websocket' },
-  })
+async function connect(
+  code: string,
+  { halfOpen = false, ip }: { halfOpen?: boolean; ip?: string } = {},
+): Promise<Client> {
+  const headers: Record<string, string> = { Upgrade: 'websocket' }
+  if (ip) headers['CF-Connecting-IP'] = ip
+  const response = await SELF.fetch(`http://example.com/api/games/${code}/ws`, { headers })
   const ws = response.webSocket
   if (!ws) throw new Error(`Expected a WebSocket, got status ${response.status}`)
   ws.accept({ allowHalfOpen: halfOpen })
@@ -505,5 +513,116 @@ describe('heartbeat', () => {
     ann.sendRaw('not json')
     expect(await ann.next()).toMatchObject({ type: 'error', code: 'BAD_MESSAGE' })
     expect((await nextState(ann)).connected).toEqual([annJoined.playerId])
+  })
+})
+
+describe('public tables', () => {
+  async function openTables(ip?: string): Promise<OpenTable[]> {
+    const response = await SELF.fetch('http://example.com/api/tables', {
+      headers: ip ? { 'CF-Connecting-IP': ip } : {},
+    })
+    expect(response.status).toBe(200)
+    return ((await response.json()) as { tables: OpenTable[] }).tables
+  }
+
+  /** The room tells the directory after its broadcast, so the list can lag a moment. */
+  async function listed(code: string, ip?: string): Promise<OpenTable | undefined> {
+    return (await openTables(ip)).find((t) => t.code === code)
+  }
+
+  async function expectListed(code: string, want: boolean, ip?: string) {
+    await expect.poll(async () => (await listed(code, ip)) !== undefined).toBe(want)
+  }
+
+  async function publicLobby() {
+    const lobby = await lobbyGame()
+    lobby.ann.send({ type: 'setPublic', public: true })
+    expect(await nextState(lobby.ann)).toMatchObject({ public: true })
+    expect(await nextState(lobby.bob)).toMatchObject({ public: true })
+    await expectListed(lobby.code, true)
+    return lobby
+  }
+
+  it('lists a public lobby with its host and seats', async () => {
+    const { code } = await publicLobby()
+    expect(await listed(code)).toEqual({
+      code,
+      host: 'Ann',
+      others: ['Bob'],
+      seats: 2,
+      maxSeats: 8,
+    })
+  })
+
+  it('does not list a private lobby', async () => {
+    const { code } = await lobbyGame()
+    expect(await listed(code)).toBeUndefined()
+  })
+
+  it('takes the room off when the host makes it private', async () => {
+    const { code, ann } = await publicLobby()
+    ann.send({ type: 'setPublic', public: false })
+    await expectListed(code, false)
+  })
+
+  it('takes the room off when the game starts', async () => {
+    const { code, ann } = await publicLobby()
+    ann.send({ type: 'start' })
+    await expectListed(code, false)
+  })
+
+  it('takes the room off when the host disconnects, and back when they return', async () => {
+    const { code, ann, annJoined } = await publicLobby()
+    ann.close()
+    await expectListed(code, false)
+    const back = await connect(code)
+    await join(back, 'Ann', annJoined.token)
+    await expectListed(code, true)
+  })
+
+  it('takes the room off when the host goes silent', async () => {
+    const { code, annJoined } = await publicLobby()
+    const stub = env.GAME_ROOM.get(env.GAME_ROOM.idFromName(code))
+    await runInDurableObject(stub, async (_instance, state) => {
+      for (const ws of state.getWebSockets()) {
+        const attachment = ws.deserializeAttachment() as { playerId: string | null }
+        if (attachment.playerId === annJoined.playerId) {
+          ws.serializeAttachment({ ...attachment, seenAt: 0 })
+        }
+      }
+    })
+    expect(await runDurableObjectAlarm(stub)).toBe(true)
+    expect(await listed(code)).toBeUndefined()
+  })
+
+  it('keeps a kicked player out and hides the table from them', async () => {
+    const code = await createGame()
+    const ann = await connect(code, { ip: '203.0.113.1' })
+    await join(ann, 'Ann')
+    await nextState(ann)
+    const dave = await connect(code, { ip: '198.51.100.7' })
+    const daveJoined = await join(dave, 'Dave')
+    await nextState(dave)
+    await nextState(ann)
+    ann.send({ type: 'setPublic', public: true })
+    await nextState(ann)
+    await nextState(dave)
+
+    ann.send({ type: 'kick', playerId: daveJoined.playerId })
+    expect(await dave.next()).toEqual({ type: 'removed', reason: 'kicked' })
+    expect(await nextState(ann)).toMatchObject({
+      kicked: [{ playerId: daveJoined.playerId, name: 'Dave' }],
+    })
+    await expectListed(code, true, '203.0.113.1')
+    expect(await listed(code, '198.51.100.7')).toBeUndefined()
+
+    const again = await connect(code, { ip: '198.51.100.7' })
+    again.send({ type: 'join', name: 'Dave2' })
+    expect(await again.next()).toMatchObject({ type: 'error', code: 'BLOCKED' })
+
+    ann.send({ type: 'unkick', playerId: daveJoined.playerId })
+    expect(await nextState(ann)).toMatchObject({ kicked: [] })
+    await expectListed(code, true, '198.51.100.7')
+    expect((await join(again, 'Dave')).playerId).not.toBe(daveJoined.playerId)
   })
 })

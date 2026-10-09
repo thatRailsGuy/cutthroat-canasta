@@ -15,7 +15,14 @@
     "run_worker_first": ["/api/*"],
   },
   "durable_objects": {
-    "bindings": [{ "name": "GAME_ROOM", "class_name": "GameRoom" }],
+    "bindings": [
+      { "name": "GAME_ROOM", "class_name": "GameRoom" },
+      // One instance, named "all": the public lobbies the home page lists.
+      { "name": "TABLE_DIRECTORY", "class_name": "TableDirectory" },
+    ],
   },
-  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["GameRoom"] }],
+  "migrations": [
+    { "tag": "v1", "new_sqlite_classes": ["GameRoom"] },
+    { "tag": "v2", "new_sqlite_classes": ["TableDirectory"] },
+  ],
 }

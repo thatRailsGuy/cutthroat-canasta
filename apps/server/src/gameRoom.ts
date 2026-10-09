@@ -1,5 +1,6 @@
 import { DurableObject } from 'cloudflare:workers'
 import type { Seed } from '@canasta/engine'
+import { addressKey, clientIp } from './address'
 import { allowSend, appendLine, stampLine } from './chat'
 import { randomSeed } from './codes'
 import { isStale, lastSeen } from './presence'
@@ -12,11 +13,14 @@ import {
   type ServerMessage,
 } from './protocol'
 import { createRoom, handleMessage, stateMessage, type RoomIds, type RoomState } from './room'
+import { REFRESH_MS, tableListing } from './tables'
 
 interface Attachment {
   playerId: string | null
   /** When the socket connected or last sent a message (ms). Pings are tracked by the runtime. */
   seenAt: number
+  /** The address key (address.ts) it connected from, or null if the request didn't say. */
+  address: string | null
 }
 
 const ids: RoomIds = {
@@ -34,6 +38,10 @@ export class GameRoom extends DurableObject<Env> {
    * which is fine, because a room only hibernates once it has gone quiet.
    */
   private chatTimes = new Map<string, number[]>()
+  /** Whether the directory lists the room. Saved, so a woken room knows to take itself off. */
+  private listed = false
+  /** The listing last sent to the directory, and when, to skip sending the same one again. */
+  private reported: { json: string; at: number } | null = null
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env)
@@ -41,6 +49,7 @@ export class GameRoom extends DurableObject<Env> {
     ctx.blockConcurrencyWhile(async () => {
       this.room = (await ctx.storage.get<RoomState>('room')) ?? null
       this.chat = (await ctx.storage.get<ChatLine[]>('chat')) ?? []
+      this.listed = (await ctx.storage.get<boolean>('listed')) ?? false
     })
   }
 
@@ -62,40 +71,44 @@ export class GameRoom extends DurableObject<Env> {
     if (request.headers.get('Upgrade') !== 'websocket') {
       return new Response('Expected a WebSocket upgrade', { status: 426 })
     }
+    const ip = clientIp(request)
+    const address = ip ? await addressKey(this.room.code, ip) : null
     const [client, server] = Object.values(new WebSocketPair())
     this.ctx.acceptWebSocket(server)
-    server.serializeAttachment({ playerId: null, seenAt: Date.now() } satisfies Attachment)
+    server.serializeAttachment({ playerId: null, seenAt: Date.now(), address } satisfies Attachment)
     return new Response(null, { status: 101, webSocket: client })
   }
 
   async webSocketMessage(ws: WebSocket, raw: string | ArrayBuffer): Promise<void> {
     if (!this.room) return
-    const { playerId } = ws.deserializeAttachment() as Attachment
-    ws.serializeAttachment({ playerId, seenAt: Date.now() } satisfies Attachment)
+    const { playerId, address } = attachmentOf(ws)
+    reattach(ws, { seenAt: Date.now() })
     const droppedPlayer = this.dropStaleSockets()
     const parsed = parseClientMessage(raw)
     if (!parsed.ok) {
       send(ws, parsed.error)
-      if (droppedPlayer) this.broadcast()
+      if (droppedPlayer) await this.presenceChanged()
       return
     }
     if (parsed.message.type === 'chat') {
       await this.addChat(ws, playerId, parsed.message.text)
-      if (droppedPlayer) this.broadcast()
+      if (droppedPlayer) await this.presenceChanged()
       return
     }
 
-    const outcome = handleMessage(this.room, playerId, parsed.message, ids, this.connected())
+    const outcome = handleMessage(
+      this.room,
+      playerId,
+      parsed.message,
+      ids,
+      this.connected(),
+      address ?? null,
+    )
     if (outcome.changed) {
       this.room = outcome.state
       await this.ctx.storage.put('room', this.room)
     }
-    if (outcome.bindPlayerId) {
-      ws.serializeAttachment({
-        playerId: outcome.bindPlayerId,
-        seenAt: Date.now(),
-      } satisfies Attachment)
-    }
+    if (outcome.bindPlayerId) reattach(ws, { playerId: outcome.bindPlayerId, seenAt: Date.now() })
     for (const message of outcome.reply) send(ws, message)
     // The backlog goes to a socket that just took a seat, before its first state.
     if (outcome.bindPlayerId) send(ws, { type: 'chatLog', lines: this.chat })
@@ -103,13 +116,14 @@ export class GameRoom extends DurableObject<Env> {
     if (outcome.detach) {
       const { playerId: gone, reason } = outcome.detach
       for (const socket of this.ctx.getWebSockets()) {
-        if ((socket.deserializeAttachment() as Attachment).playerId !== gone) continue
-        socket.serializeAttachment({ playerId: null, seenAt: Date.now() } satisfies Attachment)
+        if (attachmentOf(socket).playerId !== gone) continue
+        reattach(socket, { playerId: null, seenAt: Date.now() })
         send(socket, { type: 'removed', reason })
       }
     }
     // A dropped player's dot must go grey even when this message changed nothing.
     if (outcome.broadcast || droppedPlayer) this.broadcast()
+    await this.report()
   }
 
   async webSocketClose(ws: WebSocket, code: number, reason: string): Promise<void> {
@@ -119,12 +133,63 @@ export class GameRoom extends DurableObject<Env> {
       // Already closed, or a reserved close code that can't be echoed.
     }
     this.dropStaleSockets()
-    this.broadcast(ws)
+    await this.presenceChanged(ws)
   }
 
   async webSocketError(ws: WebSocket): Promise<void> {
     this.dropStaleSockets()
-    this.broadcast(ws)
+    await this.presenceChanged(ws)
+  }
+
+  /**
+   * Set only while the room is listed. It drops silent sockets, so a host whose phone died
+   * comes off the list, and tells the directory the room is still there.
+   */
+  async alarm(): Promise<void> {
+    if (this.dropStaleSockets()) this.broadcast()
+    await this.report({ refresh: true })
+  }
+
+  private async presenceChanged(except?: WebSocket): Promise<void> {
+    this.broadcast(except)
+    await this.report({ except })
+  }
+
+  /**
+   * Puts the room on the home page's list, updates its line, or takes it off. `refresh` sends
+   * the line even if it hasn't changed. A failure only costs the listing, never the move.
+   */
+  private async report({
+    except,
+    refresh = false,
+  }: { except?: WebSocket; refresh?: boolean } = {}) {
+    if (!this.room) return
+    const listing = tableListing(this.room, this.connected(except))
+    if (!listing && !this.listed) return
+    const json = JSON.stringify(listing)
+    const now = Date.now()
+    const fresh = this.reported?.json === json && now - this.reported.at < REFRESH_MS
+    if (fresh && !refresh) return
+    const directory = this.env.TABLE_DIRECTORY.get(this.env.TABLE_DIRECTORY.idFromName('all'))
+    try {
+      if (listing) await directory.put(listing)
+      else await directory.remove(this.room.code)
+    } catch (error) {
+      console.error('Could not update the table directory', error)
+      return
+    }
+    this.reported = { json, at: now }
+    if (this.listed !== !!listing) {
+      this.listed = !!listing
+      await this.ctx.storage.put('listed', this.listed)
+    }
+    if (listing) {
+      if ((await this.ctx.storage.getAlarm()) === null) {
+        await this.ctx.storage.setAlarm(now + REFRESH_MS)
+      }
+    } else {
+      await this.ctx.storage.deleteAlarm()
+    }
   }
 
   private async addChat(ws: WebSocket, playerId: string | null, text: string): Promise<void> {
@@ -157,7 +222,7 @@ export class GameRoom extends DurableObject<Env> {
   /** Sends `message` to every socket bound to a player. */
   private announce(message: ServerMessage): void {
     for (const socket of this.ctx.getWebSockets()) {
-      if ((socket.deserializeAttachment() as Attachment).playerId) send(socket, message)
+      if (attachmentOf(socket).playerId) send(socket, message)
     }
   }
 
@@ -171,10 +236,10 @@ export class GameRoom extends DurableObject<Env> {
     const now = Date.now()
     let droppedPlayer = false
     for (const ws of this.ctx.getWebSockets()) {
-      const { playerId, seenAt } = ws.deserializeAttachment() as Attachment
+      const { playerId, seenAt } = attachmentOf(ws)
       if (!isStale(lastSeen(seenAt, this.ctx.getWebSocketAutoResponseTimestamp(ws)), now)) continue
       if (playerId) droppedPlayer = true
-      ws.serializeAttachment({ playerId: null, seenAt } satisfies Attachment)
+      reattach(ws, { playerId: null })
       try {
         ws.close(STALE_CLOSE_CODE, 'No heartbeat')
       } catch {
@@ -190,7 +255,7 @@ export class GameRoom extends DurableObject<Env> {
       this.ctx
         .getWebSockets()
         .filter((ws) => ws !== except)
-        .map((ws) => (ws.deserializeAttachment() as Attachment).playerId),
+        .map((ws) => attachmentOf(ws).playerId),
     )
     return (this.room?.game.players ?? []).map((p) => p.id).filter((id) => ids.has(id))
   }
@@ -201,10 +266,19 @@ export class GameRoom extends DurableObject<Env> {
     const connected = this.connected(except)
     for (const ws of this.ctx.getWebSockets()) {
       if (ws === except) continue
-      const { playerId } = ws.deserializeAttachment() as Attachment
+      const { playerId } = attachmentOf(ws)
       if (playerId) send(ws, stateMessage(room, playerId, connected))
     }
   }
+}
+
+/** `address` is missing on sockets opened before it was added. */
+function attachmentOf(ws: WebSocket): Attachment {
+  return ws.deserializeAttachment() as Attachment
+}
+
+function reattach(ws: WebSocket, changes: Partial<Attachment>): void {
+  ws.serializeAttachment({ ...attachmentOf(ws), ...changes } satisfies Attachment)
 }
 
 function send(ws: WebSocket, message: ServerMessage): void {

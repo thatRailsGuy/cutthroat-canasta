@@ -24,6 +24,8 @@ export interface SeatNotice {
   playerId: string
 }
 
+export type KickedPlayer = Extract<ServerMessage, { type: 'state' }>['kicked'][number]
+
 export interface GameState {
   connection: ConnectionStatus
   failures: number
@@ -33,6 +35,10 @@ export interface GameState {
   view: PlayerView | null
   hostId: string | null
   connected: string[]
+  /** Whether the host listed the room on the home page. */
+  isPublic: boolean
+  /** Host only: players they kicked and can let back in. */
+  kicked: KickedPlayer[]
   /** Why the last join failed; the page shows the join form with it. */
   joinError: string | null
   toasts: Toast[]
@@ -74,6 +80,8 @@ export const initialGameState: GameState = {
   view: null,
   hostId: null,
   connected: [],
+  isPublic: false,
+  kicked: [],
   joinError: null,
   toasts: [],
   notices: [],
@@ -149,6 +157,8 @@ function onMessage(state: GameState, message: ServerMessage, joinFailed: boolean
         view: message.view,
         hostId: message.hostId,
         connected: message.connected,
+        isPublic: message.public,
+        kicked: message.kicked,
         notices: newRound ? [] : state.notices,
       }
     }
@@ -164,6 +174,8 @@ function onMessage(state: GameState, message: ServerMessage, joinFailed: boolean
           view: initialGameState.view,
           hostId: initialGameState.hostId,
           connected: initialGameState.connected,
+          isPublic: initialGameState.isPublic,
+          kicked: initialGameState.kicked,
         }
       }
       // Two players can press Next round together; the second one's ROUND_NOT_OVER is noise.

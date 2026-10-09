@@ -1,7 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import type { Seed } from '@canasta/engine'
 import type { ClientMessage } from '../src/protocol'
-import { createRoom, handleMessage, stateMessage, type RoomIds, type RoomState } from '../src/room'
+import {
+  blockedAddresses,
+  createRoom,
+  handleMessage,
+  stateMessage,
+  type RoomIds,
+  type RoomState,
+} from '../src/room'
 
 const SEED: Seed = [42, 0, 0, 0]
 
@@ -468,5 +475,167 @@ describe('stateMessage', () => {
     if (message.type !== 'state') throw new Error('expected a state message')
     expect(message.view.you?.id).toBe('p2')
     expect(message.view.players[0]).not.toHaveProperty('hand')
+  })
+})
+
+describe('public rooms', () => {
+  it('lets only the host list the room, and sends the flag in every state', () => {
+    const { state, ids } = roomWith(['Ann', 'Bob'])
+    expect(stateMessage(state, 'p2', [])).toMatchObject({ public: false })
+    expect(
+      errorOf(handleMessage(state, 'p2', { type: 'setPublic', public: true }, ids, [])),
+    ).toMatchObject({ code: 'NOT_HOST' })
+    const outcome = handleMessage(state, 'p1', { type: 'setPublic', public: true }, ids, [])
+    expect(outcome.changed).toBe(true)
+    expect(outcome.broadcast).toBe(true)
+    expect(stateMessage(outcome.state, 'p2', [])).toMatchObject({ public: true })
+  })
+
+  it('reads a room saved before public rooms as private', () => {
+    const { state } = roomWith(['Ann'])
+    const old: RoomState = { ...state }
+    delete old.public
+    expect(stateMessage(old, 'p1', [])).toMatchObject({ public: false })
+  })
+})
+
+describe('blocking a kicked player', () => {
+  /** Ann joins from home, Bob from the cafe. */
+  function lobby() {
+    const ids = sequentialIds()
+    let state = createRoom('ABCDEF', SEED)
+    state = handleMessage(state, null, { type: 'join', name: 'Ann' }, ids, [], 'home').state
+    state = handleMessage(state, null, { type: 'join', name: 'Bob' }, ids, [], 'cafe').state
+    return { state, ids }
+  }
+
+  it('records where each player joined from', () => {
+    expect(lobby().state.addresses).toEqual({ p1: 'home', p2: 'cafe' })
+  })
+
+  it("blocks a kicked player's address from taking a new seat", () => {
+    const { state, ids } = lobby()
+    const kicked = handleMessage(state, 'p1', { type: 'kick', playerId: 'p2' }, ids, []).state
+    expect(blockedAddresses(kicked)).toEqual(['cafe'])
+    expect(kicked.addresses).toEqual({ p1: 'home' })
+
+    const again = handleMessage(kicked, null, { type: 'join', name: 'Bobby' }, ids, [], 'cafe')
+    expect(again.changed).toBe(false)
+    expect(errorOf(again)).toMatchObject({ code: 'BLOCKED' })
+    const elsewhere = handleMessage(kicked, null, { type: 'join', name: 'Cy' }, ids, [], 'park')
+    expect(elsewhere.bindPlayerId).toBe('p3')
+  })
+
+  it('lets a seated player on the blocked network rejoin with their token', () => {
+    const ids = sequentialIds()
+    let state = createRoom('ABCDEF', SEED)
+    for (const name of ['Ann', 'Bob', 'Cy']) {
+      state = handleMessage(state, null, { type: 'join', name }, ids, [], 'cafe').state
+    }
+    state = handleMessage(state, 'p1', { type: 'kick', playerId: 'p2' }, ids, []).state
+    const rejoin = handleMessage(
+      state,
+      null,
+      { type: 'join', name: 'Cy', token: 't3' },
+      ids,
+      [],
+      'cafe',
+    )
+    expect(rejoin.bindPlayerId).toBe('p3')
+  })
+
+  it('does not block a player who left on their own', () => {
+    const { state, ids } = lobby()
+    const left = handleMessage(state, 'p2', { type: 'leave' }, ids, []).state
+    expect(blockedAddresses(left)).toEqual([])
+    const back = handleMessage(left, null, { type: 'join', name: 'Bob' }, ids, [], 'cafe')
+    expect(back.bindPlayerId).toBe('p3')
+  })
+
+  it('blocks nothing when it never knew the address', () => {
+    const { state, ids } = roomWith(['Ann', 'Bob'])
+    const kicked = handleMessage(state, 'p1', { type: 'kick', playerId: 'p2' }, ids, []).state
+    expect(blockedAddresses(kicked)).toEqual([])
+  })
+
+  it('records a new address when a player rejoins from another network', () => {
+    const { state, ids } = lobby()
+    const rejoin = handleMessage(
+      state,
+      null,
+      { type: 'join', name: 'Bob', token: 't2' },
+      ids,
+      [],
+      'train',
+    )
+    expect(rejoin.changed).toBe(true)
+    expect(rejoin.state.addresses).toEqual({ p1: 'home', p2: 'train' })
+    const same = handleMessage(
+      state,
+      null,
+      { type: 'join', name: 'Bob', token: 't2' },
+      ids,
+      [],
+      'cafe',
+    )
+    expect(same.changed).toBe(false)
+  })
+})
+
+describe('unkick', () => {
+  function kickedBob() {
+    const ids = sequentialIds()
+    let state = createRoom('ABCDEF', SEED)
+    state = handleMessage(state, null, { type: 'join', name: 'Ann' }, ids, [], 'home').state
+    state = handleMessage(state, null, { type: 'join', name: 'Bob' }, ids, [], 'cafe').state
+    state = handleMessage(state, 'p1', { type: 'kick', playerId: 'p2' }, ids, []).state
+    return { state, ids }
+  }
+
+  it('shows the host, and only the host, who was kicked', () => {
+    const { state, ids } = kickedBob()
+    const withCy = handleMessage(state, null, { type: 'join', name: 'Cy' }, ids, [], 'park').state
+    expect(stateMessage(withCy, 'p1', [])).toMatchObject({
+      kicked: [{ playerId: 'p2', name: 'Bob' }],
+    })
+    expect(stateMessage(withCy, 'p3', [])).toMatchObject({ kicked: [] })
+  })
+
+  it('lets the kicked player join again, in a new seat', () => {
+    const { state, ids } = kickedBob()
+    const outcome = handleMessage(state, 'p1', { type: 'unkick', playerId: 'p2' }, ids, [])
+    expect(outcome.changed).toBe(true)
+    expect(outcome.broadcast).toBe(true)
+    expect(outcome.state.kicked).toEqual([])
+    const back = handleMessage(outcome.state, null, { type: 'join', name: 'Bob' }, ids, [], 'cafe')
+    expect(back.bindPlayerId).toBe('p3')
+  })
+
+  it('keeps blocking a network another kicked player shares', () => {
+    const ids = sequentialIds()
+    let state = createRoom('ABCDEF', SEED)
+    for (const name of ['Ann', 'Bob', 'Cy']) {
+      const address = name === 'Ann' ? 'home' : 'cafe'
+      state = handleMessage(state, null, { type: 'join', name }, ids, [], address).state
+    }
+    state = handleMessage(state, 'p1', { type: 'kick', playerId: 'p2' }, ids, []).state
+    state = handleMessage(state, 'p1', { type: 'kick', playerId: 'p3' }, ids, []).state
+    state = handleMessage(state, 'p1', { type: 'unkick', playerId: 'p2' }, ids, []).state
+    expect(blockedAddresses(state)).toEqual(['cafe'])
+  })
+
+  it('is host only', () => {
+    const { state, ids } = kickedBob()
+    const withCy = handleMessage(state, null, { type: 'join', name: 'Cy' }, ids, [], 'park').state
+    expect(
+      errorOf(handleMessage(withCy, 'p3', { type: 'unkick', playerId: 'p2' }, ids, [])),
+    ).toMatchObject({ code: 'NOT_HOST' })
+  })
+
+  it('rejects someone who was never kicked', () => {
+    const { state, ids } = kickedBob()
+    expect(
+      errorOf(handleMessage(state, 'p1', { type: 'unkick', playerId: 'p9' }, ids, [])),
+    ).toMatchObject({ code: 'NO_SUCH_PLAYER' })
   })
 })

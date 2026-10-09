@@ -1,6 +1,8 @@
+import { clientIp } from './address'
 import { normalizeCode, randomCode, randomSeed } from './codes'
 
 export { GameRoom } from './gameRoom'
+export { TableDirectory } from './tableDirectory'
 
 const MAX_CODE_ATTEMPTS = 5
 const WS_ROUTE = /^\/api\/games\/([^/]+)\/ws$/
@@ -10,6 +12,7 @@ export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url)
     if (url.pathname === '/api/games' && request.method === 'POST') return createGameRoute(env)
+    if (url.pathname === '/api/tables' && request.method === 'GET') return tablesRoute(env, request)
 
     const match = WS_ROUTE.exec(url.pathname)
     if (match && request.method === 'GET') {
@@ -43,6 +46,13 @@ async function gameExistsRoute(env: Env, input: string): Promise<Response> {
   const code = normalizeCode(input)
   if (!code || !(await roomFor(env, code).exists())) return notFound()
   return Response.json({ code })
+}
+
+/** The public lobbies for the home page, leaving out any that kicked the caller. */
+async function tablesRoute(env: Env, request: Request): Promise<Response> {
+  const directory = env.TABLE_DIRECTORY.get(env.TABLE_DIRECTORY.idFromName('all'))
+  const tables = await directory.list(clientIp(request))
+  return Response.json({ tables }, { headers: { 'Cache-Control': 'no-store' } })
 }
 
 function notFound(): Response {

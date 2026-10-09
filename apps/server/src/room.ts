@@ -23,6 +23,24 @@ export interface RoomState {
   hostId: string | null
   /** token → playerId */
   tokens: Record<string, string>
+  /** Listed on the home page while in the lobby. Missing in rooms made before public rooms. */
+  public?: boolean
+  /** playerId → the address key (address.ts) they last joined from. */
+  addresses?: Record<string, string>
+  /** Players the host kicked. Their address can't take a new seat until the host lets them in. */
+  kicked?: Kick[]
+}
+
+export interface Kick {
+  playerId: string
+  name: string
+  /** The address key they last joined from, or null if it was never known (nothing blocked). */
+  address: string | null
+}
+
+/** The address keys that can't take a new seat. */
+export function blockedAddresses(state: RoomState): string[] {
+  return (state.kicked ?? []).flatMap((k) => (k.address === null ? [] : [k.address]))
 }
 
 export interface RoomIds {
@@ -57,21 +75,38 @@ export function stateMessage(
   playerId: string,
   connected: string[],
 ): ServerMessage {
-  return { type: 'state', view: viewFor(state.game, playerId), hostId: state.hostId, connected }
+  return {
+    type: 'state',
+    view: viewFor(state.game, playerId),
+    hostId: state.hostId,
+    connected,
+    public: state.public ?? false,
+    // Only the host can let anyone back in, so only the host needs the list.
+    kicked:
+      playerId === state.hostId
+        ? (state.kicked ?? []).map(({ playerId, name }) => ({ playerId, name }))
+        : [],
+  }
 }
 
 /** Chat is handled by the Durable Object, which has the clock and the chat log. */
 export type RoomMessage = Exclude<ClientMessage, { type: 'chat' }>
 
-/** `connected` lists the players with an open connection, including the sender. */
+/**
+ * `connected` lists the players with an open connection, including the sender. `address` is
+ * the sender's address key (address.ts), or null when the request didn't say where it came from.
+ */
 export function handleMessage(
   state: RoomState,
   senderId: string | null,
   message: RoomMessage,
   ids: RoomIds,
   connected: readonly string[],
+  address: string | null = null,
 ): Outcome {
-  if (message.type === 'join') return join(state, senderId, message.name, message.token, ids)
+  if (message.type === 'join') {
+    return join(state, senderId, message.name, message.token, ids, address)
+  }
   if (!senderId) return protocolError(state, 'NOT_JOINED', 'Join the game first.')
 
   switch (message.type) {
@@ -94,6 +129,15 @@ export function handleMessage(
       return hostOnly(state, senderId, () => reissue(state, message.playerId, ids, connected))
     case 'playAgain':
       return playAgain(state, senderId, ids, connected)
+    case 'unkick':
+      return hostOnly(state, senderId, () => unkick(state, message.playerId))
+    case 'setPublic':
+      return hostOnly(state, senderId, () => ({
+        state: { ...state, public: message.public },
+        reply: [],
+        changed: true,
+        broadcast: true,
+      }))
   }
 }
 
@@ -103,6 +147,7 @@ function join(
   name: string,
   token: string | undefined,
   ids: RoomIds,
+  address: string | null,
 ): Outcome {
   if (senderId) return protocolError(state, 'ALREADY_JOINED', "You've already joined this game.")
 
@@ -120,25 +165,39 @@ function join(
       )
     }
     const playerId = state.tokens[token]
+    const next = withAddress(state, playerId, address)
     return {
-      state,
+      state: next,
       reply: [joined(state, playerId, token)],
       bindPlayerId: playerId,
-      changed: false,
+      changed: next !== state,
       broadcast: true,
     }
   }
 
+  // Only a new seat is refused, so someone the host still wants, who shares the kicked
+  // player's network, keeps their seat.
+  if (address !== null && blockedAddresses(state).includes(address)) {
+    return protocolError(
+      state,
+      'BLOCKED',
+      "The host of this game removed you, so you can't join it again.",
+    )
+  }
   const playerId = ids.newPlayerId()
   const result = addPlayer(state.game, playerId, name)
   if (!result.ok) return ruleErrorOutcome(state, result.error)
   const newToken = ids.newToken()
-  const next: RoomState = {
-    ...state,
-    game: result.game,
-    hostId: state.hostId ?? playerId,
-    tokens: { ...state.tokens, [newToken]: playerId },
-  }
+  const next: RoomState = withAddress(
+    {
+      ...state,
+      game: result.game,
+      hostId: state.hostId ?? playerId,
+      tokens: { ...state.tokens, [newToken]: playerId },
+    },
+    playerId,
+    address,
+  )
   return {
     state: next,
     reply: [joined(next, playerId, newToken)],
@@ -148,7 +207,10 @@ function join(
   }
 }
 
-/** Lobby only (the engine enforces it). If the host goes, the next seat becomes host. */
+/**
+ * Lobby only (the engine enforces it). If the host goes, the next seat becomes host. A kicked
+ * player's address is blocked, so they can't come straight back under a new name.
+ */
 function removeSeat(state: RoomState, playerId: string, reason: RemovedReason): Outcome {
   if (!isSeated(state, playerId)) return noSuchPlayer(state)
   const result = removePlayer(state.game, playerId)
@@ -158,8 +220,25 @@ function removeSeat(state: RoomState, playerId: string, reason: RemovedReason): 
     game: result.game,
     hostId: state.hostId === playerId ? (result.game.players[0]?.id ?? null) : state.hostId,
     tokens: tokensWithout(state.tokens, playerId),
+    addresses: addressesWithout(state.addresses, playerId),
+  }
+  if (reason === 'kicked') {
+    const name = state.game.players.find((p) => p.id === playerId)!.name
+    const address = state.addresses?.[playerId] ?? null
+    next.kicked = [...(state.kicked ?? []), { playerId, name, address }]
   }
   return { state: next, reply: [], detach: { playerId, reason }, changed: true, broadcast: true }
+}
+
+/** Lets a kicked player's address take a new seat again. Their old seat stays gone. */
+function unkick(state: RoomState, playerId: string): Outcome {
+  if (!state.kicked?.some((k) => k.playerId === playerId)) return noSuchPlayer(state)
+  return {
+    state: { ...state, kicked: state.kicked.filter((k) => k.playerId !== playerId) },
+    reply: [],
+    changed: true,
+    broadcast: true,
+  }
 }
 
 /**
@@ -177,6 +256,7 @@ function quit(state: RoomState, playerId: string): Outcome {
     game: result.game,
     hostId: state.hostId === playerId ? (players[seat % players.length]?.id ?? null) : state.hostId,
     tokens: tokensWithout(state.tokens, playerId),
+    addresses: addressesWithout(state.addresses, playerId),
   }
   const { players: before, waiting = [] } = state.game
   const name = [...before, ...waiting].find((p) => p.id === playerId)!.name
@@ -203,6 +283,7 @@ function leaveFinished(state: RoomState, playerId: string): Outcome {
     game: result.game,
     hostId: state.hostId === playerId ? nextHost(result.game, playerId) : state.hostId,
     tokens: tokensWithout(state.tokens, playerId),
+    addresses: addressesWithout(state.addresses, playerId),
   }
   return {
     state: next,
@@ -315,6 +396,20 @@ function isSeated(state: RoomState, playerId: string): boolean {
 
 function tokensWithout(tokens: Record<string, string>, playerId: string): Record<string, string> {
   return Object.fromEntries(Object.entries(tokens).filter(([, id]) => id !== playerId))
+}
+
+/** Records where a player joined from. Returns `state` itself when nothing changed. */
+function withAddress(state: RoomState, playerId: string, address: string | null): RoomState {
+  if (address === null || state.addresses?.[playerId] === address) return state
+  return { ...state, addresses: { ...state.addresses, [playerId]: address } }
+}
+
+function addressesWithout(
+  addresses: Record<string, string> | undefined,
+  playerId: string,
+): Record<string, string> | undefined {
+  if (!addresses) return undefined
+  return Object.fromEntries(Object.entries(addresses).filter(([id]) => id !== playerId))
 }
 
 function joined(state: RoomState, playerId: string, token: string): ServerMessage {

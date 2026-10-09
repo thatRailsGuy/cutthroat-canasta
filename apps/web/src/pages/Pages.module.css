@@ -62,6 +62,135 @@
   background: #9aa0a6;
 }
 
+/* The host's Public switch: a pill that slides on, with what it means beside it. */
+.public {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 0.15rem 0.75rem;
+  padding: 0.7rem 0.8rem;
+  border: 2px solid var(--ink);
+  border-radius: var(--radius);
+  background: white;
+}
+
+.publicOn {
+  background: #e4f3f1;
+}
+
+.switch {
+  position: relative;
+  grid-row: span 2;
+  width: 3.2rem;
+  height: 1.8rem;
+  min-height: 0;
+  padding: 0;
+  background: #9aa0a6;
+}
+
+.switch::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 50%;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+  transition: transform 0.15s;
+}
+
+.switch[aria-checked='true'] {
+  background: var(--teal);
+}
+
+.switch[aria-checked='true']::after {
+  transform: translateX(1.4rem);
+}
+
+.publicState {
+  font-weight: 800;
+}
+
+.publicWhy {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.publicChip {
+  justify-self: start;
+  padding: 0.1rem 0.6rem;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  background: #e4f3f1;
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
+.kicked {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0.7rem;
+  border-radius: var(--radius);
+  background: var(--ink);
+  color: var(--paper);
+  font-size: 0.9rem;
+}
+
+.kicked button {
+  min-height: 32px;
+  padding: 0 0.8rem;
+  font-size: 0.85rem;
+  background: var(--gold);
+  box-shadow: 0 2px 0 var(--paper);
+}
+
+/* The host's list of kicked players, each with Let back in. */
+.kickedList {
+  display: grid;
+  gap: 0.4rem;
+  padding: 0.6rem 0.8rem;
+  border: 2px dashed rgb(43 35 32 / 0.4);
+  border-radius: var(--radius);
+}
+
+.kickedList h2 {
+  margin: 0;
+  font-family: var(--font);
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+}
+
+.kickedList ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.kickedList li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  color: var(--muted);
+}
+
+.kickedList button {
+  min-height: 34px;
+  padding: 0 0.8rem;
+  font-size: 0.85rem;
+}
+
 .error {
   color: var(--bad);
 }
