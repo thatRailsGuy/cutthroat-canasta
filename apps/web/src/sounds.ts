@@ -23,7 +23,16 @@ export const SOUND_LEVELS: readonly { name: string; hint: string }[] = [
 export const DEFAULT_SOUND_LEVEL: SoundLevel = 2
 
 export type Sound =
-  'turn' | 'roundOver' | 'gameOver' | 'draw' | 'discard' | 'meld' | 'pickup' | 'canasta' | 'chat'
+  | 'turn'
+  | 'roundOver'
+  | 'gameOver'
+  | 'draw'
+  | 'discard'
+  | 'meld'
+  | 'pickup'
+  | 'red3'
+  | 'canasta'
+  | 'chat'
 
 /** A sound to play for something that just happened. */
 export interface Cue {
@@ -89,8 +98,12 @@ export function cuesFor(previous: SoundSnapshot | null, view: PlayerView): Cue[]
 
 function eventCues(event: FeedEvent, youId: string | null): Cue[] {
   switch (event.type) {
-    case 'drewStock':
-      return [{ sound: 'draw', mine: event.playerId === youId }]
+    case 'drewStock': {
+      const mine = event.playerId === youId
+      const cues: Cue[] = [{ sound: 'draw', mine }]
+      if (event.red3s.length > 0) cues.push({ sound: 'red3', mine })
+      return cues
+    }
     case 'discarded':
       return [{ sound: 'discard', mine: event.playerId === youId }]
     case 'melded': {
@@ -105,6 +118,7 @@ function eventCues(event: FeedEvent, youId: string | null): Cue[] {
     case 'pickedUpPile': {
       const mine = event.playerId === youId
       const cues: Cue[] = [{ sound: 'pickup', mine }]
+      if (event.red3s.length > 0) cues.push({ sound: 'red3', mine })
       if (event.canastas?.length) cues.push({ sound: 'canasta', mine })
       return cues
     }
@@ -145,6 +159,7 @@ export const SOUND_CHART: readonly {
       { label: 'You meld', step: 2 },
       { label: 'You discard', step: 2 },
       { label: 'You take the pile', step: 2 },
+      { label: 'You get a red 3', step: 2 },
       { label: 'You make a canasta', step: 2 },
     ],
   },
@@ -153,6 +168,7 @@ export const SOUND_CHART: readonly {
     rows: [
       { label: 'Someone draws, melds or discards', step: 3 },
       { label: 'Someone takes the pile', step: 3 },
+      { label: 'Someone gets a red 3', step: 3 },
       { label: 'Someone makes a canasta', step: 3 },
     ],
   },

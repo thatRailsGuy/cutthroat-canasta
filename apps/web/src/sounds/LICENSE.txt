@@ -33,6 +33,12 @@ License: Creative Commons Attribution 4.0 (CC BY 4.0), https://creativecommons.o
 
 Changed: 1.37 seconds from 0.08 s, mixed to mono, raised 3.6 dB, with a fade-out.
 
+red3-coin.mp3: "Coin drop3.m4a" by JonathanHoleton, https://freesound.org/people/JonathanHoleton/sounds/649417/
+License: Creative Commons Attribution 4.0 (CC BY 4.0), https://creativecommons.org/licenses/by/4.0/
+
+Changed: 1.3 seconds from the coin landing (1.08 s), lowered 2 dB, with a 0.3-second fade-out,
+converted to mono 44.1 kHz MP3.
+
 game-over.mp3: "Jingle_Achievement_00.wav" by LittleRobotSoundFactory, https://freesound.org/people/LittleRobotSoundFactory/sounds/270404/
 License: Creative Commons Attribution 4.0 (CC BY 4.0), https://creativecommons.org/licenses/by/4.0/
 

@@ -17,6 +17,6 @@ describe('RulesPage', () => {
       'href',
       'https://freesound.org/people/Diego25/sounds/394625/',
     )
-    expect(credits.getAllByRole('link', { name: 'CC BY 4.0' })).toHaveLength(3)
+    expect(credits.getAllByRole('link', { name: 'CC BY 4.0' })).toHaveLength(4)
   })
 })

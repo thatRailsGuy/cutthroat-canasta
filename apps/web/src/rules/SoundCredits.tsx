@@ -35,6 +35,18 @@ const CREDITS: {
     changed: 'Trimmed, made louder and faded out.',
   },
   {
+    moment: 'Red 3',
+    works: [
+      {
+        title: 'Coin drop3',
+        author: 'JonathanHoleton',
+        url: 'https://freesound.org/people/JonathanHoleton/sounds/649417/',
+      },
+    ],
+    license: CC_BY,
+    changed: 'Trimmed, made quieter and faded out.',
+  },
+  {
     moment: 'Game over',
     works: [
       {

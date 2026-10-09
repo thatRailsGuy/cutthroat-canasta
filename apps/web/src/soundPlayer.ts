@@ -14,6 +14,7 @@ import pencilDrop2 from './sounds/pencil-drop-2.mp3'
 import pencilDrop3 from './sounds/pencil-drop-3.mp3'
 import pencilDrop4 from './sounds/pencil-drop-4.mp3'
 import pencilTally from './sounds/pencil-tally.mp3'
+import red3Coin from './sounds/red3-coin.mp3'
 import turnBell from './sounds/turn-bell.mp3'
 
 const CLIPS = {
@@ -33,6 +34,7 @@ const CLIPS = {
   register: cashRegister,
   jingle: gameOverJingle,
   clink: chatClink,
+  coin: red3Coin,
 }
 type Clip = keyof typeof CLIPS
 const PLACES: Clip[] = ['place1', 'place2', 'place3', 'place4']
@@ -301,6 +303,13 @@ const SOUNDS: Record<Sound, (voice: Voice, cue: Cue) => number> = {
     v.place(0.55, 0.45, 1.2)
     v.place(0.68, 0.45, 1.2)
     return 0.9
+  },
+  // A quarter dropped on the table, spinning down, or a made coin ring if the recording didn't load.
+  red3: (v) => {
+    if (v.clip('coin', 0, 0.8)) return 0.9
+    v.bell(3136, 0, 0.12, 0.6)
+    v.bell(3136, 0.12, 0.08, 0.5)
+    return 0.5
   },
   // An old cash register: the drawer opens and the bell rings.
   canasta: (v) => {

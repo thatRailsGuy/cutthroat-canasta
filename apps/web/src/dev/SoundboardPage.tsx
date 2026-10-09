@@ -129,6 +129,13 @@ const TILES: { sound: Sound; name: string; what: string; when: string; both: boo
     both: true,
   },
   {
+    sound: 'red3',
+    name: 'Red 3',
+    what: 'A quarter dropped on the table',
+    when: 'A red 3 comes off the stock or with the pile.',
+    both: true,
+  },
+  {
     sound: 'canasta',
     name: 'Canasta',
     what: 'Old cash register, drawer and bell',
@@ -161,6 +168,13 @@ const SEQUENCES: [string, Cue[]][] = [
       { sound: 'meld', mine: false, cards: 5 },
       { sound: 'canasta', mine: false },
       { sound: 'discard', mine: false },
+    ],
+  ],
+  [
+    'Draw a red 3',
+    [
+      { sound: 'draw', mine: true },
+      { sound: 'red3', mine: true },
     ],
   ],
   [

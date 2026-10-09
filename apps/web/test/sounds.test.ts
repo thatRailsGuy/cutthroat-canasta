@@ -73,6 +73,31 @@ describe('cuesFor', () => {
     ])
   })
 
+  it('drops a coin for red 3s drawn, or taken with the pile before its canasta', () => {
+    const before = makeView({ hand: [card('5h', 1)], phase: 'draw' })
+    const drawn = next(before, [
+      { type: 'drewStock', playerId: 'you', red3s: [card('3h', 7), card('3d', 8)] },
+    ])
+    expect(sounds(cuesFor(snapshotOf(before), drawn))).toEqual(['draw', 'red3'])
+
+    const bobBefore = bobsTurn()
+    const taken = next(bobBefore, [
+      {
+        type: 'pickedUpPile',
+        playerId: 'bob',
+        count: 6,
+        played: noPlay,
+        canastas: [{ rank: '8', natural: false }],
+        red3s: [card('3h', 9)],
+      },
+    ])
+    expect(sounds(cuesFor(snapshotOf(bobBefore), taken))).toEqual([
+      'pickup (theirs)',
+      'red3 (theirs)',
+      'canasta (theirs)',
+    ])
+  })
+
   it('plays no moves for a catch-up of many events at once', () => {
     const before = bobsTurn()
     const events: FeedEvent[] = Array.from({ length: MAX_ANIMATED_EVENTS + 1 }, () => ({
