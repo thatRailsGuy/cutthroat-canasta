@@ -68,25 +68,70 @@
   cursor: pointer;
 }
 
-/* The stops are words under the track, so the slider reads without the hint. */
+/*
+ * The stops are words under the track, so the slider reads without the hint. Each word sits
+ * under a tick at its stop, wrapping to two lines so the long ones fit on a phone. The thumb's
+ * centre runs from half its width in from one end to half its width in from the other.
+ */
 .stops {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  --thumb: 1.25rem;
+  position: relative;
+  height: calc(10px + 2.3em);
   font-size: 0.78rem;
   font-weight: 800;
+  line-height: 1.15;
   color: var(--muted);
 }
 
 .stops span {
+  position: absolute;
+  top: 10px;
+  width: min-content;
   text-align: center;
+  transform: translateX(-50%);
 }
 
+.stops span::before {
+  content: '';
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  width: 2px;
+  height: 6px;
+  border-radius: 1px;
+  background: #b9a991;
+  transform: translateX(-50%);
+}
+
+.stops span:nth-child(2) {
+  left: calc(var(--thumb) / 2 + (100% - var(--thumb)) / 3);
+}
+
+.stops span:nth-child(3) {
+  left: calc(var(--thumb) / 2 + (100% - var(--thumb)) * 2 / 3);
+}
+
+/* The end words line up with the ends of the track, and their ticks stay on the stops. */
 .stops span:first-child {
+  left: 0;
   text-align: left;
+  transform: none;
+}
+
+.stops span:first-child::before {
+  left: calc(var(--thumb) / 2);
 }
 
 .stops span:last-child {
+  right: 0;
   text-align: right;
+  transform: none;
+}
+
+.stops span:last-child::before {
+  left: auto;
+  right: calc(var(--thumb) / 2);
+  transform: translateX(50%);
 }
 
 .stops .on {
