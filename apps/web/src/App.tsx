@@ -5,6 +5,8 @@ import { HomePage } from './pages/HomePage'
 import { RulesPage } from './pages/RulesPage'
 import { TutorialPage } from './tutorial/TutorialPage'
 
+// Dev only: links to every dev page, and a way to make a game with made-up players.
+const DevIndexPage = import.meta.env.DEV ? lazy(() => import('./dev/DevIndexPage')) : null
 // Dev only: the table with a made-up game, for working on its look. Left out of builds.
 const PreviewPage = import.meta.env.DEV ? lazy(() => import('./dev/PreviewPage')) : null
 // Dev only: every sound on its own button. Left out of builds.
@@ -17,6 +19,16 @@ export function App() {
       <Route path="/g/:code" element={<GamePage />} />
       <Route path="/rules" element={<RulesPage />} />
       <Route path="/learn" element={<TutorialPage />} />
+      {DevIndexPage && (
+        <Route
+          path="/dev"
+          element={
+            <Suspense>
+              <DevIndexPage />
+            </Suspense>
+          }
+        />
+      )}
       {PreviewPage && (
         <Route
           path="/dev/table"

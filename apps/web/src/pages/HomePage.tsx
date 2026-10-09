@@ -88,6 +88,12 @@ export function HomePage() {
         >
           Display options
         </button>
+        {import.meta.env.DEV && (
+          <>
+            {' '}
+            · <Link to="/dev">Dev</Link>
+          </>
+        )}
       </p>
       {displayOpen && (
         <section id="display-options" className={styles.display} aria-labelledby="display-h">

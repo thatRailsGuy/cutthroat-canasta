@@ -8,27 +8,41 @@ const SOUND_LEVEL_KEY = 'canasta:soundLevel'
 const CHAT_SOUND_KEY = 'canasta:chatSound'
 const DISPLAY_KEY = 'canasta:display'
 
-/** localStorage can throw (private mode, blocked storage). The game still works without it. */
-function read(key: string): string | null {
+const local = () => localStorage
+const session = () => sessionStorage
+
+/** Storage can throw (private mode, blocked storage). The game still works without it. */
+function read(key: string, store: () => Storage = local): string | null {
   try {
-    return localStorage.getItem(key)
+    return store().getItem(key)
   } catch {
     return null
   }
 }
 
-function write(key: string, value: string | null): void {
+function write(key: string, value: string | null, store: () => Storage = local): void {
   try {
-    if (value === null) localStorage.removeItem(key)
-    else localStorage.setItem(key, value)
+    if (value === null) store().removeItem(key)
+    else store().setItem(key, value)
   } catch {
     // Ignore: the player can rejoin with a link from the host.
   }
 }
 
-export const loadToken = (code: string) => read(tokenKey(code))
-export const saveToken = (code: string, token: string) => write(tokenKey(code), token)
-export const clearToken = (code: string) => write(tokenKey(code), null)
+/**
+ * Each tab keeps its own copy of a game's token, so two seats of one game open in two tabs
+ * don't take each other's seat on a reconnect or a reload. localStorage keeps the latest one,
+ * for a new tab.
+ */
+export const loadToken = (code: string) => read(tokenKey(code), session) ?? read(tokenKey(code))
+export function saveToken(code: string, token: string): void {
+  write(tokenKey(code), token, session)
+  write(tokenKey(code), token)
+}
+export function clearToken(code: string): void {
+  write(tokenKey(code), null, session)
+  write(tokenKey(code), null)
+}
 export const loadName = () => read(NAME_KEY) ?? ''
 export const saveName = (name: string) => write(NAME_KEY, name)
 export function loadHandLayout(): 'spread' | 'line' | null {
