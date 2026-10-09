@@ -65,9 +65,17 @@
   font-size: 1.65rem;
 }
 
-/* Waiting for the next deal: pencilled in faintly. */
+/* Waiting for the next deal: pencilled in, in brown italics, still easy to read. */
 .late {
-  opacity: 0.5;
+  color: var(--muted);
+  font-style: italic;
+}
+
+.nextHand {
+  font-family: var(--font);
+  font-size: 0.7rem;
+  font-style: normal;
+  font-weight: 400;
 }
 
 .leader {

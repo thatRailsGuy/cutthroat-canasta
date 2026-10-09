@@ -200,6 +200,10 @@ button.meld:hover {
   display: flex;
 }
 
+.chip[data-dismissed] .peek {
+  display: none;
+}
+
 .peek > * + * {
   margin-left: -1rem;
 }

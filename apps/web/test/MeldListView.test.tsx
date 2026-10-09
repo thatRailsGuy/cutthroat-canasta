@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { MeldList } from '../src/components/MeldList'
 import { card } from './fixtures'
@@ -48,5 +48,18 @@ describe('MeldList', () => {
     const peek = nines.querySelector('[aria-hidden="true"]')!
     expect(peek.querySelectorAll('[data-card-id]')).toHaveLength(3)
     expect(peek.querySelector('[data-card-id="3"]')).toHaveTextContent('2')
+  })
+
+  it('hides the popup on Escape until focus or the pointer leaves the chip', () => {
+    const melds = [
+      { id: 'm1', rank: '9' as const, cards: ['9c', '9d', '9s'].map((c, i) => card(c, i + 1)) },
+    ]
+    render(<MeldList melds={melds} red3s={[]} chips />)
+    const nines = screen.getByRole('img', { name: '9s: 3 cards' })
+    nines.focus()
+    fireEvent.keyDown(nines, { key: 'Escape' })
+    expect(nines).toHaveAttribute('data-dismissed')
+    fireEvent.blur(nines)
+    expect(nines).not.toHaveAttribute('data-dismissed')
   })
 })

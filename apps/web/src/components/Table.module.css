@@ -238,7 +238,7 @@
   padding: 0.1rem 0.6rem;
   border: 2px solid var(--ink);
   border-radius: 999px;
-  background: var(--teal);
+  background: var(--teal-dark);
   color: var(--paper);
 }
 

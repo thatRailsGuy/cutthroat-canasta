@@ -234,6 +234,23 @@ export function Table({
 
   return (
     <main className={styles.table}>
+      {/* The hand comes after the opponents, the pile and your melds; this jumps straight to it. */}
+      {you && (
+        <a
+          href="#your-hand"
+          className="skip-link"
+          onClick={(e) => {
+            e.preventDefault()
+            const hand = document.querySelector('[data-focus-group="hand"]')
+            const first =
+              hand?.querySelector<HTMLElement>('button[data-card-id]') ??
+              hand?.querySelector<HTMLElement>('button')
+            first?.focus()
+          }}
+        >
+          Skip to your hand
+        </a>
+      )}
       <div className={styles.play}>
         <header className={styles.top}>
           <h1 className={styles.logo}>

@@ -51,7 +51,7 @@ export function ScorePad({ view, onOpenSheet }: ScorePadProps) {
               <tr key={p.id} className={styles.late}>
                 <th scope="row" title={p.name}>
                   {p.name}
-                  <span className="sr-only">, dealt in next hand</span>
+                  <span className={styles.nextHand}> · next hand</span>
                 </th>
                 <td />
                 <td>0</td>

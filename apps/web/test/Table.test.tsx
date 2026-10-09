@@ -5,7 +5,7 @@ import type { ChatLine } from '@canasta/server/protocol'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { initialGameState } from '../src/gameState'
 import { Table } from '../src/pages/Table'
-import { makeView } from './fixtures'
+import { card, makeView } from './fixtures'
 
 /** Zed joined mid-hand: no seat, no hand, waiting for the next deal. */
 function watching() {
@@ -95,5 +95,22 @@ describe('Table, on a phone', () => {
     expect(onRead).not.toHaveBeenCalled()
     await userEvent.click(screen.getByRole('button', { name: 'Scores, 2 unread' }))
     expect(onRead).toHaveBeenCalled()
+  })
+})
+
+describe('Table, skip link', () => {
+  it('jumps from the top of the page to your hand', async () => {
+    const view = makeView({ hand: [card('Kh', 1), card('7s', 2)], phase: 'play' })
+    const state = { ...initialGameState, playerId: 'you', view, connection: 'open' as const }
+    render(
+      <MemoryRouter>
+        <Table code="HT7KM4" view={view} state={state} send={vi.fn(() => true)} />
+      </MemoryRouter>,
+    )
+    await userEvent.tab()
+    expect(screen.getByRole('link', { name: 'Skip to your hand' })).toHaveFocus()
+    await userEvent.keyboard('{Enter}')
+    const hand = within(screen.getByRole('region', { name: 'Your hand' }))
+    expect(hand.getByRole('button', { name: 'King of hearts' })).toHaveFocus()
   })
 })

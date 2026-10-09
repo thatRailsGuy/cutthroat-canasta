@@ -92,6 +92,7 @@ export function Hand({
       ref={sectionRef}
       className={className}
       style={style}
+      id="your-hand"
       aria-label="Your hand"
       data-hand=""
       data-focus-group="hand"

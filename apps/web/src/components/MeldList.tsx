@@ -162,6 +162,12 @@ function MeldChips({ melds, red3s }: { melds: Meld[]; red3s: CardValue[] }) {
             role="img"
             aria-label={`${rankPlural(meld.rank)}: ${label}`}
             tabIndex={0}
+            // Escape hides the popup while the pointer or focus stays on the chip (WCAG 1.4.13).
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') e.currentTarget.dataset.dismissed = ''
+            }}
+            onPointerLeave={(e) => delete e.currentTarget.dataset.dismissed}
+            onBlur={(e) => delete e.currentTarget.dataset.dismissed}
           >
             <span className={styles.chipRank}>{meld.rank}</span>×{meld.cards.length}
             <Peek cards={meld.cards} />

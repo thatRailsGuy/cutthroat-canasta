@@ -54,6 +54,8 @@
   --teal: #2f9b92;
   --teal-dark: #1f6f69;
   --gold: #f2b233;
+  /* Mustard dark enough for an outline to keep 3:1 on the gingham. */
+  --gold-ink: #8a5a00;
   --ice: #bfe3f5;
   --ice-ink: #1f3a78;
   --pad: #fffef7;
@@ -89,14 +91,19 @@
  * fits a laptop's 1440 x 800 without scrolling, and fills a bigger monitor instead of floating
  * small in the middle. The vh term keeps it within the height, the vw term within the width.
  */
+/*
+ * The limits are in rem, so they follow the player's default font size (14px and 24px at the
+ * usual 16px). Browser zoom grows the text only once it reaches the smallest size, because the
+ * window-based size shrinks as zoom grows; players who need bigger text get a setting for it.
+ */
 @media (min-width: 1001px) {
   html {
-    font-size: clamp(14px, min(1.15vw, 1.74vh), 24px);
+    font-size: clamp(0.875rem, min(1.15vw, 1.74vh), 1.5rem);
   }
 
   /* A crowded table has two rows of opponents and a two-row turn loop: a little smaller. */
   html[data-crowded] {
-    font-size: clamp(12px, min(1.15vw, 1.56vh), 24px);
+    font-size: clamp(0.75rem, min(1.15vw, 1.56vh), 1.5rem);
   }
 }
 
@@ -188,18 +195,18 @@ a:hover {
 }
 
 /*
- * Dragging cards (cardDrag.ts). Places that would take the dragged cards get a dashed gold
- * outline; the one under the pointer turns solid gold, or red when the move isn't allowed.
+ * Dragging cards (cardDrag.ts). Places that would take the dragged cards get a dashed mustard
+ * outline; the one under the pointer turns solid and tinted, or red when the move isn't allowed.
  */
 [data-drop-state='can'] {
-  outline: 2px dashed var(--gold);
+  outline: 2px dashed var(--gold-ink);
   outline-offset: 3px;
 }
 
 [data-drop-state='ok'] {
-  outline: 3px solid var(--gold);
+  outline: 3px solid var(--gold-ink);
   outline-offset: 3px;
-  background-color: rgb(242 178 51 / 0.18);
+  background-color: rgb(242 178 51 / 0.3);
 }
 
 [data-drop-state='no'] {
@@ -275,6 +282,34 @@ a:hover {
   background: var(--gold);
   box-shadow: 0 0 0 2px var(--ink);
   pointer-events: none;
+}
+
+/* Hidden until a keyboard player tabs to it, then in the top corner. */
+.skip-link {
+  position: fixed;
+  top: 0.5rem;
+  left: 0.5rem;
+  z-index: 70;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 1.1rem;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  background: var(--gold);
+  color: var(--ink);
+  font-weight: 800;
+  text-decoration: none;
+  box-shadow: var(--shadow);
+}
+
+.skip-link:not(:focus) {
+  clip-path: inset(50%);
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  padding: 0;
+  border: 0;
 }
 
 /* Read by screen readers, never shown. */
