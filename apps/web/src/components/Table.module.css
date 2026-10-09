@@ -64,6 +64,8 @@
   padding: 0.6rem 1rem 0.9rem 0.6rem;
   min-width: 15rem;
   max-width: 26rem;
+  /* The panel fills its share of the row, so its width doesn't change as the melds grow. */
+  flex: 1 1 15rem;
 }
 
 .opponent header,

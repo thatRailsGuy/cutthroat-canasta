@@ -15,7 +15,10 @@ export interface MeldListProps {
   red3s: CardValue[]
   /** Your own melds: clicking one stages the selected cards as an addition to it. */
   onPick?: (meldId: string) => void
-  /** Opponents' melds overlap more, so their panels stay short. */
+  /**
+   * Opponents' melds: their columns overlap more, and they keep to one row of a fixed height,
+   * so the table doesn't move as they grow.
+   */
   compact?: boolean
   /**
    * A crowded table: each meld is a chip with its rank and card count, and no cards. Not for
@@ -45,7 +48,10 @@ export function MeldList({ melds, red3s, onPick, compact = false, chips = false 
   )
   if (chips) return <MeldChips melds={ordered} red3s={red3s} />
   return (
-    <div className={`${styles.melds} ${compact ? styles.compact : ''}`}>
+    <div
+      className={`${styles.melds} ${compact ? styles.compact : ''}`}
+      style={{ '--count': ordered.length + (red3s.length > 0 ? 1 : 0) } as CSSProperties}
+    >
       {ordered.map((meld) => {
         const canasta = isCanasta(meld)
         const natural = canasta && isNaturalCanasta(meld)

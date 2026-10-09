@@ -11,6 +11,36 @@
   --step: 0.85rem;
 }
 
+/* An opponent's melds stay in one row, as tall as the tallest column can get (6 cards, before
+   it squares up as a canasta), so their melds never push the table down. Once they run out of
+   width they overlap sideways, each covering the right of the one before, so every rank corner
+   still shows. The panel sets the width; the melds don't widen it. */
+.compact {
+  /* A meld's box: the card, its padding and border, and a canasta's squared edges. */
+  --meld-w: calc(2.5rem + 0.6rem + 4px + 6px);
+  flex-wrap: nowrap;
+  gap: 0;
+  height: calc(3.5rem + 5 * var(--step) + 0.6rem + 4px + 0.35rem + 0.72rem * 1.5);
+  min-width: 0;
+  container-type: inline-size;
+}
+
+.compact > * + * {
+  margin-left: min(1rem, calc((100% - var(--count) * var(--meld-w)) / (var(--count) - 1)));
+}
+
+.compact > .meld {
+  flex-shrink: 0;
+  background: var(--paper);
+}
+
+/* Once the melds overlap, the next one would cover the end of each caption ("3 of 7" would read
+   "3 of"), so the captions go. Each meld's label still says how many cards it has. */
+.compact .caption {
+  max-height: clamp(0rem, (100cqi - var(--count) * var(--meld-w)) * 100, 2rem);
+  overflow: hidden;
+}
+
 /* A meld is a picture on an opponent's panel and a button on yours, so reset the button look. */
 .meld,
 button.meld:active:not(:disabled) {
