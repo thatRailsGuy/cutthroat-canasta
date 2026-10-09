@@ -10,6 +10,7 @@ import { createPortal } from 'react-dom'
 import { Link } from 'react-router'
 import { usePhone } from '../layout'
 import { STEPS } from './lesson'
+import { lessMotion } from '../display'
 import {
   areaElement,
   measureArea,
@@ -291,5 +292,5 @@ function canAnimate(): boolean {
   if (typeof Element === 'undefined' || typeof Element.prototype.animate !== 'function') {
     return false
   }
-  return !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+  return !lessMotion()
 }

@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router'
 import { createGame, normalizeCode } from '../api'
+import { DisplaySwitches } from '../components/DisplayOptions'
 import { OpenTables } from '../components/OpenTables'
 import { loadName, saveName } from '../storage'
 import { useTitle } from '../title'
@@ -15,6 +16,7 @@ export function HomePage() {
   const [code, setCode] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [displayOpen, setDisplayOpen] = useState(false)
   const trimmed = name.trim()
 
   const go = (gameCode: string) => {
@@ -76,8 +78,23 @@ export function HomePage() {
       )}
       <OpenTables canJoin={trimmed.length > 0} onJoin={go} />
       <p className={styles.links}>
-        <Link to="/learn">Learn to play</Link> · <Link to="/rules">Read the rules</Link>
+        <Link to="/learn">Learn to play</Link> · <Link to="/rules">Read the rules</Link> ·{' '}
+        <button
+          type="button"
+          className={styles.linkButton}
+          aria-expanded={displayOpen}
+          aria-controls="display-options"
+          onClick={() => setDisplayOpen(!displayOpen)}
+        >
+          Display options
+        </button>
       </p>
+      {displayOpen && (
+        <section id="display-options" className={styles.display} aria-labelledby="display-h">
+          <h2 id="display-h">Display</h2>
+          <DisplaySwitches />
+        </section>
+      )}
     </main>
   )
 }

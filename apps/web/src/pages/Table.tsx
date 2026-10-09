@@ -12,6 +12,7 @@ import { rejoinLink } from '../api'
 import { cardLabel } from '../cards'
 import { Avatar } from '../components/Avatar'
 import { CenterPile } from '../components/CenterPile'
+import { DisplayButton } from '../components/DisplayOptions'
 import { GameOver } from '../components/GameOver'
 import { HostDrawer } from '../components/HostDrawer'
 import { Hand, type HandLayout } from '../components/Hand'
@@ -417,6 +418,7 @@ export function Table({
           onLevel={setSoundLevel}
           onOpen={() => setConfirmQuit(false)}
         />
+        <DisplayButton />
       </div>
       {confirmQuit && (
         <div

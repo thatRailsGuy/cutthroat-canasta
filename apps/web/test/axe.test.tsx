@@ -3,6 +3,7 @@ import axe from 'axe-core'
 import type { ReactNode } from 'react'
 import { MemoryRouter } from 'react-router'
 import { describe, expect, it, vi } from 'vitest'
+import { DisplaySwitches } from '../src/components/DisplayOptions'
 import { initialGameState } from '../src/gameState'
 import { HomePage } from '../src/pages/HomePage'
 import { Lobby } from '../src/pages/Lobby'
@@ -73,6 +74,10 @@ describe('accessibility', () => {
     expect(
       await violations(<Table code="HT7KM4" view={view} state={state} send={() => true} />),
     ).toEqual([])
+  })
+
+  it('display options', async () => {
+    expect(await violations(<DisplaySwitches />)).toEqual([])
   })
 
   it('rules page', async () => {

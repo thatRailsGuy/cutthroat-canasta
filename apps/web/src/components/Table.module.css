@@ -57,6 +57,10 @@
   box-shadow: var(--shadow);
 }
 
+:global(html[data-contrast]) :is(.opponent, .you, .feed, .roundEnd, .gameOver) {
+  border-width: 3px;
+}
+
 .opponent {
   display: grid;
   gap: 0.75rem;

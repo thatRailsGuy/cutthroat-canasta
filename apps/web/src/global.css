@@ -67,6 +67,9 @@
   --avocado: #5e6f1f;
   --pink: #f2a6b6;
   --walnut: #85502f;
+  /* Four-color suits (display option): diamonds and clubs, each 6:1 or better on a card. */
+  --suit-blue: #1f5fa8;
+  --suit-green: #1f6b2b;
   --ok: #1e6b2e;
   --bad: #a3261b;
   --radius: 12px;
@@ -192,6 +195,51 @@ a:hover {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/*
+ * Display options (display.ts marks the root element with each one that's on).
+ *
+ * Fewer animations: the same as the system's reduced motion, chosen in the game instead.
+ */
+html[data-calm] *,
+html[data-calm] *::before,
+html[data-calm] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+}
+
+/*
+ * Larger cards and text: a size up from the root, which everything is sized from. On a computer
+ * it never goes below 1.25rem, so the table no longer shrinks to fit the window but scrolls, and
+ * browser zoom grows it the way it does any page.
+ */
+html[data-large] {
+  font-size: 1.25rem;
+}
+
+@media (min-width: 1001px) {
+  html[data-large] {
+    font-size: min(max(1.25rem, calc(1.25 * min(1.15vw, 1.74vh))), 1.875rem);
+  }
+
+  html[data-large][data-crowded] {
+    font-size: min(max(1.25rem, calc(1.25 * min(1.15vw, 1.56vh))), 1.875rem);
+  }
+}
+
+/* High contrast: a plain cloth, ink for the quieter text, and thicker outlines on buttons. */
+html[data-contrast] {
+  --muted: var(--ink);
+}
+
+html[data-contrast] body {
+  background-image: none;
+}
+
+html[data-contrast] button {
+  border-width: 3px;
 }
 
 /*

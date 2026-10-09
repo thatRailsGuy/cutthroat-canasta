@@ -11,6 +11,10 @@
   box-shadow: var(--shadow);
 }
 
+:global(html[data-contrast]) :is(.home, .lobby) {
+  border-width: 3px;
+}
+
 .home h1,
 .lobby h1 {
   margin: 0;
@@ -228,4 +232,38 @@
 
 .links {
   margin: 0;
+}
+
+.pageTools {
+  position: fixed;
+  top: 0.5rem;
+  right: 6.25rem;
+  z-index: 5;
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* A button that reads as one of the links beside it. */
+.linkButton {
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  color: var(--red);
+  font-weight: inherit;
+  text-decoration: underline;
+}
+
+.display {
+  display: grid;
+  gap: 0.3rem;
+  padding-top: 1rem;
+  border-top: 2px dashed rgb(43 35 32 / 0.35);
+}
+
+.display h2 {
+  margin: 0;
+  font-size: 1.25rem;
 }

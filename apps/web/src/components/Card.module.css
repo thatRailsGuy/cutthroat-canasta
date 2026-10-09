@@ -15,6 +15,20 @@
     box-shadow 0.12s;
 }
 
+/* Display options: four-color suits, and a heavier outline for high contrast. */
+:global(html[data-four-color]) .card[data-suit='diamonds'] {
+  color: var(--suit-blue);
+}
+
+:global(html[data-four-color]) .card[data-suit='clubs'] {
+  color: var(--suit-green);
+}
+
+:global(html[data-contrast]) .card {
+  border-width: 3px;
+  box-shadow: 0 3px 0 var(--ink);
+}
+
 /* An overlapped card comes in front of its neighbour while focused, so its ring shows. */
 .card:focus-visible {
   z-index: 1;

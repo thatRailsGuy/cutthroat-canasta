@@ -2,6 +2,7 @@ import type { ChatLine, ClientMessage } from '@canasta/server/protocol'
 import type { PlayerView } from '@canasta/engine'
 import { MIN_PLAYERS } from '@canasta/engine'
 import { useState } from 'react'
+import { DisplayButton } from '../components/DisplayOptions'
 import { GameCode } from '../components/GameCode'
 import { QrCode } from '../components/QrCode'
 import { TableTalk, type TalkControls } from '../components/TableTalk'
@@ -47,6 +48,10 @@ export function Lobby({
   const shareLink = `${window.location.origin}/g/${code}`
   return (
     <main className={styles.lobby}>
+      {/* Fixed at the top, beside the Rules button, as at the table. */}
+      <div className={styles.pageTools}>
+        <DisplayButton />
+      </div>
       <h1>Pull up a chair</h1>
       <GameCode code={code} />
       <p>

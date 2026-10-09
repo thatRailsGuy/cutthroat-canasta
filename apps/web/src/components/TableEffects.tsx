@@ -9,6 +9,7 @@ import {
 import { useLayoutEffect, useRef } from 'react'
 import { effectsFor, type TableEffect } from '../effects'
 import cardStyles from './Card.module.css'
+import { lessMotion } from '../display'
 import styles from './TableEffects.module.css'
 
 /** What the table looked like when the effects last ran. */
@@ -88,7 +89,7 @@ function canAnimate(): boolean {
   if (typeof Element === 'undefined' || typeof Element.prototype.animate !== 'function') {
     return false
   }
-  return !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+  return !lessMotion()
 }
 
 interface PlayContext {

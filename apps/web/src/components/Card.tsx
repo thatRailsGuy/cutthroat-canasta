@@ -58,6 +58,7 @@ export function Card({
         role="img"
         aria-label={cardDescription(card)}
         data-card-id={card.id}
+        data-suit={card.suit ?? undefined}
       >
         {face}
       </span>
@@ -70,6 +71,7 @@ export function Card({
       aria-label={fresh ? `${cardDescription(card)}, just drawn` : cardDescription(card)}
       aria-pressed={selected}
       aria-keyshortcuts={keyShortcuts}
+      data-suit={card.suit ?? undefined}
       onClick={onClick}
       onPointerDown={onPointerDown}
       onKeyDown={onKeyDown}

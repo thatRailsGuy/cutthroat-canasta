@@ -138,3 +138,7 @@
     display: none;
   }
 }
+
+:global(html[data-calm]) .ring {
+  display: none;
+}

@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { lessMotion } from '../display'
 
 export interface CountUpProps {
   from: number
@@ -18,7 +19,7 @@ export function CountUp({ from, to, duration = 1200, delay = 0 }: CountUpProps) 
   useEffect(() => {
     const el = ref.current
     if (!el || from === to || typeof requestAnimationFrame !== 'function') return
-    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return
+    if (lessMotion()) return
     const format = (n: number) => Math.round(n).toLocaleString('en-US')
     let frame = 0
     let start: number | null = null

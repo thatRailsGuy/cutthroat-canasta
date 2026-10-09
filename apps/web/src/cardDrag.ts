@@ -1,5 +1,6 @@
 import type { CardId } from '@canasta/engine'
 import { useEffect, useRef, type PointerEvent as ReactPointerEvent } from 'react'
+import { lessMotion } from './display'
 import { parseDropTarget, type DropTarget, type DropVerdict } from './drops'
 
 export interface CardDragOptions {
@@ -193,7 +194,7 @@ export function useCardDrag(options: CardDragOptions) {
       drag.timer = setTimeout(() => {
         drag.armed = true
         // A tap you can feel that the card lifted, unless the player asked for less motion.
-        if (!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+        if (!lessMotion()) {
           navigator.vibrate?.(10)
         }
         start()
