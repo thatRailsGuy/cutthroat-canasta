@@ -2,13 +2,17 @@ import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react
 import { Link, useLocation, useNavigate, useParams } from 'react-router'
 import { gameExists, normalizeCode } from '../api'
 import type { ConnectionStatus } from '../connection'
+import { Announcer } from '../components/Announcer'
 import { ChatSounds } from '../components/ChatSounds'
 import { RulesDrawer } from '../components/RulesDrawer'
 import { TableSounds } from '../components/TableSounds'
 import { Toasts } from '../components/Toasts'
 import { RulesDrawerContext, type DrawerRequest } from '../rules/drawer'
 import type { PageSection } from '../rules/sections'
+import { useFocusRescue } from '../focusRescue'
+import { usePhone } from '../layout'
 import { loadName, loadToken, tokenFromHash } from '../storage'
+import { useTitle } from '../title'
 import { useGame } from '../useGame'
 import { Lobby } from './Lobby'
 import { Table } from './Table'
@@ -133,6 +137,14 @@ function Session({ code, linkToken, autoJoinName, joinsByItself }: SessionProps)
   }, [state.removed, navigate])
 
   const view = state.view
+  const phone = usePhone()
+  useFocusRescue()
+  // The tab says when it's your turn, so a player in another tab can see it.
+  const yourTurn =
+    view?.status === 'playing' &&
+    view.round !== null &&
+    view.players[view.round.current]?.id === state.playerId
+  useTitle(yourTurn ? `Your turn · Game ${code}` : `Game ${code}`)
   let body
   const waitingForSeat = !state.playerId && (state.joining || (joinsByItself && !state.joinError))
   // Seated but no view yet: the first state is on its way, so don't flash the join form.
@@ -167,7 +179,17 @@ function Session({ code, linkToken, autoJoinName, joinsByItself }: SessionProps)
     // A new key each round, and each new hand of a round, remounts the table, which resets
     // staging: card ids repeat per deal.
     const deal = view.round ? `${view.round.number}.${view.round.redeals}` : undefined
-    body = <Table key={deal} code={code} view={view} state={state} send={send} talk={talk} />
+    body = (
+      <Table
+        key={deal}
+        code={code}
+        view={view}
+        state={state}
+        send={send}
+        talk={talk}
+        announcedElsewhere={phone}
+      />
+    )
   }
 
   return (
@@ -177,6 +199,12 @@ function Session({ code, linkToken, autoJoinName, joinsByItself }: SessionProps)
       {/* Outside the table, which remounts with each deal, so the deal itself can play a sound. */}
       {view && state.playerId && <TableSounds view={view} live={state.connection === 'open'} />}
       {state.playerId && <ChatSounds heard={state.chatHeard} playerId={state.playerId} />}
+      <Announcer
+        view={state.playerId ? view : null}
+        playerId={state.playerId}
+        chatHeard={state.chatHeard}
+        events={phone}
+      />
       <button type="button" className={styles.rulesButton} onClick={() => openRules('overview')}>
         Rules
       </button>
@@ -235,7 +263,11 @@ function JoinForm({
           Join
         </button>
       </form>
-      {error && <p className={styles.error}>{error}</p>}
+      {error && (
+        <p className={styles.error} role="alert">
+          {error}
+        </p>
+      )}
     </main>
   )
 }

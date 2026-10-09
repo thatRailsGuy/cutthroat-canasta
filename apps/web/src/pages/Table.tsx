@@ -7,7 +7,7 @@ import {
   type PublicPlayer,
 } from '@canasta/engine'
 import type { ClientMessage } from '@canasta/server/protocol'
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { rejoinLink } from '../api'
 import { cardLabel } from '../cards'
 import { Avatar } from '../components/Avatar'
@@ -53,9 +53,20 @@ export interface TableProps {
   coach?: ReactNode
   /** Cards the tutorial points at, ringed in gold. */
   lit?: readonly CardId[]
+  /** The page's Announcer says the table's events, so the event log stays quiet. */
+  announcedElsewhere?: boolean
 }
 
-export function Table({ code, view, state, send, talk, coach, lit }: TableProps) {
+export function Table({
+  code,
+  view,
+  state,
+  send,
+  talk,
+  coach,
+  lit,
+  announcedElsewhere = false,
+}: TableProps) {
   const [staging, dispatch] = useStaging(view)
   const round = view.round!
   // Null for a player who joined mid-hand: they watch until the next deal.
@@ -67,6 +78,11 @@ export function Table({ code, view, state, send, talk, coach, lit }: TableProps)
   const offline = state.connection !== 'open'
   const [scoresOpen, setScoresOpen] = useState(false)
   const [confirmQuit, setConfirmQuit] = useState(false)
+  const quitButton = useRef<HTMLButtonElement>(null)
+  const keepPlaying = () => {
+    setConfirmQuit(false)
+    quitButton.current?.focus()
+  }
   const [hostOpen, setHostOpen] = useState(false)
   const [soundLevel, setSoundLevel] = useSoundLevel()
   const inPlay = view.status === 'playing' || view.status === 'roundOver'
@@ -199,6 +215,7 @@ export function Table({ code, view, state, send, talk, coach, lit }: TableProps)
       playerId={state.playerId}
       offline={offline}
       visible={!phone || sideOpen}
+      announce={!announcedElsewhere}
       talk={talk}
     />
   )
@@ -350,6 +367,7 @@ export function Table({ code, view, state, send, talk, coach, lit }: TableProps)
         )}
         {you && inPlay && (
           <button
+            ref={quitButton}
             type="button"
             className={styles.toolButton}
             aria-expanded={confirmQuit}
@@ -384,14 +402,22 @@ export function Table({ code, view, state, send, talk, coach, lit }: TableProps)
         />
       </div>
       {confirmQuit && (
-        <div className={styles.toolConfirm} role="alertdialog" aria-label="Quit the game?">
+        <div
+          className={styles.toolConfirm}
+          role="alertdialog"
+          aria-label="Quit the game?"
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') keepPlaying()
+          }}
+        >
           <span>
             Quit for good? The others play on without you, and you can't come back to this game.
           </span>
           <button type="button" disabled={offline} onClick={() => send({ type: 'leave' })}>
             Quit
           </button>
-          <button type="button" onClick={() => setConfirmQuit(false)}>
+          {/* The safe choice takes focus, so a stray Enter doesn't end your game. */}
+          <button type="button" autoFocus onClick={keepPlaying}>
             Keep playing
           </button>
         </div>

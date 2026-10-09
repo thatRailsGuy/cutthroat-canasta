@@ -37,18 +37,22 @@ export function SoundButton({ level, onLevel, onOpen }: SoundButtonProps) {
   const [chartOpen, setChartOpen] = useState(false)
   const [chatOn, setChatOn] = useChatSound()
   const root = useRef<HTMLDivElement>(null)
+  const button = useRef<HTMLButtonElement>(null)
   const chart = useRef<HTMLDialogElement>(null)
   const id = useId()
   const name = SOUND_LEVELS[level].name
 
   // Escape or a click anywhere else closes the panel. The chart closes first, on its own.
+  // Escape puts focus back on the speaker button, which opened the panel.
   useEffect(() => {
     if (!open) return
     const onPointer = (e: PointerEvent) => {
       if (!root.current?.contains(e.target as Node)) setOpen(false)
     }
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !chart.current?.open) setOpen(false)
+      if (e.key !== 'Escape' || chart.current?.open) return
+      setOpen(false)
+      button.current?.focus()
     }
     document.addEventListener('pointerdown', onPointer)
     document.addEventListener('keydown', onKey)
@@ -68,8 +72,17 @@ export function SoundButton({ level, onLevel, onOpen }: SoundButtonProps) {
   const test = TEST_CUES[level]
 
   return (
-    <div ref={root} className={styles.root}>
+    <div
+      ref={root}
+      className={styles.root}
+      onBlur={(e) => {
+        // Tabbing out of the panel closes it, as a click elsewhere does.
+        const next = e.relatedTarget as Node | null
+        if (next && !root.current?.contains(next)) setOpen(false)
+      }}
+    >
       <button
+        ref={button}
         type="button"
         className={styles.button}
         aria-label={`Sound: ${name}`}
@@ -94,6 +107,8 @@ export function SoundButton({ level, onLevel, onOpen }: SoundButtonProps) {
             </label>
             <input
               id={`${id}-level`}
+              // The panel opens to the slider, so arrow keys change the step at once.
+              autoFocus
               type="range"
               min={0}
               max={3}

@@ -15,6 +15,11 @@
     box-shadow 0.12s;
 }
 
+/* An overlapped card comes in front of its neighbour while focused, so its ring shows. */
+.card:focus-visible {
+  z-index: 1;
+}
+
 button.card:active:not(:disabled) {
   transform: none;
   box-shadow: 0 3px 0 rgb(43 35 32 / 0.3);

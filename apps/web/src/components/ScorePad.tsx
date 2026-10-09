@@ -39,18 +39,19 @@ export function ScorePad({ view, onOpenSheet }: ScorePadProps) {
           </thead>
           <tbody>
             {players.map((p) => (
-              <tr key={p.id} aria-label={p.name}>
+              <tr key={p.id}>
                 <th scope="row" title={p.name}>
                   {p.name}
                 </th>
                 <td>{last ? (last.breakdown[p.id]?.total ?? '–') : ''}</td>
-                <td className={leaders.includes(p) ? styles.leader : undefined}>{p.score}</td>
+                <Total score={p.score} leading={leaders.includes(p)} />
               </tr>
             ))}
             {late.map((p) => (
-              <tr key={p.id} aria-label={`${p.name}, dealt in next hand`} className={styles.late}>
+              <tr key={p.id} className={styles.late}>
                 <th scope="row" title={p.name}>
                   {p.name}
+                  <span className="sr-only">, dealt in next hand</span>
                 </th>
                 <td />
                 <td>0</td>
@@ -83,6 +84,7 @@ export function ScorePad({ view, onOpenSheet }: ScorePadProps) {
                 className={styles.late}
               >
                 {p.name}
+                <span className="sr-only">, dealt in next hand</span>
               </th>
             ))}
           </tr>
@@ -109,9 +111,7 @@ export function ScorePad({ view, onOpenSheet }: ScorePadProps) {
         <tfoot>
           <tr aria-label="Totals">
             {players.map((p) => (
-              <td key={p.id} className={leaders.includes(p) ? styles.leader : undefined}>
-                {p.score}
-              </td>
+              <Total key={p.id} score={p.score} leading={leaders.includes(p)} />
             ))}
             {late.map((p) => (
               <td key={p.id} className={styles.late}>
@@ -125,5 +125,15 @@ export function ScorePad({ view, onOpenSheet }: ScorePadProps) {
         Scores
       </button>
     </section>
+  )
+}
+
+/** A running total. The leader's is underlined, and a screen reader hears "leading". */
+function Total({ score, leading }: { score: number; leading: boolean }) {
+  return (
+    <td className={leading ? styles.leader : undefined}>
+      {score}
+      {leading && <span className="sr-only">, leading</span>}
+    </td>
   )
 }

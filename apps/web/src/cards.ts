@@ -1,4 +1,4 @@
-import type { Card, Rank, Suit } from '@canasta/engine'
+import { isWild, type Card, type Rank, type Suit } from '@canasta/engine'
 
 export const SUIT_SYMBOLS: Record<Suit, string> = {
   clubs: '♣',
@@ -65,6 +65,16 @@ export function cardLabel(card: Card): string {
 /** Accessible name, such as "7 of hearts" or "Joker". */
 export function cardName(card: Card): string {
   return card.suit ? `${RANK_NAMES[card.rank]} of ${card.suit}` : 'Joker'
+}
+
+/**
+ * A card's name with what it does in the game, for a screen reader: "2 of clubs, wild",
+ * "3 of hearts, red 3", "3 of spades, black 3". The look of the card says this to everyone else.
+ */
+export function cardDescription(card: Card): string {
+  if (isWild(card)) return card.suit ? `${cardName(card)}, wild` : 'Joker, wild'
+  if (card.rank === '3') return `${cardName(card)}, ${isRed(card) ? 'red' : 'black'} 3`
+  return cardName(card)
 }
 
 export function sortHand(cards: readonly Card[]): Card[] {

@@ -29,7 +29,9 @@ describe('MeldList', () => {
       },
     ]
     render(<MeldList melds={melds} red3s={[card('3h', 30)]} chips />)
-    const kings = screen.getByRole('img', { name: 'Kings: Dirty canasta, 7 cards' })
+    const kings = screen.getByRole('img', {
+      name: 'Kings: Dirty canasta, 7 cards, including 1 wild',
+    })
     expect(kings).toHaveTextContent('K×7')
     expect(kings).toHaveAttribute('data-rank', 'K')
     expect(kings).toHaveAttribute('data-canasta')
@@ -41,7 +43,7 @@ describe('MeldList', () => {
       { id: 'm1', rank: '9' as const, cards: ['9c', '9d', '2s'].map((c, i) => card(c, i + 1)) },
     ]
     render(<MeldList melds={melds} red3s={[]} chips />)
-    const nines = screen.getByRole('img', { name: '9s: 3 cards' })
+    const nines = screen.getByRole('img', { name: '9s: 3 cards, including 1 wild' })
     expect(nines).toHaveAttribute('tabindex', '0')
     const peek = nines.querySelector('[aria-hidden="true"]')!
     expect(peek.querySelectorAll('[data-card-id]')).toHaveLength(3)

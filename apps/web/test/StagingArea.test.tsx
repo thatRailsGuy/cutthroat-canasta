@@ -65,7 +65,13 @@ describe('StagingArea', () => {
       score: -100,
     })
     const { click } = setup(view)
-    for (const name of ['9 of hearts', '9 of spades', '2 of clubs', '2 of diamonds', 'Joker']) {
+    for (const name of [
+      '9 of hearts',
+      '9 of spades',
+      '2 of clubs, wild',
+      '2 of diamonds, wild',
+      'Joker, wild',
+    ]) {
       await click(name)
     }
     expect(screen.getByRole('status')).toHaveTextContent("Wild cards can't outnumber natural cards")

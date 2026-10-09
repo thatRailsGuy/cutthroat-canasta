@@ -132,8 +132,11 @@
   background: #5fbf6f;
 }
 
+/* Hollow and dashed, so offline doesn't rely on colour: the two fills were almost the same. */
 .offline {
-  background: #b9b2a6;
+  border-style: dashed;
+  border-color: var(--muted);
+  background: var(--paper);
 }
 
 .badge {
@@ -319,6 +322,11 @@
   border-radius: 999px;
   overflow: hidden;
   box-shadow: 0 2px 0 var(--ink);
+}
+
+.layoutSwitch button:focus-visible {
+  /* Inside the pill, which clips anything outside it. */
+  outline-offset: -4px;
 }
 
 .layoutSwitch button {

@@ -1,6 +1,6 @@
 import type { Card as CardValue } from '@canasta/engine'
 import type { KeyboardEvent, PointerEvent } from 'react'
-import { SUIT_SYMBOLS, cardName, isRed } from '../cards'
+import { SUIT_SYMBOLS, cardDescription, isRed } from '../cards'
 import styles from './Card.module.css'
 
 export interface CardProps {
@@ -16,6 +16,8 @@ export interface CardProps {
   /** For a card in your hand: starts a drag. */
   onPointerDown?: (event: PointerEvent<HTMLButtonElement>) => void
   onKeyDown?: (event: KeyboardEvent<HTMLButtonElement>) => void
+  /** Keys the card answers to beyond Enter and Space, for `aria-keyshortcuts`. */
+  keyShortcuts?: string
 }
 
 export function Card({
@@ -27,6 +29,7 @@ export function Card({
   onClick,
   onPointerDown,
   onKeyDown,
+  keyShortcuts,
 }: CardProps) {
   const className = [
     styles.card,
@@ -50,7 +53,12 @@ export function Card({
   )
   if (!onClick) {
     return (
-      <span className={className} role="img" aria-label={cardName(card)} data-card-id={card.id}>
+      <span
+        className={className}
+        role="img"
+        aria-label={cardDescription(card)}
+        data-card-id={card.id}
+      >
         {face}
       </span>
     )
@@ -59,8 +67,9 @@ export function Card({
     <button
       type="button"
       className={className}
-      aria-label={fresh ? `${cardName(card)}, just drawn` : cardName(card)}
+      aria-label={fresh ? `${cardDescription(card)}, just drawn` : cardDescription(card)}
       aria-pressed={selected}
+      aria-keyshortcuts={keyShortcuts}
       onClick={onClick}
       onPointerDown={onPointerDown}
       onKeyDown={onKeyDown}

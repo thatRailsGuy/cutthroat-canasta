@@ -77,7 +77,7 @@ export function GameOver({
           <p className={styles.waitLine}>Waiting for {host.name} (host) to start another game.</p>
         )
       )}
-      <div className={styles.gameOverActions}>
+      <div className={styles.gameOverActions} data-focus-group="next">
         {canStart && (
           <button
             type="button"

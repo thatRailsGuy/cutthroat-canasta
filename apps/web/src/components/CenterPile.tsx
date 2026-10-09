@@ -41,7 +41,7 @@ export function CenterPile(props: CenterPileProps) {
   // Cards under the top one peek out, face down to the eye, so the pile reads as a pile.
   const under = Math.min(Math.max(round.discardCount - 1, 0), 2)
   return (
-    <section className={styles.center} aria-label="Stock and discard pile">
+    <section className={styles.center} aria-label="Stock and discard pile" data-focus-group="pile">
       <div className={styles.spot}>
         <button
           type="button"
@@ -97,6 +97,7 @@ export function CenterPile(props: CenterPileProps) {
                 {isBlack3(top) && (
                   <span className={styles.stop} title="A black 3 on top: nobody can take the pile">
                     Stop
+                    <span className="sr-only">: a black 3 on top, so nobody can take the pile</span>
                   </span>
                 )}
               </span>

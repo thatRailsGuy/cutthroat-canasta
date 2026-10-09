@@ -89,10 +89,16 @@
   border-radius: 14px;
 }
 
-/* Until your first pickup the pile sits in a thick ice-blue ring that swells slowly. */
+/*
+ * Until your first pickup the pile sits in a thick ice-blue ring that swells slowly. The ring
+ * is on the card itself too, so it stays, still, when reduced motion stops the swelling.
+ */
 .frozen .topCard,
 .frozen .sidewaysTop {
   border-radius: 10px;
+  box-shadow:
+    0 0 0 4px var(--ice),
+    0 3px 0 6px var(--ink);
   animation: frost 2.6s ease-in-out infinite;
 }
 

@@ -192,7 +192,10 @@ export function useCardDrag(options: CardDragOptions) {
     if (drag.touch) {
       drag.timer = setTimeout(() => {
         drag.armed = true
-        navigator.vibrate?.(10)
+        // A tap you can feel that the card lifted, unless the player asked for less motion.
+        if (!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+          navigator.vibrate?.(10)
+        }
         start()
         follow()
       }, TOUCH_HOLD_MS)

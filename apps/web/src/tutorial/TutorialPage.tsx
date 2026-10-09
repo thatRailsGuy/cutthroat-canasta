@@ -3,6 +3,8 @@ import type { ClientMessage } from '@canasta/server/protocol'
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { describeEvent } from '../feed'
+import { useFocusRescue } from '../focusRescue'
+import { useTitle } from '../title'
 import { TableSounds } from '../components/TableSounds'
 import { initialGameState, type GameState } from '../gameState'
 import { Table } from '../pages/Table'
@@ -35,6 +37,8 @@ const start = (): Lesson => ({ game: lessonGame(), step: 0, hint: null, refusals
 /** `/learn`: a practice hand on the real table, with a lesson card that walks you through it. */
 export function TutorialPage() {
   const navigate = useNavigate()
+  useFocusRescue()
+  useTitle('Learn to play')
   const [lesson, setLesson] = useState(start)
   const { game, step, hint, refusals } = lesson
   const view = useMemo(() => viewFor(game, YOU), [game])

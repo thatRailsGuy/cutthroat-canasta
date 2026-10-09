@@ -163,8 +163,9 @@ a:hover {
   color: var(--red-dark);
 }
 
+/* Dark teal, which keeps 3:1 against the darkest gingham square (the lighter teal didn't). */
 :focus-visible {
-  outline: 3px solid var(--teal);
+  outline: 3px solid var(--teal-dark);
   outline-offset: 2px;
 }
 
@@ -274,4 +275,14 @@ a:hover {
   background: var(--gold);
   box-shadow: 0 0 0 2px var(--ink);
   pointer-events: none;
+}
+
+/* Read by screen readers, never shown. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }

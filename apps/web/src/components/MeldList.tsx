@@ -2,6 +2,7 @@ import {
   isCanasta,
   isNatural,
   isNaturalCanasta,
+  isWild,
   type Card as CardValue,
   type Meld,
 } from '@canasta/engine'
@@ -55,9 +56,7 @@ export function MeldList({ melds, red3s, onPick, compact = false, chips = false 
       {ordered.map((meld) => {
         const canasta = isCanasta(meld)
         const natural = canasta && isNaturalCanasta(meld)
-        const label = canasta
-          ? `${natural ? 'Clean' : 'Dirty'} canasta, ${meld.cards.length} cards`
-          : `${meld.cards.length} cards`
+        const label = meldLabel(meld, canasta, natural)
         const body = (
           <>
             {canasta ? (
@@ -152,9 +151,7 @@ function MeldChips({ melds, red3s }: { melds: Meld[]; red3s: CardValue[] }) {
         const canasta = isCanasta(meld)
         const natural = canasta && isNaturalCanasta(meld)
         const kind = canasta ? (natural ? styles.clean : styles.dirty) : ''
-        const label = canasta
-          ? `${natural ? 'Clean' : 'Dirty'} canasta, ${meld.cards.length} cards`
-          : `${meld.cards.length} cards`
+        const label = meldLabel(meld, canasta, natural)
         return (
           <span
             key={meld.id}
@@ -196,4 +193,14 @@ function Peek({ cards }: { cards: CardValue[] }) {
       ))}
     </span>
   )
+}
+
+/**
+ * What a meld holds, such as "Dirty canasta, 8 cards, including 2 wild". The cards themselves
+ * are hidden from a screen reader, so the label counts the wilds.
+ */
+function meldLabel(meld: Meld, canasta: boolean, natural: boolean): string {
+  const wilds = meld.cards.filter(isWild).length
+  const count = `${meld.cards.length} cards${wilds > 0 ? `, including ${wilds} wild` : ''}`
+  return canasta ? `${natural ? 'Clean' : 'Dirty'} canasta, ${count}` : count
 }

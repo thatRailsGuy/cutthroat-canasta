@@ -4,12 +4,14 @@ import styles from '../rules/Rules.module.css'
 import { RulesContent } from '../rules/RulesContent'
 import { PAGE_SECTIONS } from '../rules/sections'
 import { SoundCredits } from '../rules/SoundCredits'
+import { useTitle } from '../title'
 
 // The credits are on this page only, so they aren't a section the Rules drawer can open.
 const CONTENTS = [...PAGE_SECTIONS, { id: 'sound-credits', title: 'Sound credits' }]
 
 export function RulesPage() {
   const { hash } = useLocation()
+  useTitle('Rules')
 
   useEffect(() => {
     // The browser can't jump to the anchor on load: the page renders after it looks.

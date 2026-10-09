@@ -78,6 +78,7 @@ export function Hand({
       lit={lit.includes(c.id)}
       onClick={() => onToggle(c.id)}
       onPointerDown={onDragStart && ((e) => onDragStart(e, c.id))}
+      keyShortcuts={onMove ? 'Alt+ArrowLeft Alt+ArrowRight' : undefined}
       onKeyDown={(e) => {
         if (!e.altKey || (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight')) return
         e.preventDefault()
@@ -93,6 +94,7 @@ export function Hand({
       style={style}
       aria-label="Your hand"
       data-hand=""
+      data-focus-group="hand"
       data-drop={onDragStart ? 'hand' : undefined}
     >
       {cardsBody}

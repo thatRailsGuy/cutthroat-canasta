@@ -75,7 +75,9 @@ function Talk({
 describe('TableTalk', () => {
   it('lists events and chat oldest first, with your own lines as You', () => {
     render(<Talk />)
-    const items = within(screen.getByRole('log')).getAllByRole('listitem')
+    const items = within(screen.getByRole('list', { name: 'Table events and chat' })).getAllByRole(
+      'listitem',
+    )
     expect(items.map((li) => li.textContent)).toEqual([
       'Bob drew a card',
       'Bob: my turn',

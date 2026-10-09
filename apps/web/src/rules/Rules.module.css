@@ -26,6 +26,11 @@
   align-self: start;
 }
 
+/* Enough room between the links to make each one an easy target. */
+.toc li + li {
+  margin-top: 0.35rem;
+}
+
 .content {
   grid-area: content;
   font-family: var(--serif);

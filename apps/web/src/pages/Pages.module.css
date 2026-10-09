@@ -58,8 +58,16 @@
   background: #5fbf6f;
 }
 
+/* Hollow and dashed, so offline doesn't rely on colour: the two fills were almost the same. */
 .offline {
-  background: #9aa0a6;
+  border-style: dashed;
+  border-color: var(--muted);
+  background: var(--paper);
+}
+
+.away {
+  font-size: 0.8rem;
+  color: var(--muted);
 }
 
 /* The host's Public switch: a pill that slides on, with what it means beside it. */

@@ -87,6 +87,12 @@ export function Lobby({
             {p.name}
             {p.id === hostId && ' (host)'}
             {p.id === playerId && ' (you)'}
+            {/* The dot already says Offline to a screen reader. */}
+            {!connected.includes(p.id) && (
+              <span className={styles.away} aria-hidden="true">
+                away
+              </span>
+            )}
             {isHost && p.id !== playerId && (
               <button
                 type="button"

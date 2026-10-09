@@ -46,6 +46,8 @@ export interface TableTalkProps {
   offline: boolean
   /** False while the panel is out of sight, such as in a closed sheet. */
   visible?: boolean
+  /** False when something else says new lines aloud, so the log doesn't say them twice. */
+  announce?: boolean
   /** Without it there is no input, as in the tutorial. */
   talk?: TalkControls
 }
@@ -65,6 +67,7 @@ export function TableTalk({
   playerId,
   offline,
   visible = true,
+  announce = true,
   talk,
 }: TableTalkProps) {
   const nameOf = (id: string) => [...players, ...quit].find((p) => p.id === id)?.name ?? 'a player'
@@ -111,7 +114,9 @@ export function TableTalk({
       <ul
         ref={listRef}
         className={styles.talk}
-        role="log"
+        aria-live={announce ? 'polite' : 'off'}
+        aria-relevant="additions"
+        aria-label="Table events and chat"
         onScroll={(e) => {
           const list = e.currentTarget
           atBottomRef.current =

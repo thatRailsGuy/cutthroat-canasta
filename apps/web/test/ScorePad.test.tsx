@@ -57,7 +57,7 @@ describe('ScorePad', () => {
       },
     ]
     render(<ScorePad view={view} onOpenSheet={vi.fn()} />)
-    const eve = within(screen.getByRole('row', { name: 'Eve' }))
+    const eve = within(screen.getByRole('row', { name: /^Eve\b/ }))
     expect(eve.getAllByText('500')).toHaveLength(2)
     expect(eve.getAllByText('500')[1].className).toMatch(/leader/)
     expect(screen.getByRole('columnheader', { name: 'Rd 1' })).toBeInTheDocument()

@@ -3,11 +3,13 @@ import { Link, useLocation, useNavigate } from 'react-router'
 import { createGame, normalizeCode } from '../api'
 import { OpenTables } from '../components/OpenTables'
 import { loadName, saveName } from '../storage'
+import { useTitle } from '../title'
 import type { GamePageState } from './GamePage'
 import styles from './Pages.module.css'
 
 export function HomePage() {
   const navigate = useNavigate()
+  useTitle(null)
   const notice = (useLocation().state as { notice?: string } | null)?.notice
   const [name, setName] = useState(loadName)
   const [code, setCode] = useState('')
@@ -41,7 +43,11 @@ export function HomePage() {
   return (
     <main className={styles.home}>
       <h1>Cutthroat Canasta</h1>
-      {notice && <p className={styles.notice}>{notice}</p>}
+      {notice && (
+        <p className={styles.notice} role="status">
+          {notice}
+        </p>
+      )}
       <label>
         Your name
         <input value={name} maxLength={20} onChange={(e) => setName(e.target.value)} />
@@ -63,7 +69,11 @@ export function HomePage() {
           Join
         </button>
       </form>
-      {error && <p className={styles.error}>{error}</p>}
+      {error && (
+        <p className={styles.error} role="alert">
+          {error}
+        </p>
+      )}
       <OpenTables canJoin={trimmed.length > 0} onJoin={go} />
       <p className={styles.links}>
         <Link to="/learn">Learn to play</Link> · <Link to="/rules">Read the rules</Link>

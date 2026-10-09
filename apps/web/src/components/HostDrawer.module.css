@@ -123,8 +123,11 @@
   background: #5fbf6f;
 }
 
+/* Hollow and dashed, so offline doesn't rely on colour: the two fills were almost the same. */
 .offline {
-  background: #b9b2a6;
+  border-style: dashed;
+  border-color: var(--muted);
+  background: var(--paper);
 }
 
 /* A connected seat: the quieter button. */
@@ -147,4 +150,9 @@
   min-width: 0;
   min-height: 44px;
   padding: 0 0.5rem;
+}
+
+.away {
+  font-size: 0.8rem;
+  color: var(--muted);
 }

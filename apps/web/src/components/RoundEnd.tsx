@@ -57,7 +57,7 @@ export function RoundEnd({ view, onNextRound }: RoundEndProps) {
         </tbody>
       </table>
       {onNextRound && (
-        <button type="button" onClick={onNextRound}>
+        <button type="button" onClick={onNextRound} data-focus-group="next">
           Next round
         </button>
       )}

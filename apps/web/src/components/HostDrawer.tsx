@@ -38,6 +38,12 @@ export function HostDrawer(props: HostDrawerProps) {
   const { open, onClose, code, seats, waiting, full, playing, offline, connected, links } = props
   const dialogRef = useRef<HTMLDialogElement>(null)
   const [confirmRedeal, setConfirmRedeal] = useState(false)
+  // Set when the confirm closes, so the button that opened it gets focus back as it returns.
+  const refocusRedeal = useRef(false)
+  const cancelRedeal = () => {
+    refocusRedeal.current = true
+    setConfirmRedeal(false)
+  }
   const invite = `${window.location.origin}/g/${code}`
 
   useEffect(() => {
@@ -99,7 +105,18 @@ export function HostDrawer(props: HostDrawerProps) {
                   and nobody scores this hand.
                 </p>
                 {confirmRedeal ? (
-                  <div className={styles.confirm} role="alertdialog" aria-label="Deal a new hand?">
+                  <div
+                    className={styles.confirm}
+                    role="alertdialog"
+                    aria-label="Deal a new hand?"
+                    onKeyDown={(e) => {
+                      // Escape backs out of the confirm, not out of the whole drawer.
+                      if (e.key !== 'Escape') return
+                      e.preventDefault()
+                      e.stopPropagation()
+                      cancelRedeal()
+                    }}
+                  >
                     <span>Sure? This can't be undone.</span>
                     <button
                       type="button"
@@ -112,12 +129,22 @@ export function HostDrawer(props: HostDrawerProps) {
                     >
                       Deal new hand
                     </button>
-                    <button type="button" onClick={() => setConfirmRedeal(false)}>
+                    {/* The safe choice takes focus, so a stray Enter doesn't throw out the hand. */}
+                    <button type="button" autoFocus onClick={cancelRedeal}>
                       Keep playing
                     </button>
                   </div>
                 ) : (
-                  <button type="button" onClick={() => setConfirmRedeal(true)}>
+                  <button
+                    type="button"
+                    ref={(el) => {
+                      if (el && refocusRedeal.current) {
+                        refocusRedeal.current = false
+                        el.focus()
+                      }
+                    }}
+                    onClick={() => setConfirmRedeal(true)}
+                  >
                     Deal a new hand…
                   </button>
                 )}
@@ -141,6 +168,12 @@ export function HostDrawer(props: HostDrawerProps) {
                           aria-label={isConnected ? 'Online' : 'Offline'}
                           title={isConnected ? 'Online' : 'Offline'}
                         />
+                        {/* The dot already says Offline to a screen reader. */}
+                        {!isConnected && (
+                          <span className={styles.away} aria-hidden="true">
+                            away
+                          </span>
+                        )}
                       </span>
                       {/* A new link remounts the control, which clears the last copy result. */}
                       <RejoinControl
