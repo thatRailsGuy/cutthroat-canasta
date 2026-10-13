@@ -506,6 +506,29 @@ describe('heartbeat', () => {
     expect(await bob.closed()).toBe(STALE_CLOSE_CODE)
   })
 
+  it('drops a silent socket in a game in progress with no message at all', async () => {
+    const { code, ann, annJoined, bob, bobJoined } = await startedGame({ halfOpenBob: true })
+    await silence(code, bobJoined.playerId)
+
+    const stub = env.GAME_ROOM.get(env.GAME_ROOM.idFromName(code))
+    expect(await runDurableObjectAlarm(stub)).toBe(true)
+    const state = await nextState(ann)
+    expect(state.connected).toEqual([annJoined.playerId])
+    expect(Object.keys(state.away)).toEqual([bobJoined.playerId])
+    expect(await bob.closed()).toBe(STALE_CLOSE_CODE)
+  })
+
+  it('stops checking once nobody is connected', async () => {
+    const { code, ann, bob } = await startedGame()
+    ann.close()
+    bob.close()
+    await Promise.all([ann.closed(), bob.closed()])
+    const stub = env.GAME_ROOM.get(env.GAME_ROOM.idFromName(code))
+    // The alarm set while they were here runs once more and finds nobody.
+    await runDurableObjectAlarm(stub)
+    expect(await runDurableObjectAlarm(stub)).toBe(false)
+  })
+
   it('tells the table a silent player is gone, even after a malformed message', async () => {
     const { code, ann, annJoined, bobJoined } = await startedGame({ halfOpenBob: true })
     await silence(code, bobJoined.playerId)

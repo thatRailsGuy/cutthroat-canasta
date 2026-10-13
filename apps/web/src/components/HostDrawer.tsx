@@ -28,8 +28,8 @@ export interface HostDrawerProps {
   links: Record<string, string>
   /**
    * Ask the server for a rejoin link. Offered for every seat, because a dead phone can still
-   * count as connected: the server only notices a silent socket when a message arrives, and the
-   * reissue request itself is that message.
+   * count as connected: the server checks for silent sockets every 30 seconds, and whenever a
+   * message arrives, so the reissue request itself is a check.
    */
   onReissue: (playerId: string) => void
   onRedeal: () => void

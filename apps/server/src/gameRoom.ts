@@ -23,6 +23,12 @@ interface Attachment {
   address: string | null
 }
 
+/**
+ * How often a room with anyone connected checks for silent sockets. With STALE_AFTER_MS, a phone
+ * that died without closing its socket shows as away 70 to 100 seconds after its last ping.
+ */
+const PRESENCE_CHECK_MS = 30_000
+
 const ids: RoomIds = {
   newPlayerId: () => crypto.randomUUID(),
   newToken: () => crypto.randomUUID(),
@@ -82,6 +88,9 @@ export class GameRoom extends DurableObject<Env> {
     const [client, server] = Object.values(new WebSocketPair())
     this.ctx.acceptWebSocket(server)
     server.serializeAttachment({ playerId: null, seenAt: Date.now(), address } satisfies Attachment)
+    if ((await this.ctx.storage.getAlarm()) === null) {
+      await this.ctx.storage.setAlarm(Date.now() + PRESENCE_CHECK_MS)
+    }
     return new Response(null, { status: 101, webSocket: client })
   }
 
@@ -150,13 +159,19 @@ export class GameRoom extends DurableObject<Env> {
   }
 
   /**
-   * Set only while the room is listed. It drops silent sockets, so a host whose phone died
-   * comes off the list, and tells the directory the room is still there.
+   * Set while anyone is connected. It drops silent sockets, so a phone that died stops counting
+   * as connected even when nobody at the table sends anything, and a listed room's host whose
+   * phone died comes off the list. It also tells the directory a listed room is still there.
    */
   async alarm(): Promise<void> {
     const dropped = this.dropStaleSockets()
     if ((await this.trackAway()) || dropped) this.broadcast()
-    await this.report({ refresh: true })
+    await this.report()
+    // Closed sockets are gone from the list, so an empty room stops waking itself. A listing
+    // that couldn't be taken off yet gets another try.
+    if (this.ctx.getWebSockets().length > 0 || this.listed) {
+      await this.ctx.storage.setAlarm(Date.now() + PRESENCE_CHECK_MS)
+    }
   }
 
   private async presenceChanged(except?: WebSocket): Promise<void> {
@@ -166,20 +181,17 @@ export class GameRoom extends DurableObject<Env> {
   }
 
   /**
-   * Puts the room on the home page's list, updates its line, or takes it off. `refresh` sends
-   * the line even if it hasn't changed. A failure only costs the listing, never the move.
+   * Puts the room on the home page's list, updates its line, or takes it off. An unchanged line
+   * is sent again once it is REFRESH_MS old. A failure only costs the listing, never the move.
    */
-  private async report({
-    except,
-    refresh = false,
-  }: { except?: WebSocket; refresh?: boolean } = {}) {
+  private async report({ except }: { except?: WebSocket } = {}) {
     if (!this.room) return
     const listing = tableListing(this.room, this.connected(except))
     if (!listing && !this.listed) return
     const json = JSON.stringify(listing)
     const now = Date.now()
     const fresh = this.reported?.json === json && now - this.reported.at < REFRESH_MS
-    if (fresh && !refresh) return
+    if (fresh) return
     const directory = this.env.TABLE_DIRECTORY.get(this.env.TABLE_DIRECTORY.idFromName('all'))
     try {
       if (listing) await directory.put(listing)
@@ -192,13 +204,6 @@ export class GameRoom extends DurableObject<Env> {
     if (this.listed !== !!listing) {
       this.listed = !!listing
       await this.ctx.storage.put('listed', this.listed)
-    }
-    if (listing) {
-      if ((await this.ctx.storage.getAlarm()) === null) {
-        await this.ctx.storage.setAlarm(now + REFRESH_MS)
-      }
-    } else {
-      await this.ctx.storage.deleteAlarm()
     }
   }
 
