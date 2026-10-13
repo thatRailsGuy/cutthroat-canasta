@@ -3,10 +3,10 @@ import { useCallback, useEffect, useReducer, useRef } from 'react'
 import { socketUrl } from './api'
 import { GameConnection } from './connection'
 import { gameReducer, initialGameState, type GameState } from './gameState'
-import { clearToken, loadName, loadToken, saveName, saveToken } from './storage'
+import { clearToken, loadName, loadToken, saveLinkToken, saveName, saveToken } from './storage'
 
 export interface GameOptions {
-  /** A token from a rejoin link. It is saved before the first connect. */
+  /** A token from a rejoin link. This tab uses it from the first connect. */
   linkToken: string | null
   /** Join with this name as soon as the socket opens (set by the home page). */
   autoJoinName: string | null
@@ -39,7 +39,7 @@ export function useGame(code: string, { linkToken, autoJoinName }: GameOptions):
   const sendJoinRef = useRef<() => void>(() => {})
 
   useEffect(() => {
-    if (linkToken) saveToken(code, linkToken)
+    if (linkToken) saveLinkToken(code, linkToken)
     pendingNameRef.current = autoJoinName
 
     const sendJoin = () => {
@@ -63,7 +63,7 @@ export function useGame(code: string, { linkToken, autoJoinName }: GameOptions):
           joiningRef.current = null
           pendingNameRef.current = null
         }
-        if (message.type === 'joined') saveToken(code, message.token)
+        if (message.type === 'joined') saveToken(code, message.token, message.playerId)
         // A saved token that no longer works (the seat was reissued) is useless: forget it.
         if (joinFailed && joining?.withToken) clearToken(code)
         if (message.type === 'removed') {
