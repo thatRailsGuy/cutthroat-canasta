@@ -22,6 +22,11 @@ export const HEARTBEAT_INTERVAL_MS = 20_000
 export const STALE_AFTER_MS = 70_000
 /** Close code for a socket the server dropped as stale. The client reconnects with its token. */
 export const STALE_CLOSE_CODE = 4000
+/**
+ * How long a seat must be away before a player waiting for the next hand can take it over, so
+ * a locked phone or a reload doesn't cost a seat.
+ */
+export const TAKE_OVER_AFTER_MS = 120_000
 
 const cardId = z.number().int().nonnegative()
 const cardIds = z.array(cardId).max(60)
@@ -84,6 +89,7 @@ export const clientMessageSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('leave') }),
   z.object({ type: z.literal('kick'), playerId }),
   z.object({ type: z.literal('reissue'), playerId }),
+  z.object({ type: z.literal('takeOver'), playerId }),
   z.object({ type: z.literal('playAgain') }),
   z.object({ type: z.literal('unkick'), playerId }),
   z.object({ type: z.literal('setPublic'), public: z.boolean() }),
@@ -107,6 +113,9 @@ export type ProtocolErrorCode =
   | 'UNKNOWN_TOKEN'
   | 'CHAT_TOO_FAST'
   | 'BLOCKED'
+  | 'NOT_WAITING'
+  | 'SEAT_NOT_AWAY'
+  | 'SEAT_TAKEN'
 export type ServerErrorCode = RuleErrorCode | ProtocolErrorCode
 
 /** One line of table talk, as the server stamped it. */
@@ -138,6 +147,8 @@ export type ServerMessage =
       public: boolean
       /** Players the host kicked and can let back in. Empty for everyone but the host. */
       kicked: { playerId: string; name: string }[]
+      /** How long each seated player without a connection has been away (ms). */
+      away: Record<string, number>
     }
   | { type: 'error'; code: ServerErrorCode; message: string }
   | { type: 'removed'; reason: RemovedReason }

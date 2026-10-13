@@ -144,3 +144,48 @@ describe('Table, while the host is away', () => {
     expect(screen.queryByRole('button', { name: 'Host' })).toBeNull()
   })
 })
+
+describe('Table, for a waiting player while a seat is away', () => {
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  function waitingWhileBobAway(awayFor: number) {
+    vi.useFakeTimers({ now: 10_000_000, toFake: ['Date'] })
+    const view = makeView({ hand: [], phase: 'draw' })
+    view.you = null
+    view.waiting = [{ id: 'zed', name: 'Zed' }]
+    const state = {
+      ...initialGameState,
+      playerId: 'zed',
+      view,
+      connected: ['you', 'zed'],
+      awaySince: { bob: Date.now() - awayFor },
+      connection: 'open' as const,
+    }
+    const send = vi.fn(() => true)
+    render(
+      <MemoryRouter>
+        <Table code="HT7KM4" view={view} state={state} send={send} />
+      </MemoryRouter>,
+    )
+    return { send }
+  }
+
+  it("offers the seat once it's been away 2 minutes, and asks before taking it", async () => {
+    const { send } = waitingWhileBobAway(3 * 60_000)
+    const note = screen.getByRole('region', { name: 'You' })
+    expect(note).toHaveTextContent('Bob away for 3 minutes')
+    const user = userEvent.setup()
+    await user.click(within(note).getByRole('button', { name: "Take Bob's seat…" }))
+    const confirm = screen.getByRole('alertdialog', { name: "Take Bob's seat?" })
+    expect(within(confirm).getByRole('button', { name: 'Keep watching' })).toHaveFocus()
+    await user.click(within(confirm).getByRole('button', { name: 'Take the seat' }))
+    expect(send).toHaveBeenCalledWith({ type: 'takeOver', playerId: 'bob' })
+  })
+
+  it('offers nothing while the seat has only just gone', () => {
+    waitingWhileBobAway(60_000)
+    expect(screen.queryByRole('button', { name: "Take Bob's seat…" })).toBeNull()
+  })
+})

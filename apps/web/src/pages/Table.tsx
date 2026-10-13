@@ -6,7 +6,7 @@ import {
   type PlayerView,
   type PublicPlayer,
 } from '@canasta/engine'
-import type { ClientMessage } from '@canasta/server/protocol'
+import type { ClientMessage, TAKE_OVER_AFTER_MS } from '@canasta/server/protocol'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { rejoinLink } from '../api'
 import { cardLabel } from '../cards'
@@ -371,7 +371,14 @@ export function Table({
             )}
           </section>
         ) : (
-          <WatchNote view={view} playerId={state.playerId} offline={offline} send={send} />
+          <WatchNote
+            view={view}
+            playerId={state.playerId}
+            connected={state.connected}
+            awaySince={state.awaySince}
+            offline={offline}
+            send={send}
+          />
         )}
       </div>
 
@@ -486,14 +493,33 @@ export function Table({
  * Where your panel and hand go, for a player who joined mid-hand: they watch this hand, and
  * are dealt in with the next one after everyone already playing.
  */
+// A type-only import keeps server code out of the bundle; the annotation fails the typecheck if
+// the copy ever differs from the server's.
+const TAKE_OVER_MS: typeof TAKE_OVER_AFTER_MS = 120_000
+
+/** The time now, updated every 15 seconds while `ticking`, for "away for 3 minutes". */
+function useNow(ticking: boolean): number {
+  const [now, setNow] = useState(Date.now)
+  useEffect(() => {
+    if (!ticking) return
+    const timer = setInterval(() => setNow(Date.now()), 15_000)
+    return () => clearInterval(timer)
+  }, [ticking])
+  return now
+}
+
 function WatchNote({
   view,
   playerId,
+  connected,
+  awaySince,
   offline,
   send,
 }: {
   view: PlayerView
   playerId: string | null
+  connected: readonly string[]
+  awaySince: Readonly<Record<string, number>>
   offline: boolean
   send: (message: ClientMessage) => boolean
 }) {
@@ -501,6 +527,18 @@ function WatchNote({
   const index = seats.findIndex((p) => p.id === playerId)
   const me = seats[index]
   const before = seats[index - 1]
+  const now = useNow(Object.keys(awaySince).length > 0)
+  // Only a waiting player can take over a seat, and only once it has been away a while.
+  const waiting = view.waiting.some((p) => p.id === playerId)
+  const takeable = waiting
+    ? view.players.flatMap((p) => {
+        const since = awaySince[p.id]
+        if (connected.includes(p.id) || since === undefined) return []
+        const away = now - since
+        return away >= TAKE_OVER_MS ? [{ player: p, minutes: Math.floor(away / 60_000) }] : []
+      })
+    : []
+  const [confirming, setConfirming] = useState<string | null>(null)
   return (
     <section className={styles.watch} aria-label="You">
       <span className={styles.watchChair} aria-hidden="true">
@@ -515,6 +553,56 @@ function WatchNote({
           {before ? `, and you'll play after ${before.name}` : ''}.
         </p>
       </div>
+      {takeable.map(({ player, minutes }) =>
+        confirming === player.id ? (
+          <div
+            key={player.id}
+            className={styles.takeOver}
+            role="alertdialog"
+            aria-label={`Take ${player.name}'s seat?`}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') setConfirming(null)
+            }}
+          >
+            <strong>Take {player.name}'s seat?</strong>
+            <p>
+              You play {player.name}'s cards and melds, and the seat's score from here on.{' '}
+              {player.name} can't come back to this seat. Everyone at the table sees that you took
+              it.
+            </p>
+            <div className={styles.takeOverButtons}>
+              <button
+                type="button"
+                disabled={offline}
+                onClick={() => send({ type: 'takeOver', playerId: player.id })}
+              >
+                Take the seat
+              </button>
+              {/* The safe choice takes focus, so a stray Enter takes nobody's seat. */}
+              <button type="button" autoFocus onClick={() => setConfirming(null)}>
+                Keep watching
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div key={player.id} className={styles.takeOver}>
+            <strong>
+              {player.name}{' '}
+              <span className={styles.takeOverAway}>
+                away for {minutes} {minutes === 1 ? 'minute' : 'minutes'}
+              </span>
+            </strong>
+            <p>
+              You can take over {player.name}'s seat and play their hand now, instead of waiting.
+            </p>
+            <div className={styles.takeOverButtons}>
+              <button type="button" onClick={() => setConfirming(player.id)}>
+                Take {player.name}'s seat…
+              </button>
+            </div>
+          </div>
+        ),
+      )}
       <button type="button" disabled={offline} onClick={() => send({ type: 'leave' })}>
         Leave
       </button>

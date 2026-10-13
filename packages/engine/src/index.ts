@@ -17,6 +17,7 @@ export {
   restartGame,
   startGame,
   startNextRound,
+  takeOverSeat,
 } from './game'
 export { applyAction } from './actions'
 export { viewFor, type PlayerView, type PublicPlayer, type RoundView } from './view'

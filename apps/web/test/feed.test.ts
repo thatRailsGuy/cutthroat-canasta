@@ -18,6 +18,7 @@ const players: PublicPlayer[] = [
 
 describe('describeEvent', () => {
   const cases: [FeedEvent, string][] = [
+    [{ type: 'tookOver', playerId: 'a', name: 'Zed', was: 'Ann' }, "Zed took over Ann's seat"],
     [{ type: 'drewStock', playerId: 'a', red3s: [] }, 'Ann drew a card'],
     [{ type: 'drewStock', playerId: 'a', red3s: [card('3h', 1)] }, 'Ann drew and laid down 3♥'],
     [

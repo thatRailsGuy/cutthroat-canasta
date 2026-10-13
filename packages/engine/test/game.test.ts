@@ -9,6 +9,7 @@ import {
   startGame,
   redealRound,
   startNextRound,
+  takeOverSeat,
 } from '../src/game'
 import { isRed3, isWild } from '../src/cards'
 import type { Game } from '../src/types'
@@ -236,6 +237,51 @@ describe('startNextRound', () => {
     expect(next.players.map((p) => p.score)).toEqual([100, -50])
     expect(next.players.every((p) => p.hand.length === 13 && p.melds.length === 0)).toBe(true)
     expect(countCards(next)).toBe(108)
+  })
+})
+
+describe('takeOverSeat', () => {
+  /** Three seated, and Zed waiting for the next hand. */
+  const withZed = () => unwrap(addPlayer(unwrap(startGame(lobby(3))), 'zed', 'Zed'))
+
+  it('gives the seat, its hand and its score to the waiting player, under their name', () => {
+    const game = withZed()
+    game.players[1].score = 1240
+    const hand = game.players[1].hand
+    const next = unwrap(takeOverSeat(game, 'p1', 'zed'))
+    expect(next.players[1]).toMatchObject({
+      id: 'p1',
+      name: 'Zed',
+      was: ['Player 1'],
+      score: 1240,
+      hand,
+    })
+    expect(next.waiting).toEqual([])
+    expect(next.round!.feed.at(-1)).toEqual({
+      type: 'tookOver',
+      playerId: 'p1',
+      name: 'Zed',
+      was: 'Player 1',
+    })
+    expect(next.log.at(-1)).toEqual({ event: 'takeOver', playerId: 'p1', by: 'zed' })
+    expect(countCards(next)).toBe(countCards(game))
+  })
+
+  it('keeps every earlier name when a seat changes hands again', () => {
+    let game = unwrap(takeOverSeat(withZed(), 'p1', 'zed'))
+    game = unwrap(addPlayer(game, 'yan', 'Yan'))
+    expect(unwrap(takeOverSeat(game, 'p1', 'yan')).players[1].was).toEqual(['Player 1', 'Zed'])
+  })
+
+  it('refuses once the game is over', () => {
+    const game = { ...withZed(), status: 'gameOver' as const }
+    const result = takeOverSeat(game, 'p1', 'zed')
+    expect(result.ok ? null : result.error.code).toBe('GAME_NOT_PLAYING')
+  })
+
+  it('throws unless the taker is waiting and the seat is in play', () => {
+    expect(() => takeOverSeat(withZed(), 'p1', 'p2')).toThrow('Unknown player')
+    expect(() => takeOverSeat(withZed(), 'zed', 'zed')).toThrow('Unknown player')
   })
 })
 

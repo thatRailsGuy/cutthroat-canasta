@@ -39,6 +39,7 @@ export function describeEvent(
   if (event.type === 'stockOut') return 'The stock ran out. The round is over.'
   if (event.type === 'quit') return `${event.name} quit the game`
   if (event.type === 'joined') return `${event.name} pulled up a chair and is dealt in next hand`
+  if (event.type === 'tookOver') return `${event.name} took over ${event.was}'s seat`
   const name = [...players, ...quit].find((p) => p.id === event.playerId)?.name ?? 'Someone'
   switch (event.type) {
     case 'drewStock':

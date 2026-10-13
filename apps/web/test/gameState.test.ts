@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
   NOT_SENT_MESSAGE,
   gameReducer,
@@ -27,6 +27,7 @@ describe('gameReducer', () => {
       connected: ['you'],
       public: true,
       kicked: [],
+      away: {},
     })
     expect(state).toMatchObject({ view, hostId: 'you', connected: ['you'], isPublic: true })
   })
@@ -75,6 +76,7 @@ describe('gameReducer', () => {
       connected: ['you', 'bob'],
       public: false,
       kicked: [],
+      away: {},
     })
     // The socket dropped and the host reissued the seat; the reconnect's join fails.
     state = gameReducer(state, { type: 'joining' })
@@ -102,6 +104,7 @@ describe('gameReducer', () => {
       connected: [],
       public: false,
       kicked: [],
+      away: {},
     })
     state = receive(state, { type: 'seatReissued', playerId: 'bob' })
     state = receive(state, {
@@ -111,6 +114,7 @@ describe('gameReducer', () => {
       connected: [],
       public: false,
       kicked: [],
+      away: {},
     })
     expect(state.notices).toHaveLength(1)
     const nextRound = { ...view, round: { ...view.round!, number: 2 } }
@@ -121,6 +125,7 @@ describe('gameReducer', () => {
       connected: [],
       public: false,
       kicked: [],
+      away: {},
     })
     expect(state.notices).toEqual([])
   })
@@ -148,6 +153,32 @@ describe('gameReducer', () => {
     state = receive(state, { type: 'seatReissued', playerId: 'bob' })
     expect(state.rejoinTokens).toEqual({ bob: 'new' })
     expect(state.notices).toEqual([{ id: 1, playerId: 'bob' }])
+  })
+
+  it('counts how long each away seat has been gone by this clock, and keeps the join error code', () => {
+    vi.useFakeTimers({ now: 1_000_000 })
+    const view = makeView({ hand: [], phase: 'draw' })
+    const state = receive(initialGameState, {
+      type: 'state',
+      view,
+      hostId: 'you',
+      connected: ['you'],
+      public: false,
+      kicked: [],
+      away: { bob: 150_000 },
+    })
+    expect(state.awaySince).toEqual({ bob: 850_000 })
+    vi.useRealTimers()
+
+    const failed = gameReducer(initialGameState, {
+      type: 'message',
+      message: { type: 'error', code: 'SEAT_TAKEN', message: 'Zed took over your seat.' },
+      joinFailed: true,
+    })
+    expect(failed).toMatchObject({
+      joinError: 'Zed took over your seat.',
+      joinErrorCode: 'SEAT_TAKEN',
+    })
   })
 
   it('keeps who stood in for the host on a seat notice', () => {

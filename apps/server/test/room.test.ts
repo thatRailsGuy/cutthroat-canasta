@@ -527,6 +527,108 @@ describe('reissue', () => {
   })
 })
 
+describe('takeOver', () => {
+  const LONG = 3 * 60_000
+  /** Ann (host) and Bob playing, and Cat waiting for the next hand. */
+  function withCat() {
+    const { state, ids } = started()
+    const cat = handleMessage(state, null, { type: 'join', name: 'Cat' }, ids, [])
+    return { state: cat.state, ids }
+  }
+  const takeOver = (state: RoomState, ids: RoomIds, away: Record<string, number>) =>
+    handleMessage(state, 'p3', { type: 'takeOver', playerId: 'p2' }, ids, ['p1', 'p3'], null, away)
+
+  it("moves a waiting player into a seat that's been away long enough", () => {
+    const { state, ids } = withCat()
+    const outcome = takeOver(state, ids, { p2: LONG })
+    expect(outcome).toMatchObject({
+      changed: true,
+      broadcast: true,
+      bindPlayerId: 'p2',
+      reply: [{ type: 'joined', code: 'ABCDEF', playerId: 'p2', token: 't4' }],
+      detach: { playerId: 'p3', reason: 'left' },
+    })
+    expect(outcome.state.game.players[1]).toMatchObject({ id: 'p2', name: 'Cat', was: ['Bob'] })
+    expect(outcome.state.game.waiting).toEqual([])
+    expect(outcome.state.tokens).toEqual({ t1: 'p1', t4: 'p2' })
+    expect(outcome.state.taken).toEqual({ t2: 'Cat' })
+  })
+
+  it("tells the seat's old player who took it when they come back", () => {
+    const { state, ids } = withCat()
+    const taken = takeOver(state, ids, { p2: LONG }).state
+    const back = handleMessage(taken, null, { type: 'join', name: 'Bob', token: 't2' }, ids, [])
+    expect(errorOf(back)).toEqual({
+      type: 'error',
+      code: 'SEAT_TAKEN',
+      message:
+        'Cat took over your seat while you were away. You can join again and be dealt in with the next hand.',
+    })
+  })
+
+  it("makes the new player host when the seat was the host's", () => {
+    const { state, ids } = withCat()
+    const outcome = handleMessage(
+      state,
+      'p3',
+      { type: 'takeOver', playerId: 'p1' },
+      ids,
+      ['p2', 'p3'],
+      null,
+      { p1: LONG },
+    )
+    expect(outcome.state.hostId).toBe('p1')
+    expect(outcome.state.game.players[0].name).toBe('Cat')
+  })
+
+  it('refuses a seat that has only just gone', () => {
+    const { state, ids } = withCat()
+    expect(errorOf(takeOver(state, ids, { p2: 30_000 }))).toMatchObject({ code: 'SEAT_NOT_AWAY' })
+  })
+
+  it('refuses a seat whose player is back', () => {
+    const { state, ids } = withCat()
+    const outcome = handleMessage(
+      state,
+      'p3',
+      { type: 'takeOver', playerId: 'p2' },
+      ids,
+      ['p1', 'p2', 'p3'],
+      null,
+      { p2: LONG },
+    )
+    expect(errorOf(outcome)).toMatchObject({ code: 'PLAYER_CONNECTED' })
+  })
+
+  it('refuses a seated player', () => {
+    const { state, ids } = withCat()
+    const outcome = handleMessage(
+      state,
+      'p1',
+      { type: 'takeOver', playerId: 'p2' },
+      ids,
+      ['p1'],
+      null,
+      { p2: LONG },
+    )
+    expect(errorOf(outcome)).toMatchObject({ code: 'NOT_WAITING' })
+  })
+
+  it('rejects someone not at the table', () => {
+    const { state, ids } = withCat()
+    const outcome = handleMessage(
+      state,
+      'p3',
+      { type: 'takeOver', playerId: 'nobody' },
+      ids,
+      ['p3'],
+      null,
+      { nobody: LONG },
+    )
+    expect(errorOf(outcome)).toMatchObject({ code: 'NO_SUCH_PLAYER' })
+  })
+})
+
 describe('actions', () => {
   const draw: ClientMessage = { type: 'action', action: { type: 'drawStock' } }
 

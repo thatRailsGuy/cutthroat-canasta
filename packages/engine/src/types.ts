@@ -24,6 +24,8 @@ export interface Player {
   meldedBeforeThisTurn: boolean
   /** The card drawn from the stock this turn, so the client can point it out. */
   drawnCard: CardId | null
+  /** Who sat here before someone took over the seat, oldest first. */
+  was?: string[]
 }
 
 export type Phase = 'draw' | 'play'
@@ -83,6 +85,8 @@ export type FeedEvent =
   | { type: 'redealt'; playerId: string }
   /** Someone joined mid-game. They are not seated yet, so the name is sent too. */
   | { type: 'joined'; playerId: string; name: string }
+  /** A waiting player took over an away player's seat. `was` is the seat's name before. */
+  | { type: 'tookOver'; playerId: string; name: string; was: string }
 
 export interface ScoreBreakdown {
   meldPoints: number
@@ -126,6 +130,7 @@ export type LogEntry =
   | { event: 'join'; playerId: string }
   | { event: 'restart' }
   | { event: 'leave'; playerId: string }
+  | { event: 'takeOver'; playerId: string; by: string }
 
 /** A player who quit a started game. Their past rounds stay in `history`. */
 export interface QuitPlayer {

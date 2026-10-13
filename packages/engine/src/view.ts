@@ -20,6 +20,8 @@ export interface PublicPlayer {
   turnsThisRound: number
   /** Until a player's first pickup of the round, the pile is frozen for them. */
   hasPickedUpPile: boolean
+  /** Who sat here before someone took over the seat, oldest first. Missing if nobody did. */
+  was?: string[]
 }
 
 export interface RoundView {
@@ -70,6 +72,7 @@ export function viewFor(game: Game, playerId: string): PlayerView {
       red3s: p.red3s,
       turnsThisRound: p.turnsThisRound,
       hasPickedUpPile: p.hasPickedUpPile,
+      ...(p.was && { was: p.was }),
     })),
     round: round
       ? {

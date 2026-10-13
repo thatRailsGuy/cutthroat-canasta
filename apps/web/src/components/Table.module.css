@@ -231,6 +231,33 @@
   font-size: 0.92rem;
 }
 
+/* An away seat a waiting player can take over, inside their sit-out note. */
+.takeOver {
+  display: grid;
+  gap: 0.4rem;
+  flex-basis: 100%;
+  padding: 0.7rem 0.85rem;
+  border: 2px solid var(--ink);
+  border-radius: 12px;
+  background: var(--paper);
+}
+
+.takeOver p {
+  margin: 0;
+  font-size: 0.92rem;
+}
+
+.takeOverAway {
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.takeOverButtons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
 .turnText {
   font-weight: 800;
   color: var(--red);

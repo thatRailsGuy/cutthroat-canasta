@@ -42,6 +42,11 @@ export class GameRoom extends DurableObject<Env> {
   private listed = false
   /** The listing last sent to the directory, and when, to skip sending the same one again. */
   private reported: { json: string; at: number } | null = null
+  /**
+   * playerId → when each seated player without a connection went away (ms). Saved, so it
+   * survives hibernation: a seat can be taken over only after a while away.
+   */
+  private awaySince: Record<string, number> = {}
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env)
@@ -50,6 +55,7 @@ export class GameRoom extends DurableObject<Env> {
       this.room = (await ctx.storage.get<RoomState>('room')) ?? null
       this.chat = (await ctx.storage.get<ChatLine[]>('chat')) ?? []
       this.listed = (await ctx.storage.get<boolean>('listed')) ?? false
+      this.awaySince = (await ctx.storage.get<Record<string, number>>('away')) ?? {}
     })
   }
 
@@ -103,6 +109,7 @@ export class GameRoom extends DurableObject<Env> {
       ids,
       this.connected(),
       address ?? null,
+      this.awayFor(),
     )
     if (outcome.changed) {
       this.room = outcome.state
@@ -121,8 +128,9 @@ export class GameRoom extends DurableObject<Env> {
         send(socket, { type: 'removed', reason })
       }
     }
+    const awayChanged = await this.trackAway()
     // A dropped player's dot must go grey even when this message changed nothing.
-    if (outcome.broadcast || droppedPlayer) this.broadcast()
+    if (outcome.broadcast || droppedPlayer || awayChanged) this.broadcast()
     await this.report()
   }
 
@@ -146,11 +154,13 @@ export class GameRoom extends DurableObject<Env> {
    * comes off the list, and tells the directory the room is still there.
    */
   async alarm(): Promise<void> {
-    if (this.dropStaleSockets()) this.broadcast()
+    const dropped = this.dropStaleSockets()
+    if ((await this.trackAway()) || dropped) this.broadcast()
     await this.report({ refresh: true })
   }
 
   private async presenceChanged(except?: WebSocket): Promise<void> {
+    await this.trackAway(except)
     this.broadcast(except)
     await this.report({ except })
   }
@@ -219,6 +229,35 @@ export class GameRoom extends DurableObject<Env> {
     this.announce({ type: 'chat', line })
   }
 
+  /**
+   * Notes when each seated player lost their last connection, and forgets it once they are back
+   * or gone. `except` is a socket that is closing. Returns true if anything changed.
+   */
+  private async trackAway(except?: WebSocket): Promise<boolean> {
+    if (!this.room) return false
+    const connected = new Set(this.connected(except))
+    const now = Date.now()
+    const next: Record<string, number> = {}
+    for (const { id } of this.room.game.players) {
+      if (!connected.has(id)) next[id] = this.awaySince[id] ?? now
+    }
+    const same =
+      Object.keys(next).length === Object.keys(this.awaySince).length &&
+      Object.entries(next).every(([id, since]) => this.awaySince[id] === since)
+    if (same) return false
+    this.awaySince = next
+    await this.ctx.storage.put('away', next)
+    return true
+  }
+
+  /** How long each seated player without a connection has been away (ms). */
+  private awayFor(): Record<string, number> {
+    const now = Date.now()
+    return Object.fromEntries(
+      Object.entries(this.awaySince).map(([id, since]) => [id, now - since]),
+    )
+  }
+
   /** Sends `message` to every socket bound to a player. */
   private announce(message: ServerMessage): void {
     for (const socket of this.ctx.getWebSockets()) {
@@ -264,10 +303,11 @@ export class GameRoom extends DurableObject<Env> {
     const room = this.room
     if (!room) return
     const connected = this.connected(except)
+    const away = this.awayFor()
     for (const ws of this.ctx.getWebSockets()) {
       if (ws === except) continue
       const { playerId } = attachmentOf(ws)
-      if (playerId) send(ws, stateMessage(room, playerId, connected))
+      if (playerId) send(ws, stateMessage(room, playerId, connected, away))
     }
   }
 }

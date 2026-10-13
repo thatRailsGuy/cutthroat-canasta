@@ -216,6 +216,30 @@ export function quitGame(game: Game, id: string): GameResult {
 }
 
 /**
+ * A player waiting for the next hand takes over a seat in play, such as one whose player went
+ * away for good. The seat keeps its hand, melds and score, and takes the new player's name; its
+ * old name goes on `was`. The new player's waiting spot is gone. Throws for unknown ids:
+ * callers check both exist.
+ */
+export function takeOverSeat(game: Game, seatId: string, takerId: string): GameResult {
+  if (game.status !== 'playing' && game.status !== 'roundOver') {
+    return fail('GAME_NOT_PLAYING', 'You can only take over a seat while a game is going.')
+  }
+  const next = cloneGame(game)
+  const waiting = next.waiting?.findIndex((p) => p.id === takerId) ?? -1
+  const seat = next.players.find((p) => p.id === seatId)
+  if (waiting === -1 || !seat)
+    throw new Error(`Unknown player: ${waiting === -1 ? takerId : seatId}`)
+  const [taker] = next.waiting!.splice(waiting, 1)
+  const was = seat.name
+  seat.was = [...(seat.was ?? []), was]
+  seat.name = taker.name
+  next.round?.feed.push({ type: 'tookOver', playerId: seatId, name: taker.name, was })
+  next.log.push({ event: 'takeOver', playerId: seatId, by: takerId })
+  return { ok: true, game: next }
+}
+
+/**
  * A player leaves a finished game for good. They stay in `players`, so everyone else's final
  * standings don't change, and Play again leaves them out. Someone still waiting for a seat was
  * never in the standings, so they just go. Throws for an unknown id: callers check the seat

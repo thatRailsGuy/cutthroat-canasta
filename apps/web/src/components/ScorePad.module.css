@@ -71,6 +71,14 @@
   font-style: italic;
 }
 
+/* A taken-over seat's earlier names. */
+.was {
+  font-family: var(--font);
+  font-size: 0.7rem;
+  font-weight: 400;
+  color: var(--muted);
+}
+
 .nextHand {
   font-family: var(--font);
   font-size: 0.7rem;

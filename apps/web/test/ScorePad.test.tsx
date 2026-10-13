@@ -34,6 +34,13 @@ describe('ScorePad', () => {
     expect(totals.getByText('400').className).not.toMatch(/leader/)
   })
 
+  it('shows who sat in a seat before someone took it over', () => {
+    const view = makeView({ hand: [], phase: 'draw' })
+    view.players[1] = { ...view.players[1], name: 'Zed', was: ['Bob'] }
+    render(<ScorePad view={view} onOpenSheet={vi.fn()} />)
+    expect(screen.getByTitle('Zed (was Bob)')).toHaveTextContent('Zed (was Bob)')
+  })
+
   it('says so before any round is scored', () => {
     render(<ScorePad view={makeView({ hand: [], phase: 'draw' })} onOpenSheet={vi.fn()} />)
     expect(screen.getByText('No rounds yet')).toBeInTheDocument()

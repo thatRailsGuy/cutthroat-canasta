@@ -1,4 +1,4 @@
-import type { PlayerView } from '@canasta/engine'
+import type { PlayerView, PublicPlayer } from '@canasta/engine'
 import type { CSSProperties } from 'react'
 import { isCrowded } from '../layout'
 import styles from './ScorePad.module.css'
@@ -40,8 +40,9 @@ export function ScorePad({ view, onOpenSheet }: ScorePadProps) {
           <tbody>
             {players.map((p) => (
               <tr key={p.id}>
-                <th scope="row" title={p.name}>
+                <th scope="row" title={nameWithWas(p)}>
                   {p.name}
+                  <Was player={p} />
                 </th>
                 <td>{last ? (last.breakdown[p.id]?.total ?? '–') : ''}</td>
                 <Total score={p.score} leading={leaders.includes(p)} />
@@ -72,8 +73,9 @@ export function ScorePad({ view, onOpenSheet }: ScorePadProps) {
         <thead>
           <tr>
             {players.map((p) => (
-              <th key={p.id} scope="col" title={p.name}>
+              <th key={p.id} scope="col" title={nameWithWas(p)}>
                 {p.name}
+                <Was player={p} />
               </th>
             ))}
             {late.map((p) => (
@@ -136,4 +138,14 @@ function Total({ score, leading }: { score: number; leading: boolean }) {
       {leading && <span className="sr-only">, leading</span>}
     </td>
   )
+}
+
+/** "Zed (was Ann)" for a seat someone took over, so its score still makes sense. */
+function nameWithWas(player: PublicPlayer): string {
+  return player.was?.length ? `${player.name} (was ${player.was.join(', ')})` : player.name
+}
+
+function Was({ player }: { player: PublicPlayer }) {
+  if (!player.was?.length) return null
+  return <span className={styles.was}> (was {player.was.join(', ')})</span>
 }

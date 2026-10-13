@@ -9,13 +9,20 @@ import {
   restartGame,
   startGame,
   startNextRound,
+  takeOverSeat,
   viewFor,
   type Game,
   type GameResult,
   type RuleError,
   type Seed,
 } from '@canasta/engine'
-import type { ClientMessage, ProtocolErrorCode, RemovedReason, ServerMessage } from './protocol'
+import {
+  TAKE_OVER_AFTER_MS,
+  type ClientMessage,
+  type ProtocolErrorCode,
+  type RemovedReason,
+  type ServerMessage,
+} from './protocol'
 
 export interface RoomState {
   code: string
@@ -34,6 +41,8 @@ export interface RoomState {
    * yet. Missing in rooms made before join ids.
    */
   joins?: Record<string, string>
+  /** The tokens of seats someone took over → who took them, so a returning player is told. */
+  taken?: Record<string, string>
 }
 
 export interface Kick {
@@ -79,6 +88,7 @@ export function stateMessage(
   state: RoomState,
   playerId: string,
   connected: string[],
+  away: Record<string, number> = {},
 ): ServerMessage {
   return {
     type: 'state',
@@ -91,6 +101,7 @@ export function stateMessage(
       playerId === state.hostId
         ? (state.kicked ?? []).map(({ playerId, name }) => ({ playerId, name }))
         : [],
+    away,
   }
 }
 
@@ -100,6 +111,7 @@ export type RoomMessage = Exclude<ClientMessage, { type: 'chat' }>
 /**
  * `connected` lists the players with an open connection, including the sender. `address` is
  * the sender's address key (address.ts), or null when the request didn't say where it came from.
+ * `away` says how long each seated player without a connection has been away (ms).
  */
 export function handleMessage(
   state: RoomState,
@@ -108,6 +120,7 @@ export function handleMessage(
   ids: RoomIds,
   connected: readonly string[],
   address: string | null = null,
+  away: Readonly<Record<string, number>> = {},
 ): Outcome {
   if (message.type === 'join') return join(state, senderId, message, ids, address)
   if (!senderId) return protocolError(state, 'NOT_JOINED', 'Join the game first.')
@@ -130,6 +143,8 @@ export function handleMessage(
       return hostOnly(state, senderId, () => removeSeat(state, message.playerId, 'kicked'))
     case 'reissue':
       return reissue(state, senderId, message.playerId, ids, connected)
+    case 'takeOver':
+      return takeOver(state, senderId, message.playerId, ids, connected, away)
     case 'playAgain':
       return playAgain(state, senderId, ids, connected)
     case 'unkick':
@@ -171,6 +186,13 @@ function join(
     // seat in the lobby, so the client drops the token. In the lobby the player can join again
     // by name, and the client asks for that up front when it knows their name; once the game
     // has started only a new rejoin link from the host helps.
+    if (state.taken && Object.hasOwn(state.taken, token)) {
+      return protocolError(
+        state,
+        'SEAT_TAKEN',
+        `${state.taken[token]} took over your seat while you were away. You can join again and be dealt in with the next hand.`,
+      )
+    }
     if (!Object.hasOwn(state.tokens, token)) {
       const error = protocolError(
         state,
@@ -388,6 +410,73 @@ function reissue(
     changed: true,
     // Everyone's view shows the host, so a new one needs a broadcast.
     broadcast: newHost,
+  }
+}
+
+/**
+ * A player waiting for the next hand takes over a seat whose player has been away for a while.
+ * Their socket moves to the seat, and the seat's old tokens stop working, so its player can't
+ * come back and play the same hand. If the seat was the host's, the new player is host.
+ */
+function takeOver(
+  state: RoomState,
+  senderId: string,
+  playerId: string,
+  ids: RoomIds,
+  connected: readonly string[],
+  away: Readonly<Record<string, number>>,
+): Outcome {
+  const { players, waiting = [] } = state.game
+  if (!waiting.some((p) => p.id === senderId)) {
+    return protocolError(
+      state,
+      'NOT_WAITING',
+      'Only a player waiting for the next hand can take over a seat.',
+    )
+  }
+  const seat = players.find((p) => p.id === playerId)
+  if (!seat) return noSuchPlayer(state)
+  if (connected.includes(playerId)) {
+    return protocolError(
+      state,
+      'PLAYER_CONNECTED',
+      `${seat.name} is back, so their seat is theirs again.`,
+    )
+  }
+  if ((away[playerId] ?? 0) < TAKE_OVER_AFTER_MS) {
+    return protocolError(
+      state,
+      'SEAT_NOT_AWAY',
+      `${seat.name} has only just gone. You can take over their seat once they've been away for 2 minutes.`,
+    )
+  }
+  const result = takeOverSeat(state.game, playerId, senderId)
+  if (!result.ok) return ruleErrorOutcome(state, result.error)
+  const token = ids.newToken()
+  const taker = waiting.find((p) => p.id === senderId)!.name
+  const oldTokens = Object.keys(state.tokens).filter((t) => state.tokens[t] === playerId)
+  const address = state.addresses?.[senderId]
+  const addresses = addressesWithout(addressesWithout(state.addresses, playerId), senderId)
+  const next: RoomState = {
+    ...state,
+    game: result.game,
+    hostId: state.hostId === senderId ? playerId : state.hostId,
+    tokens: {
+      ...tokensWithout(tokensWithout(state.tokens, playerId), senderId),
+      [token]: playerId,
+    },
+    joins: joinsWithout(joinsWithout(state.joins, playerId), senderId),
+    addresses: address === undefined ? addresses : { ...addresses, [playerId]: address },
+    taken: { ...state.taken, ...Object.fromEntries(oldTokens.map((t) => [t, taker])) },
+  }
+  return {
+    state: next,
+    reply: [joined(next, playerId, token)],
+    bindPlayerId: playerId,
+    // Any other tab still in the waiting spot has nothing left to show.
+    detach: { playerId: senderId, reason: 'left' },
+    changed: true,
+    broadcast: true,
   }
 }
 

@@ -43,6 +43,9 @@ export interface GameState {
   kicked: KickedPlayer[]
   /** Why the last join failed; the page shows the join form with it. */
   joinError: string | null
+  joinErrorCode: ServerErrorCode | null
+  /** playerId → when each seated player without a connection went away, by this device's clock. */
+  awaySince: Record<string, number>
   toasts: Toast[]
   notices: SeatNotice[]
   /** Host only: the latest rejoin token for each reissued seat. */
@@ -85,6 +88,8 @@ export const initialGameState: GameState = {
   isPublic: false,
   kicked: [],
   joinError: null,
+  joinErrorCode: null,
+  awaySince: {},
   toasts: [],
   notices: [],
   rejoinTokens: {},
@@ -107,6 +112,11 @@ export function sectionFor(code: ServerErrorCode): RuleSection | null {
     : null
 }
 
+/** Turns the server's "away for this long" into "away since", so the page can count on. */
+function awaySince(away: Record<string, number>, now: number): Record<string, number> {
+  return Object.fromEntries(Object.entries(away).map(([id, ms]) => [id, now - ms]))
+}
+
 /** Other players' lines the player hasn't seen yet. */
 export function unreadChat(state: GameState): number {
   const seen = state.chatSeen
@@ -119,7 +129,7 @@ export function gameReducer(state: GameState, event: GameEvent): GameState {
     case 'status':
       return { ...state, connection: event.status, failures: event.failures }
     case 'joining':
-      return { ...state, joining: true, joinError: null }
+      return { ...state, joining: true, joinError: null, joinErrorCode: null }
     case 'dismissToast':
       return { ...state, toasts: state.toasts.filter((t) => t.id !== event.id) }
     case 'notSent':
@@ -161,6 +171,7 @@ function onMessage(state: GameState, message: ServerMessage, joinFailed: boolean
         connected: message.connected,
         isPublic: message.public,
         kicked: message.kicked,
+        awaySince: awaySince(message.away, Date.now()),
         notices: newRound ? [] : state.notices,
       }
     }
@@ -172,6 +183,7 @@ function onMessage(state: GameState, message: ServerMessage, joinFailed: boolean
           ...state,
           joining: false,
           joinError: message.message,
+          joinErrorCode: message.code,
           playerId: initialGameState.playerId,
           view: initialGameState.view,
           hostId: initialGameState.hostId,

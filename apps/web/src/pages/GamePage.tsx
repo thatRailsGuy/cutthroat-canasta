@@ -155,6 +155,7 @@ function Session({ code, linkToken, autoJoinName, joinsByItself }: SessionProps)
       <JoinForm
         code={code}
         error={state.joinError}
+        seatTaken={state.joinErrorCode === 'SEAT_TAKEN'}
         waiting={state.connection !== 'open'}
         onJoin={join}
       />
@@ -238,11 +239,14 @@ function ConnectionBanner({
 function JoinForm({
   code,
   error,
+  seatTaken,
   waiting,
   onJoin,
 }: {
   code: string
   error: string | null
+  /** Someone took over this player's seat while they were away: say so first. */
+  seatTaken: boolean
   waiting: boolean
   onJoin: (name: string) => void
 }) {
@@ -253,17 +257,18 @@ function JoinForm({
   }
   return (
     <main className={styles.home}>
-      <h1>Join game {code}</h1>
+      <h1>{seatTaken ? 'Your seat was taken' : `Join game ${code}`}</h1>
+      {seatTaken && error && <p role="alert">{error}</p>}
       <form className={styles.join} onSubmit={submit}>
         <label>
           Your name
           <input value={name} maxLength={20} onChange={(e) => setName(e.target.value)} />
         </label>
         <button type="submit" disabled={waiting || !name.trim()}>
-          Join
+          {seatTaken ? 'Join again' : 'Join'}
         </button>
       </form>
-      {error && (
+      {error && !seatTaken && (
         <p className={styles.error} role="alert">
           {error}
         </p>
