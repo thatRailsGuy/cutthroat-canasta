@@ -129,7 +129,7 @@ export function handleMessage(
     case 'kick':
       return hostOnly(state, senderId, () => removeSeat(state, message.playerId, 'kicked'))
     case 'reissue':
-      return hostOnly(state, senderId, () => reissue(state, message.playerId, ids, connected))
+      return reissue(state, senderId, message.playerId, ids, connected)
     case 'playAgain':
       return playAgain(state, senderId, ids, connected)
     case 'unkick':
@@ -346,18 +346,24 @@ function nextHost(game: Game, hostId: string): string | null {
 }
 
 /**
- * Replaces a disconnected player's tokens with a new one, which the host shares as a link.
- * The whole table is told, so the host can't quietly take over a seat and read its hand.
+ * Replaces a disconnected player's tokens with a new one, which the sender shares as a link.
+ * The host does it, or anyone while the host is away; then they become host, so a table whose
+ * host lost their seat isn't stuck. The whole table is told, so nobody can quietly take over a
+ * seat and read its hand.
  */
 function reissue(
   state: RoomState,
+  senderId: string,
   playerId: string,
   ids: RoomIds,
   connected: readonly string[],
 ): Outcome {
+  if (senderId !== state.hostId && !hostAway(state, connected)) {
+    return protocolError(state, 'NOT_HOST', 'Only the host can do that.')
+  }
   if (!isSeated(state, playerId)) return noSuchPlayer(state)
   if (connected.includes(playerId)) {
-    // The host sees this as a toast after pressing "Seat stuck?" for a player who is still live.
+    // The sender sees this as a toast after pressing "Seat stuck?" for a player who is still live.
     const name = state.game.players.find((p) => p.id === playerId)?.name ?? 'That player'
     return protocolError(
       state,
@@ -366,17 +372,22 @@ function reissue(
     )
   }
   const token = ids.newToken()
+  const newHost = senderId !== state.hostId
   // A join id left from the seat's first join must not lead to the new token.
   const next: RoomState = {
     ...withoutJoins(state, playerId),
+    hostId: senderId,
     tokens: { ...tokensWithout(state.tokens, playerId), [token]: playerId },
   }
   return {
     state: next,
     reply: [{ type: 'reissued', playerId, token }],
-    announce: { type: 'seatReissued', playerId },
+    announce: newHost
+      ? { type: 'seatReissued', playerId, newHost: senderId }
+      : { type: 'seatReissued', playerId },
     changed: true,
-    broadcast: false,
+    // Everyone's view shows the host, so a new one needs a broadcast.
+    broadcast: newHost,
   }
 }
 
@@ -390,8 +401,7 @@ function playAgain(
   ids: RoomIds,
   connected: readonly string[],
 ): Outcome {
-  const hostHere = state.hostId !== null && connected.includes(state.hostId)
-  if (hostHere && senderId !== state.hostId) {
+  if (senderId !== state.hostId && !hostAway(state, connected)) {
     return protocolError(state, 'NOT_HOST', 'Only the host can start another game.')
   }
   const result = restartGame(state.game, ids.newSeed())
@@ -402,6 +412,11 @@ function playAgain(
     changed: true,
     broadcast: true,
   }
+}
+
+/** There is no host, or the host has no open connection. */
+function hostAway(state: RoomState, connected: readonly string[]): boolean {
+  return state.hostId === null || !connected.includes(state.hostId)
 }
 
 function hostOnly(state: RoomState, senderId: string, run: () => Outcome): Outcome {

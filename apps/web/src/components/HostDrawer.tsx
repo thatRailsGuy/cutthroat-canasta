@@ -19,6 +19,11 @@ export interface HostDrawerProps {
   playing: boolean
   offline: boolean
   connected: readonly string[]
+  /**
+   * Set when this player isn't the host but the host is away: they can stand in, and making a
+   * rejoin link makes them host. The host's name is null when there is no host.
+   */
+  standIn?: { hostName: string | null }
   /** playerId → the newest rejoin link made for that seat. */
   links: Record<string, string>
   /**
@@ -32,10 +37,12 @@ export interface HostDrawerProps {
 
 /**
  * The host's tools in a slide-over panel, like the rules: invite another player, throw out the
- * hand and deal again, and make a rejoin link for a seat that needs one.
+ * hand and deal again, and make a rejoin link for a seat that needs one. A player standing in
+ * for an away host gets the same panel without the new hand, until they are host.
  */
 export function HostDrawer(props: HostDrawerProps) {
-  const { open, onClose, code, seats, waiting, full, playing, offline, connected, links } = props
+  const { open, onClose, code, seats, waiting, full, playing, offline, connected, links, standIn } =
+    props
   const dialogRef = useRef<HTMLDialogElement>(null)
   const [confirmRedeal, setConfirmRedeal] = useState(false)
   // Set when the confirm closes, so the button that opened it gets focus back as it returns.
@@ -71,13 +78,22 @@ export function HostDrawer(props: HostDrawerProps) {
     >
       <div className={styles.body}>
         <header className={styles.head}>
-          <h2 id="host-tools">Host tools</h2>
+          <h2 id="host-tools">{standIn ? 'Stand in for the host' : 'Host tools'}</h2>
           <button type="button" onClick={close}>
             Close
           </button>
         </header>
         {open && (
           <>
+            {standIn && (
+              <p className={styles.standIn}>
+                {standIn.hostName
+                  ? `${standIn.hostName} is the host, but they're away.`
+                  : 'The host is away.'}{' '}
+                If you make a rejoin link, you become the host, so the game can go on. Everyone sees
+                that you did.
+              </p>
+            )}
             <section className={styles.section} aria-labelledby="host-invite">
               <h3 id="host-invite">Invite a player</h3>
               {full ? (
@@ -97,7 +113,7 @@ export function HostDrawer(props: HostDrawerProps) {
               )}
             </section>
 
-            {playing && (
+            {playing && !standIn && (
               <section className={styles.section} aria-labelledby="host-new-hand">
                 <h3 id="host-new-hand">New hand</h3>
                 <p>

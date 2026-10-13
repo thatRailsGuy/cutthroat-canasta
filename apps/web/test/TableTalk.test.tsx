@@ -73,6 +73,27 @@ function Talk({
 }
 
 describe('TableTalk', () => {
+  it('says who made a rejoin link when a player stood in for the host', () => {
+    render(
+      <TableTalk
+        events={[]}
+        deal={{ game: 1, round: 1, redeals: 0 }}
+        chat={[]}
+        notices={[
+          { id: 2, playerId: 'you', newHost: 'bob' },
+          { id: 1, playerId: 'bob' },
+        ]}
+        players={players}
+        playerId="you"
+        offline={false}
+      />,
+    )
+    expect(screen.getByRole('status')).toHaveTextContent(
+      "Bob made a rejoin link for Ann's seat and is the host now." +
+        "The host made a rejoin link for Bob's seat.",
+    )
+  })
+
   it('lists events and chat oldest first, with your own lines as You', () => {
     render(<Talk />)
     const items = within(screen.getByRole('list', { name: 'Table events and chat' })).getAllByRole(

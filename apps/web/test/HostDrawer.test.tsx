@@ -118,4 +118,21 @@ describe('HostDrawer', () => {
     await user.click(container.querySelector('dialog')!)
     expect(props.onClose).toHaveBeenCalledOnce()
   })
+
+  it('explains standing in for an away host, and leaves out the new hand', () => {
+    const { drawer, rerender, props } = setup({ standIn: { hostName: 'Ann' } })
+    expect(
+      drawer.getByRole('heading', { name: 'Stand in for the host', hidden: true }),
+    ).toBeInTheDocument()
+    expect(
+      drawer.getByText(/Ann is the host, but they're away\. If you make a rejoin link/),
+    ).toBeInTheDocument()
+    expect(drawer.queryByRole('button', { name: 'Deal a new hand…', hidden: true })).toBeNull()
+    expect(
+      drawer.getByRole('button', { name: 'Make a rejoin link for Bob', hidden: true }),
+    ).toBeInTheDocument()
+
+    rerender(<HostDrawer {...props} standIn={{ hostName: null }} />)
+    expect(drawer.getByText(/^The host is away\./)).toBeInTheDocument()
+  })
 })

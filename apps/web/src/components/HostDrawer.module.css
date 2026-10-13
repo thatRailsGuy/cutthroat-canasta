@@ -44,6 +44,11 @@
   font-size: 1.8rem;
 }
 
+/* Says why a player who isn't the host sees these tools. */
+.standIn {
+  margin: 0 0 1rem;
+}
+
 .section {
   display: grid;
   gap: 0.6rem;

@@ -75,6 +75,12 @@ export function Table({
   const currentId = view.players[round.current]?.id
   const yourTurn = view.status === 'playing' && you !== null && currentId === you.id
   const isHost = state.playerId === state.hostId
+  // A seated player can stand in for a host whose dot is grey (see HostDrawer).
+  const hostAway = state.hostId === null || !state.connected.includes(state.hostId)
+  const standIn =
+    !isHost && you !== null && hostAway
+      ? { hostName: view.players.find((p) => p.id === state.hostId)?.name ?? null }
+      : undefined
   const act = (action: Action) => send({ type: 'action', action })
   const offline = state.connection !== 'open'
   const [scoresOpen, setScoresOpen] = useState(false)
@@ -371,7 +377,7 @@ export function Table({
 
       {/* Fixed at the top, beside the Rules button. */}
       <div className={styles.gameTools}>
-        {isHost && inPlay && (
+        {(isHost || standIn) && inPlay && (
           <button
             type="button"
             className={styles.toolButton}
@@ -380,7 +386,7 @@ export function Table({
               setHostOpen(true)
             }}
           >
-            Host
+            {isHost ? 'Host' : 'Host is away'}
           </button>
         )}
         {you && inPlay && (
@@ -441,7 +447,7 @@ export function Table({
           </button>
         </div>
       )}
-      {isHost && (
+      {(isHost || standIn) && (
         <HostDrawer
           open={hostOpen && inPlay}
           onClose={() => setHostOpen(false)}
@@ -452,6 +458,7 @@ export function Table({
           playing={view.status === 'playing'}
           offline={offline}
           connected={state.connected}
+          standIn={standIn}
           links={Object.fromEntries(
             Object.entries(state.rejoinTokens).map(([id, token]) => [id, rejoinLink(code, token)]),
           )}

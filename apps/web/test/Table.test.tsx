@@ -114,3 +114,33 @@ describe('Table, skip link', () => {
     expect(hand.getByRole('button', { name: 'King of hearts' })).toHaveFocus()
   })
 })
+
+describe('Table, while the host is away', () => {
+  function seated(connected: string[]) {
+    const view = makeView({ hand: [], phase: 'draw' })
+    const state = {
+      ...initialGameState,
+      playerId: view.you!.id,
+      hostId: 'bob',
+      connected,
+      view,
+      connection: 'open' as const,
+    }
+    render(
+      <MemoryRouter>
+        <Table code="HT7KM4" view={view} state={state} send={vi.fn(() => true)} />
+      </MemoryRouter>,
+    )
+  }
+
+  it('lets another player open the host tools to stand in', () => {
+    seated(['you'])
+    expect(screen.getByRole('button', { name: 'Host is away' })).toBeInTheDocument()
+  })
+
+  it('offers nothing while the host is here', () => {
+    seated(['you', 'bob'])
+    expect(screen.queryByRole('button', { name: 'Host is away' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Host' })).toBeNull()
+  })
+})

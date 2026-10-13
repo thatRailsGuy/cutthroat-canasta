@@ -107,7 +107,9 @@ export function TableTalk({
       <div role="status">
         {notices.map((n) => (
           <p key={n.id} className={styles.notice}>
-            The host made a rejoin link for {nameOf(n.playerId)}'s seat.
+            {n.newHost
+              ? `${nameOf(n.newHost)} made a rejoin link for ${nameOf(n.playerId)}'s seat and is the host now.`
+              : `The host made a rejoin link for ${nameOf(n.playerId)}'s seat.`}
           </p>
         ))}
       </div>

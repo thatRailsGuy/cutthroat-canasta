@@ -22,6 +22,8 @@ export interface Toast {
 export interface SeatNotice {
   id: number
   playerId: string
+  /** Who made the link while the host was away, and became host. */
+  newHost?: string
 }
 
 export type KickedPlayer = Extract<ServerMessage, { type: 'state' }>['kicked'][number]
@@ -197,7 +199,8 @@ function onMessage(state: GameState, message: ServerMessage, joinFailed: boolean
         rejoinTokens: { ...state.rejoinTokens, [message.playerId]: message.token },
       }
     case 'seatReissued': {
-      const notice = { id: state.nextId, playerId: message.playerId }
+      const notice: SeatNotice = { id: state.nextId, playerId: message.playerId }
+      if (message.newHost) notice.newHost = message.newHost
       return {
         ...state,
         notices: [notice, ...state.notices].slice(0, MAX_NOTICES),

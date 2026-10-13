@@ -150,6 +150,15 @@ describe('gameReducer', () => {
     expect(state.notices).toEqual([{ id: 1, playerId: 'bob' }])
   })
 
+  it('keeps who stood in for the host on a seat notice', () => {
+    const state = receive(initialGameState, {
+      type: 'seatReissued',
+      playerId: 'ann',
+      newHost: 'bob',
+    })
+    expect(state.notices).toEqual([{ id: 1, playerId: 'ann', newHost: 'bob' }])
+  })
+
   it('records removal and drops the seat', () => {
     const joined = receive(initialGameState, {
       type: 'joined',

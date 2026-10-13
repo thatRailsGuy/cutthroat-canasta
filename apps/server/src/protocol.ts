@@ -142,7 +142,8 @@ export type ServerMessage =
   | { type: 'error'; code: ServerErrorCode; message: string }
   | { type: 'removed'; reason: RemovedReason }
   | { type: 'reissued'; playerId: string; token: string }
-  | { type: 'seatReissued'; playerId: string }
+  /** `newHost`: the player who made the link while the host was away, and is host now. */
+  | { type: 'seatReissued'; playerId: string; newHost?: string }
   /** A player quit a started game. The name is sent too, since they are no longer seated. */
   | { type: 'playerQuit'; playerId: string; name: string }
   | { type: 'chat'; line: ChatLine }

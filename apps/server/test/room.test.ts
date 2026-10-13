@@ -497,11 +497,26 @@ describe('reissue', () => {
     })
   })
 
-  it('is host only', () => {
-    const { state, ids } = started()
+  it('refuses another player while the host is here', () => {
+    const { state, ids } = roomWith(['Ann', 'Bob', 'Cat'])
+    const game = handleMessage(state, 'p1', { type: 'start' }, ids, []).state
     expect(
-      errorOf(handleMessage(state, 'p2', { type: 'reissue', playerId: 'p1' }, ids, ['p2'])),
+      errorOf(handleMessage(game, 'p2', { type: 'reissue', playerId: 'p3' }, ids, ['p1', 'p2'])),
     ).toMatchObject({ code: 'NOT_HOST' })
+  })
+
+  it('lets anyone make a link while the host is away, and makes them host', () => {
+    const { state, ids } = started()
+    // Ann, the host, lost their seat's token, so Bob makes them a new link.
+    const outcome = handleMessage(state, 'p2', { type: 'reissue', playerId: 'p1' }, ids, ['p2'])
+    expect(outcome).toMatchObject({
+      changed: true,
+      broadcast: true,
+      reply: [{ type: 'reissued', playerId: 'p1', token: 't3' }],
+      announce: { type: 'seatReissued', playerId: 'p1', newHost: 'p2' },
+    })
+    expect(outcome.state.hostId).toBe('p2')
+    expect(outcome.state.tokens).toEqual({ t2: 'p2', t3: 'p1' })
   })
 
   it('rejects someone not at the table', () => {
