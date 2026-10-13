@@ -27,6 +27,15 @@ export interface GameControls {
 }
 
 /**
+ * A random id for one join. `crypto.randomUUID` exists only in secure contexts, so it is missing
+ * over plain http on a LAN, where the join would throw; `getRandomValues` works everywhere.
+ */
+export function newJoinId(): string {
+  const bytes = crypto.getRandomValues(new Uint8Array(16))
+  return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('')
+}
+
+/**
  * Connects to one game. On every open it joins with the saved token, or with a name the player
  * gave, so a reconnect gets the same seat back.
  */
@@ -49,7 +58,7 @@ export function useGame(code: string, { linkToken, autoJoinName }: GameOptions):
       if (!token && pendingNameRef.current === null) return
       const knownName = pendingNameRef.current ?? (loadName() || null)
       const name = knownName ?? 'Player'
-      const joinId = (joinIdRef.current ??= crypto.randomUUID())
+      const joinId = (joinIdRef.current ??= newJoinId())
       // With a name the player gave, a stale token in the lobby costs no click: the server
       // seats them by name instead.
       const message: ClientMessage = !token
