@@ -74,6 +74,8 @@ export const clientMessageSchema = z.discriminatedUnion('type', [
      * join whose answer was lost gets the seat it made, not a second one.
      */
     joinId: z.string().min(1).max(64).optional(),
+    /** In the lobby, take a new seat with `name` if `token` is no longer valid. */
+    fallbackToName: z.literal(true).optional(),
   }),
   z.object({ type: z.literal('start') }),
   z.object({ type: z.literal('nextRound') }),

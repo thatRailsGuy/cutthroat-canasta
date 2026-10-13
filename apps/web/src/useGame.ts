@@ -46,12 +46,17 @@ export function useGame(code: string, { linkToken, autoJoinName }: GameOptions):
 
     const sendJoin = () => {
       const token = loadToken(code)
-      const name = pendingNameRef.current ?? (loadName() || 'Player')
       if (!token && pendingNameRef.current === null) return
+      const knownName = pendingNameRef.current ?? (loadName() || null)
+      const name = knownName ?? 'Player'
       const joinId = (joinIdRef.current ??= crypto.randomUUID())
-      const message: ClientMessage = token
-        ? { type: 'join', name, token, joinId }
-        : { type: 'join', name, joinId }
+      // With a name the player gave, a stale token in the lobby costs no click: the server
+      // seats them by name instead.
+      const message: ClientMessage = !token
+        ? { type: 'join', name, joinId }
+        : knownName === null
+          ? { type: 'join', name, token, joinId }
+          : { type: 'join', name, token, joinId, fallbackToName: true }
       if (!connection.send(message)) return
       joiningRef.current = { withToken: token !== null }
       dispatch({ type: 'joining' })

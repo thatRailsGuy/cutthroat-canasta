@@ -147,7 +147,7 @@ export function handleMessage(
 function join(
   state: RoomState,
   senderId: string | null,
-  { name, token, joinId }: Extract<RoomMessage, { type: 'join' }>,
+  { name, token, joinId, fallbackToName }: Extract<RoomMessage, { type: 'join' }>,
   ids: RoomIds,
   address: string | null,
 ): Outcome {
@@ -169,15 +169,20 @@ function join(
   if (token !== undefined) {
     // A kicked, left or reissued seat's token. Taking a fresh seat instead would leave a ghost
     // seat in the lobby, so the client drops the token. In the lobby the player can join again
-    // by name; once the game has started only a new rejoin link from the host helps.
+    // by name, and the client asks for that up front when it knows their name; once the game
+    // has started only a new rejoin link from the host helps.
     if (!Object.hasOwn(state.tokens, token)) {
-      return protocolError(
+      const error = protocolError(
         state,
         'UNKNOWN_TOKEN',
         state.game.status === 'lobby'
           ? 'That seat link is no longer valid. Join again with your name.'
           : 'That seat link is no longer valid. Ask the host for a new rejoin link.',
       )
+      if (!fallbackToName || state.game.status !== 'lobby') return error
+      // A name that is taken is most likely their own seat, reissued: the old answer fits.
+      const byName = newSeat(state, name, joinId, ids, address)
+      return byName.bindPlayerId ? byName : error
     }
     // The client has the token now, so its join id is no longer needed.
     const playerId = state.tokens[token]

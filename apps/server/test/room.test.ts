@@ -136,6 +136,46 @@ describe('join', () => {
     },
   )
 
+  it('takes a new seat by name in the lobby when asked and the token is gone', () => {
+    const { state, ids } = roomWith(['Ann'])
+    const outcome = handleMessage(
+      state,
+      null,
+      { type: 'join', name: 'Bob', token: 'nope', fallbackToName: true },
+      ids,
+      [],
+    )
+    expect(outcome.reply).toEqual([{ type: 'joined', code: 'ABCDEF', playerId: 'p2', token: 't2' }])
+    expect(outcome.state.game.players.map((p) => p.name)).toEqual(['Ann', 'Bob'])
+  })
+
+  it('keeps the unknown-token answer when the name fallback fails', () => {
+    const { state, ids } = roomWith(['Ann'])
+    // Ann's seat was reissued, so the old token is gone, but the seat and name are still there.
+    const outcome = handleMessage(
+      state,
+      null,
+      { type: 'join', name: 'Ann', token: 'nope', fallbackToName: true },
+      ids,
+      [],
+    )
+    expect(errorOf(outcome)).toMatchObject({ type: 'error', code: 'UNKNOWN_TOKEN' })
+    expect(outcome.state).toBe(state)
+  })
+
+  it('never falls back to a name once the game has started', () => {
+    const { state, ids } = started()
+    const outcome = handleMessage(
+      state,
+      null,
+      { type: 'join', name: 'Cat', token: 'nope', fallbackToName: true },
+      ids,
+      [],
+    )
+    expect(errorOf(outcome)).toMatchObject({ type: 'error', code: 'UNKNOWN_TOKEN' })
+    expect(outcome.state.game.waiting ?? []).toEqual([])
+  })
+
   it('gives a retried join the seat the first try took', () => {
     const { state, ids } = roomWith(['Ann'])
     const first = handleMessage(state, null, { type: 'join', name: 'Bob', joinId: 'j1' }, ids, [])
@@ -149,6 +189,21 @@ describe('join', () => {
     )
     expect(retry.reply).toEqual([{ type: 'joined', code: 'ABCDEF', playerId: 'p2', token: 't2' }])
     expect(retry.bindPlayerId).toBe('p2')
+    expect(retry.state.game.players).toHaveLength(2)
+  })
+
+  it('also finds the seat when the retry carries the stale token that started it', () => {
+    const { state, ids } = roomWith(['Ann'])
+    const message = {
+      type: 'join',
+      name: 'Bob',
+      token: 'nope',
+      fallbackToName: true,
+      joinId: 'j1',
+    } as const
+    const first = handleMessage(state, null, message, ids, [])
+    const retry = handleMessage(first.state, null, message, ids, [])
+    expect(retry).toMatchObject({ bindPlayerId: 'p2', reply: [{ type: 'joined', token: 't2' }] })
     expect(retry.state.game.players).toHaveLength(2)
   })
 
