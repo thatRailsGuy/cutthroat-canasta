@@ -69,6 +69,11 @@ export const clientMessageSchema = z.discriminatedUnion('type', [
     type: z.literal('join'),
     name: joinName,
     token: z.string().min(1).max(64).optional(),
+    /**
+     * Made by the client for each join and resent with every retry until `joined` arrives, so a
+     * join whose answer was lost gets the seat it made, not a second one.
+     */
+    joinId: z.string().min(1).max(64).optional(),
   }),
   z.object({ type: z.literal('start') }),
   z.object({ type: z.literal('nextRound') }),

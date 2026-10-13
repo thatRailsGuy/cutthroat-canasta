@@ -36,6 +36,8 @@ export function useGame(code: string, { linkToken, autoJoinName }: GameOptions):
   const pendingNameRef = useRef<string | null>(null)
   /** Set while a join is in flight; `withToken` says whether it used a saved token. */
   const joiningRef = useRef<{ withToken: boolean } | null>(null)
+  /** Sent with each try of a join until it is answered, so a retry can't take a second seat. */
+  const joinIdRef = useRef<string | null>(null)
   const sendJoinRef = useRef<() => void>(() => {})
 
   useEffect(() => {
@@ -46,7 +48,10 @@ export function useGame(code: string, { linkToken, autoJoinName }: GameOptions):
       const token = loadToken(code)
       const name = pendingNameRef.current ?? (loadName() || 'Player')
       if (!token && pendingNameRef.current === null) return
-      const message: ClientMessage = token ? { type: 'join', name, token } : { type: 'join', name }
+      const joinId = (joinIdRef.current ??= crypto.randomUUID())
+      const message: ClientMessage = token
+        ? { type: 'join', name, token, joinId }
+        : { type: 'join', name, joinId }
       if (!connection.send(message)) return
       joiningRef.current = { withToken: token !== null }
       dispatch({ type: 'joining' })
@@ -62,6 +67,7 @@ export function useGame(code: string, { linkToken, autoJoinName }: GameOptions):
         if (message.type === 'joined' || joinFailed) {
           joiningRef.current = null
           pendingNameRef.current = null
+          joinIdRef.current = null
         }
         if (message.type === 'joined') saveToken(code, message.token, message.playerId)
         // A saved token that no longer works (the seat was reissued) is useless: forget it.

@@ -29,6 +29,11 @@ export interface RoomState {
   addresses?: Record<string, string>
   /** Players the host kicked. Their address can't take a new seat until the host lets them in. */
   kicked?: Kick[]
+  /**
+   * joinId → playerId, for seats taken by name whose client hasn't come back with the token
+   * yet. Missing in rooms made before join ids.
+   */
+  joins?: Record<string, string>
 }
 
 export interface Kick {
@@ -104,9 +109,7 @@ export function handleMessage(
   connected: readonly string[],
   address: string | null = null,
 ): Outcome {
-  if (message.type === 'join') {
-    return join(state, senderId, message.name, message.token, ids, address)
-  }
+  if (message.type === 'join') return join(state, senderId, message, ids, address)
   if (!senderId) return protocolError(state, 'NOT_JOINED', 'Join the game first.')
 
   switch (message.type) {
@@ -144,12 +147,24 @@ export function handleMessage(
 function join(
   state: RoomState,
   senderId: string | null,
-  name: string,
-  token: string | undefined,
+  { name, token, joinId }: Extract<RoomMessage, { type: 'join' }>,
   ids: RoomIds,
   address: string | null,
 ): Outcome {
   if (senderId) return protocolError(state, 'ALREADY_JOINED', "You've already joined this game.")
+
+  // A retry of a join that took a seat, but whose `joined` never arrived. It gets that seat.
+  const retried = joinId !== undefined ? seatOfJoin(state, joinId) : null
+  if (retried) {
+    const next = withAddress(state, retried.playerId, address)
+    return {
+      state: next,
+      reply: [joined(state, retried.playerId, retried.token)],
+      bindPlayerId: retried.playerId,
+      changed: next !== state,
+      broadcast: true,
+    }
+  }
 
   if (token !== undefined) {
     // A kicked, left or reissued seat's token. Taking a fresh seat instead would leave a ghost
@@ -164,8 +179,9 @@ function join(
           : 'That seat link is no longer valid. Ask the host for a new rejoin link.',
       )
     }
+    // The client has the token now, so its join id is no longer needed.
     const playerId = state.tokens[token]
-    const next = withAddress(state, playerId, address)
+    const next = withAddress(withoutJoins(state, playerId), playerId, address)
     return {
       state: next,
       reply: [joined(state, playerId, token)],
@@ -175,6 +191,16 @@ function join(
     }
   }
 
+  return newSeat(state, name, joinId, ids, address)
+}
+
+function newSeat(
+  state: RoomState,
+  name: string,
+  joinId: string | undefined,
+  ids: RoomIds,
+  address: string | null,
+): Outcome {
   // Only a new seat is refused, so someone the host still wants, who shares the kicked
   // player's network, keeps their seat.
   if (address !== null && blockedAddresses(state).includes(address)) {
@@ -194,6 +220,7 @@ function join(
       game: result.game,
       hostId: state.hostId ?? playerId,
       tokens: { ...state.tokens, [newToken]: playerId },
+      ...(joinId !== undefined && { joins: { ...state.joins, [joinId]: playerId } }),
     },
     playerId,
     address,
@@ -205,6 +232,14 @@ function join(
     changed: true,
     broadcast: true,
   }
+}
+
+/** The seat a join id took, and its token, if the seat still has one. */
+function seatOfJoin(state: RoomState, joinId: string): { playerId: string; token: string } | null {
+  if (!state.joins || !Object.hasOwn(state.joins, joinId)) return null
+  const playerId = state.joins[joinId]
+  const token = Object.keys(state.tokens).find((t) => state.tokens[t] === playerId)
+  return token === undefined ? null : { playerId, token }
 }
 
 /**
@@ -220,6 +255,7 @@ function removeSeat(state: RoomState, playerId: string, reason: RemovedReason): 
     game: result.game,
     hostId: state.hostId === playerId ? (result.game.players[0]?.id ?? null) : state.hostId,
     tokens: tokensWithout(state.tokens, playerId),
+    joins: joinsWithout(state.joins, playerId),
     addresses: addressesWithout(state.addresses, playerId),
   }
   if (reason === 'kicked') {
@@ -256,6 +292,7 @@ function quit(state: RoomState, playerId: string): Outcome {
     game: result.game,
     hostId: state.hostId === playerId ? (players[seat % players.length]?.id ?? null) : state.hostId,
     tokens: tokensWithout(state.tokens, playerId),
+    joins: joinsWithout(state.joins, playerId),
     addresses: addressesWithout(state.addresses, playerId),
   }
   const { players: before, waiting = [] } = state.game
@@ -283,6 +320,7 @@ function leaveFinished(state: RoomState, playerId: string): Outcome {
     game: result.game,
     hostId: state.hostId === playerId ? nextHost(result.game, playerId) : state.hostId,
     tokens: tokensWithout(state.tokens, playerId),
+    joins: joinsWithout(state.joins, playerId),
     addresses: addressesWithout(state.addresses, playerId),
   }
   return {
@@ -323,8 +361,9 @@ function reissue(
     )
   }
   const token = ids.newToken()
+  // A join id left from the seat's first join must not lead to the new token.
   const next: RoomState = {
-    ...state,
+    ...withoutJoins(state, playerId),
     tokens: { ...tokensWithout(state.tokens, playerId), [token]: playerId },
   }
   return {
@@ -396,6 +435,20 @@ function isSeated(state: RoomState, playerId: string): boolean {
 
 function tokensWithout(tokens: Record<string, string>, playerId: string): Record<string, string> {
   return Object.fromEntries(Object.entries(tokens).filter(([, id]) => id !== playerId))
+}
+
+function joinsWithout(
+  joins: Record<string, string> | undefined,
+  playerId: string,
+): Record<string, string> | undefined {
+  if (!joins) return undefined
+  return Object.fromEntries(Object.entries(joins).filter(([, id]) => id !== playerId))
+}
+
+/** Drops a player's join ids. Returns `state` itself when they had none. */
+function withoutJoins(state: RoomState, playerId: string): RoomState {
+  if (!Object.values(state.joins ?? {}).includes(playerId)) return state
+  return { ...state, joins: joinsWithout(state.joins, playerId) }
 }
 
 /** Records where a player joined from. Returns `state` itself when nothing changed. */

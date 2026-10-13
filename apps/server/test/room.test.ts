@@ -136,6 +136,68 @@ describe('join', () => {
     },
   )
 
+  it('gives a retried join the seat the first try took', () => {
+    const { state, ids } = roomWith(['Ann'])
+    const first = handleMessage(state, null, { type: 'join', name: 'Bob', joinId: 'j1' }, ids, [])
+    // The socket dropped before `joined` arrived; the client tries again on a new one.
+    const retry = handleMessage(
+      first.state,
+      null,
+      { type: 'join', name: 'Bob', joinId: 'j1' },
+      ids,
+      [],
+    )
+    expect(retry.reply).toEqual([{ type: 'joined', code: 'ABCDEF', playerId: 'p2', token: 't2' }])
+    expect(retry.bindPlayerId).toBe('p2')
+    expect(retry.state.game.players).toHaveLength(2)
+  })
+
+  it('forgets a join id once the client comes back with its token', () => {
+    const { state, ids } = roomWith(['Ann'])
+    const first = handleMessage(state, null, { type: 'join', name: 'Bob', joinId: 'j1' }, ids, [])
+    expect(first.state.joins).toEqual({ j1: 'p2' })
+    const back = handleMessage(
+      first.state,
+      null,
+      { type: 'join', name: 'Bob', token: 't2' },
+      ids,
+      [],
+    )
+    expect(back.changed).toBe(true)
+    expect(back.state.joins).toEqual({})
+  })
+
+  it("doesn't let an old join id lead to a reissued seat's new token", () => {
+    const { state, ids } = roomWith(['Ann'])
+    const bob = handleMessage(state, null, { type: 'join', name: 'Bob', joinId: 'j1' }, ids, [])
+    const reissued = handleMessage(bob.state, 'p1', { type: 'reissue', playerId: 'p2' }, ids, [
+      'p1',
+    ])
+    const retry = handleMessage(
+      reissued.state,
+      null,
+      { type: 'join', name: 'Bob', joinId: 'j1' },
+      ids,
+      [],
+    )
+    expect(errorOf(retry)).toMatchObject({ type: 'error', code: 'NAME_TAKEN' })
+  })
+
+  it('takes a new seat for a join id whose seat is gone', () => {
+    const { state, ids } = roomWith(['Ann'])
+    const bob = handleMessage(state, null, { type: 'join', name: 'Bob', joinId: 'j1' }, ids, [])
+    const left = handleMessage(bob.state, 'p2', { type: 'leave' }, ids, [])
+    expect(left.state.joins).toEqual({})
+    const again = handleMessage(
+      left.state,
+      null,
+      { type: 'join', name: 'Bob', joinId: 'j1' },
+      ids,
+      [],
+    )
+    expect(again.bindPlayerId).toBe('p3')
+  })
+
   it('lets a new player join a started game to wait for the next hand', () => {
     const { state, ids } = started()
     const outcome = handleMessage(state, null, { type: 'join', name: 'Cat' }, ids, [])
