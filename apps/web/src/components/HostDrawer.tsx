@@ -249,13 +249,20 @@ function CopyField({ value, label }: { value: string; label: string }) {
   const copy = () => {
     const fallback = () => {
       const input = inputRef.current
-      input?.focus()
-      input?.select()
       let copied = false
-      try {
-        copied = document.execCommand('copy')
-      } catch {
-        // Some browsers throw instead of returning false.
+      if (input) {
+        input.focus()
+        // iOS Safari doesn't select a read-only box's text with select(), and then the copy
+        // command copies nothing while still saying it worked. setSelectionRange works there.
+        input.readOnly = false
+        input.setSelectionRange(0, input.value.length)
+        input.readOnly = true
+        const selected = input.selectionStart === 0 && input.selectionEnd === input.value.length
+        try {
+          copied = selected && document.execCommand('copy')
+        } catch {
+          // Some browsers throw instead of returning false.
+        }
       }
       setCopyResult(copied ? 'copied' : 'manual')
     }

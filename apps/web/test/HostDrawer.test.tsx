@@ -73,6 +73,37 @@ describe('HostDrawer', () => {
       expect(drawer.getByText('Copied')).toBeInTheDocument()
     })
 
+    it('selects the whole link before copying, and leaves the box read-only', () => {
+      let selection: [number | null, number | null] = [null, null]
+      const exec = vi.fn(() => {
+        const input = document.activeElement as HTMLInputElement
+        selection = [input.selectionStart, input.selectionEnd]
+        return true
+      })
+      withoutClipboard(true)
+      Object.defineProperty(document, 'execCommand', { value: exec, configurable: true })
+      const { drawer, button } = setup()
+      fireEvent.click(button('Copy'))
+      const input = drawer.getByRole('textbox', { name: 'Invite link', hidden: true })
+      expect(selection).toEqual([0, (input as HTMLInputElement).value.length])
+      expect(input).toHaveAttribute('readonly')
+    })
+
+    it("doesn't say Copied when the link couldn't be selected", () => {
+      const exec = withoutClipboard(true)
+      // Neither way of selecting takes, as on a browser that won't select the box.
+      const range = vi
+        .spyOn(HTMLInputElement.prototype, 'setSelectionRange')
+        .mockImplementation(() => {})
+      const select = vi.spyOn(HTMLInputElement.prototype, 'select').mockImplementation(() => {})
+      const { drawer, button } = setup()
+      fireEvent.click(button('Copy'))
+      range.mockRestore()
+      select.mockRestore()
+      expect(exec).not.toHaveBeenCalled()
+      expect(drawer.getByText('Select and copy')).toBeInTheDocument()
+    })
+
     it('leaves the link selected to copy by hand when the copy command fails', () => {
       withoutClipboard(false)
       const { drawer, button } = setup()
