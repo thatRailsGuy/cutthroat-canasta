@@ -39,7 +39,10 @@ describe('HostDrawer', () => {
     expect(drawer.getByRole('textbox', { name: 'Invite link', hidden: true })).toHaveValue(
       `${window.location.origin}/g/ABCD`,
     )
-    expect(drawer.getByRole('img', { name: /QR code/, hidden: true })).toBeInTheDocument()
+    expect(
+      drawer.getByRole('img', { name: 'QR code for the invite link', hidden: true }),
+    ).toBeInTheDocument()
+    expect(drawer.getByText('For a new player: takes a new seat')).toBeInTheDocument()
     expect(drawer.getByText('A B C D')).toBeInTheDocument()
     expect(drawer.getByText('Dealt in next hand: Zed')).toBeInTheDocument()
 
@@ -131,9 +134,97 @@ describe('HostDrawer', () => {
     expect(button('Seat stuck? Make a rejoin link for Cy')).toBeInTheDocument()
 
     rerender(<HostDrawer {...props} links={{ bob: 'https://example.test/g/ABCD#token=t' }} />)
-    expect(drawer.getByRole('textbox', { name: 'Rejoin link for Bob', hidden: true })).toHaveValue(
+    expect(drawer.getByRole('textbox', { name: "Bob's rejoin link", hidden: true })).toHaveValue(
       'https://example.test/g/ABCD#token=t',
     )
+  })
+
+  describe('rejoin tickets', () => {
+    const bobLink = 'https://example.test/g/ABCD#token=b'
+    const cyLink = 'https://example.test/g/ABCD#token=c'
+    const qrCodes = (drawer: ReturnType<typeof setup>['drawer']) =>
+      drawer
+        .queryAllByRole('img', { name: /^QR code/, hidden: true })
+        .map((qr) => qr.getAttribute('aria-label'))
+
+    /** Makes Bob's link, as the host would: the button, then the link from the server. */
+    async function withBobsTicket() {
+      const user = userEvent.setup()
+      const view = setup()
+      await user.click(view.button('Make a rejoin link for Bob'))
+      view.rerender(<HostDrawer {...view.props} links={{ bob: bobLink }} />)
+      return { user, ...view }
+    }
+
+    it('opens a ticket with a QR code as soon as the link is made', async () => {
+      const { drawer } = await withBobsTicket()
+      const ticket = drawer.getByRole('group', { name: 'Rejoin link for Bob', hidden: true })
+      const inTicket = within(ticket)
+      expect(inTicket.getByText("Opens Bob's seat and hand")).toBeInTheDocument()
+      expect(
+        inTicket.getByRole('img', { name: "QR code for Bob's rejoin link", hidden: true }),
+      ).toBeInTheDocument()
+      expect(inTicket.getByText("Bob's seat")).toBeInTheDocument()
+      expect(ticket).toHaveTextContent(
+        "Private. Whoever scans this plays as Bob and sees Bob's hand. Show it only to Bob.",
+      )
+      // The copy box's label is on the page, not only in its name.
+      expect(inTicket.getByText("Bob's rejoin link").tagName).toBe('LABEL')
+      expect(
+        inTicket.getByRole('textbox', { name: "Bob's rejoin link", hidden: true }),
+      ).toHaveValue(bobLink)
+      // The button that was pressed is gone, so the ticket takes focus.
+      expect(ticket).toHaveFocus()
+    })
+
+    it('folds the invite away while a ticket is open, so one QR code shows at a time', async () => {
+      const { user, drawer, button } = await withBobsTicket()
+      expect(qrCodes(drawer)).toEqual(["QR code for Bob's rejoin link"])
+      expect(drawer.queryByRole('textbox', { name: 'Invite link', hidden: true })).toBeNull()
+      expect(
+        drawer.getByText(/The invite link opens the join form and takes a new seat\./),
+      ).toBeInTheDocument()
+
+      // Hiding the ticket unfolds the invite, and Show QR takes focus.
+      await user.click(button('Hide QR'))
+      expect(qrCodes(drawer)).toEqual(['QR code for the invite link'])
+      expect(drawer.getByText('For a new player: takes a new seat')).toBeInTheDocument()
+      expect(button('Show QR for Bob')).toHaveFocus()
+      expect(drawer.getByRole('textbox', { name: "Bob's rejoin link", hidden: true })).toHaveValue(
+        bobLink,
+      )
+
+      await user.click(button('Show QR for Bob'))
+      expect(qrCodes(drawer)).toEqual(["QR code for Bob's rejoin link"])
+
+      // Show invite closes the ticket.
+      await user.click(button('Show invite'))
+      expect(qrCodes(drawer)).toEqual(['QR code for the invite link'])
+      expect(drawer.getByRole('heading', { name: 'Invite a player', hidden: true })).toHaveFocus()
+      expect(button('Show QR for Bob')).toBeInTheDocument()
+    })
+
+    it('opens one ticket at a time', async () => {
+      const { user, drawer, button, props, rerender } = await withBobsTicket()
+      await user.click(button('Seat stuck? Make a rejoin link for Cy'))
+      // Bob's ticket stays open until Cy's link comes.
+      expect(qrCodes(drawer)).toEqual(["QR code for Bob's rejoin link"])
+      rerender(<HostDrawer {...props} links={{ bob: bobLink, cy: cyLink }} />)
+      expect(qrCodes(drawer)).toEqual(["QR code for Cy's rejoin link"])
+      expect(drawer.getByRole('group', { name: 'Rejoin link for Cy', hidden: true })).toHaveFocus()
+
+      await user.click(button('Show QR for Bob'))
+      expect(qrCodes(drawer)).toEqual(["QR code for Bob's rejoin link"])
+      expect(button('Show QR for Cy')).toBeInTheDocument()
+    })
+
+    it("doesn't open the ticket again with the drawer", async () => {
+      const { drawer, button, props, rerender } = await withBobsTicket()
+      fireEvent.click(button('Close'))
+      rerender(<HostDrawer {...props} links={{ bob: bobLink }} open={false} />)
+      rerender(<HostDrawer {...props} links={{ bob: bobLink }} />)
+      expect(qrCodes(drawer)).toEqual(['QR code for the invite link'])
+    })
   })
 
   it('has no new hand between rounds', () => {
