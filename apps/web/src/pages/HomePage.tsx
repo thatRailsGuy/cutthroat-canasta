@@ -95,6 +95,9 @@ export function HomePage() {
           </>
         )}
       </p>
+      <p className={styles.knowCanasta}>
+        Know Canasta already? <Link to="/rules#house-rules">Learn our house rules</Link>
+      </p>
       {displayOpen && (
         <section id="display-options" className={styles.display} aria-labelledby="display-h">
           <h2 id="display-h">Display</h2>
