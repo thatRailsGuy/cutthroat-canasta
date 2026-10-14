@@ -95,6 +95,23 @@ describe('TableTalk', () => {
     )
   })
 
+  it('says who started the game for an away host', () => {
+    render(
+      <TableTalk
+        events={[]}
+        deal={{ game: 1, round: 1, redeals: 0 }}
+        chat={[]}
+        notices={[{ id: 1, startedBy: 'bob' }]}
+        players={players}
+        playerId="you"
+        offline={false}
+      />,
+    )
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Bob started the game and is the host now.',
+    )
+  })
+
   it('lists events and chat oldest first, with your own lines as You', () => {
     render(<Talk />)
     const items = within(screen.getByRole('list', { name: 'Table events and chat' })).getAllByRole(

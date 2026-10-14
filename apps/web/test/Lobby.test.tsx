@@ -95,7 +95,8 @@ describe('Lobby', () => {
     const { send } = setup({ hostId: 'bob', connected: ['you'] })
     expect(
       screen.getByText(
-        "Bob is the host, but they're away. If you start the game, you become the host.",
+        "Bob is the host, but they're away. If you start the game, you become the host. " +
+          "Bob will be dealt in too. If Bob doesn't come back, someone can take over that seat.",
       ),
     ).toBeInTheDocument()
     expect(screen.queryByText('Waiting for the host to start.')).not.toBeInTheDocument()
@@ -108,6 +109,7 @@ describe('Lobby', () => {
     expect(
       screen.getByText('The host is away. If you start the game, you become the host.'),
     ).toBeInTheDocument()
+    expect(screen.queryByText(/dealt in/)).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Start game' })).toBeInTheDocument()
   })
 

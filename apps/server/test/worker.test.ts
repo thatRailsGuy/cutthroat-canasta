@@ -328,6 +328,19 @@ describe('seats', () => {
     expect((await join(fresh, 'Bob', token)).playerId).toBe(bobJoined.playerId)
   })
 
+  it('tells the table who started for an away host, before the first deal', async () => {
+    const { ann, bob, bobJoined } = await lobbyGame()
+    ann.close()
+    await nextState(bob)
+    bob.send({ type: 'start' })
+    // The notice comes first, so the client still has the lobby view when it lands.
+    expect(await bob.next()).toEqual({ type: 'standInStarted', playerId: bobJoined.playerId })
+    const state = await nextState(bob)
+    expect(state.view.status).toBe('playing')
+    expect(state.hostId).toBe(bobJoined.playerId)
+    await bob.expectQuiet()
+  })
+
   it('refuses to reissue a connected seat', async () => {
     const { ann, bobJoined } = await startedGame()
     ann.send({ type: 'reissue', playerId: bobJoined.playerId })

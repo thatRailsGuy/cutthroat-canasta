@@ -144,7 +144,7 @@ export function Lobby({
       {!isHost && hostAway && (
         <p>
           {hostName
-            ? `${hostName} is the host, but they're away. If you start the game, you become the host.`
+            ? `${hostName} is the host, but they're away. If you start the game, you become the host. ${hostName} will be dealt in too. If ${hostName} doesn't come back, someone can take over that seat.`
             : 'The host is away. If you start the game, you become the host.'}
         </p>
       )}

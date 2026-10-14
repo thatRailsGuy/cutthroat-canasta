@@ -130,6 +130,30 @@ describe('gameReducer', () => {
     expect(state.notices).toEqual([])
   })
 
+  it("keeps a stand-in's start notice through the first deal", () => {
+    const lobby = {
+      ...makeView({ hand: [], phase: 'draw' }),
+      round: null,
+      status: 'lobby' as const,
+    }
+    const state = {
+      type: 'state' as const,
+      hostId: 'bob',
+      connected: [],
+      public: false,
+      kicked: [],
+      away: {},
+    }
+    let game = receive(initialGameState, { ...state, view: lobby })
+    game = receive(game, { type: 'standInStarted', playerId: 'bob' })
+    expect(game.notices).toEqual([{ id: 1, startedBy: 'bob' }])
+    const dealt = makeView({ hand: [], phase: 'draw' })
+    game = receive(game, { ...state, view: dealt })
+    expect(game.notices).toEqual([{ id: 1, startedBy: 'bob' }])
+    game = receive(game, { ...state, view: lobby })
+    expect(game.notices).toEqual([])
+  })
+
   it('toasts when another player quits, but not for the one who quit', () => {
     const seated = receive(initialGameState, {
       type: 'joined',

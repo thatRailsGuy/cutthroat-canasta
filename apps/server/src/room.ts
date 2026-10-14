@@ -530,6 +530,10 @@ function start(state: RoomState, senderId: string, connected: readonly string[])
   return {
     state: { ...state, game: result.game, hostId: senderId },
     reply: [],
+    // Everyone's Table talk says who stood in, as it does for a stand-in's rejoin link.
+    ...(senderId !== state.hostId && {
+      announce: { type: 'standInStarted', playerId: senderId } as const,
+    }),
     changed: true,
     broadcast: true,
   }

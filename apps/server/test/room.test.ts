@@ -288,6 +288,13 @@ describe('host controls', () => {
     expect(outcome).toMatchObject({ changed: true, broadcast: true, reply: [] })
     expect(outcome.state.game.status).toBe('playing')
     expect(outcome.state.hostId).toBe('p2')
+    expect(outcome.announce).toEqual({ type: 'standInStarted', playerId: 'p2' })
+  })
+
+  it("announces nothing when the host starts, even if they're away", () => {
+    const { state, ids } = roomWith(['Ann', 'Bob'])
+    expect(handleMessage(state, 'p1', { type: 'start' }, ids, ['p1']).announce).toBeUndefined()
+    expect(handleMessage(state, 'p1', { type: 'start' }, ids, []).announce).toBeUndefined()
   })
 
   it("keeps the host when a stand-in's start fails", () => {
@@ -295,6 +302,7 @@ describe('host controls', () => {
     const outcome = handleMessage(state, 'p2', { type: 'start' }, ids, ['p2'])
     expect(outcome.changed).toBe(false)
     expect(outcome.state.hostId).toBe('p1')
+    expect(outcome.announce).toBeUndefined()
   })
 
   it('passes engine errors through, such as starting alone', () => {

@@ -155,6 +155,8 @@ export type ServerMessage =
   | { type: 'reissued'; playerId: string; token: string }
   /** `newHost`: the player who made the link while the host was away, and is host now. */
   | { type: 'seatReissued'; playerId: string; newHost?: string }
+  /** A player started the game while the host was away, and is host now. */
+  | { type: 'standInStarted'; playerId: string }
   /** A player quit a started game. The name is sent too, since they are no longer seated. */
   | { type: 'playerQuit'; playerId: string; name: string }
   | { type: 'chat'; line: ChatLine }
