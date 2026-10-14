@@ -127,7 +127,7 @@ export function handleMessage(
 
   switch (message.type) {
     case 'start':
-      return hostOnly(state, senderId, () => fromResult(state, startGame(state.game)))
+      return start(state, senderId, connected)
     case 'nextRound':
       // Any seated player can deal, so a missing host can't stall the table.
       return fromResult(state, startNextRound(state.game))
@@ -512,6 +512,27 @@ function hostOnly(state: RoomState, senderId: string, run: () => Outcome): Outco
   if (senderId !== state.hostId)
     return protocolError(state, 'NOT_HOST', 'Only the host can do that.')
   return run()
+}
+
+/**
+ * Starts the game from the lobby. The host presses it, or anyone while the host is away; then, as
+ * with play again and rejoin links, they become host, so a lobby whose host went away can still
+ * start. They become host only if the game starts. Kick and listing the table stay host-only:
+ * "away" has no grace period, so a host whose wifi blinks could otherwise be kicked from their
+ * own table.
+ */
+function start(state: RoomState, senderId: string, connected: readonly string[]): Outcome {
+  if (senderId !== state.hostId && !hostAway(state, connected)) {
+    return protocolError(state, 'NOT_HOST', 'Only the host can do that.')
+  }
+  const result = startGame(state.game)
+  if (!result.ok) return ruleErrorOutcome(state, result.error)
+  return {
+    state: { ...state, game: result.game, hostId: senderId },
+    reply: [],
+    changed: true,
+    broadcast: true,
+  }
 }
 
 function fromResult(state: RoomState, result: GameResult): Outcome {

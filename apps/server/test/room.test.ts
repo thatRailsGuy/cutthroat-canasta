@@ -272,14 +272,29 @@ describe('host controls', () => {
     expect(errorOf(handleMessage(state, null, { type: 'start' }, ids, []))).toMatchObject({
       code: 'NOT_JOINED',
     })
-    expect(errorOf(handleMessage(state, 'p2', { type: 'start' }, ids, []))).toMatchObject({
-      code: 'NOT_HOST',
-    })
+    expect(errorOf(handleMessage(state, 'p2', { type: 'start' }, ids, ['p1', 'p2']))).toMatchObject(
+      { code: 'NOT_HOST' },
+    )
     const outcome = handleMessage(state, 'p1', { type: 'start' }, ids, [])
     expect(outcome.changed).toBe(true)
     expect(outcome.broadcast).toBe(true)
     expect(outcome.reply).toEqual([])
     expect(outcome.state.game.status).toBe('playing')
+  })
+
+  it('lets anyone start while the host is away, and makes them host', () => {
+    const { state, ids } = roomWith(['Ann', 'Bob'])
+    const outcome = handleMessage(state, 'p2', { type: 'start' }, ids, ['p2'])
+    expect(outcome).toMatchObject({ changed: true, broadcast: true, reply: [] })
+    expect(outcome.state.game.status).toBe('playing')
+    expect(outcome.state.hostId).toBe('p2')
+  })
+
+  it("keeps the host when a stand-in's start fails", () => {
+    const { state, ids } = started()
+    const outcome = handleMessage(state, 'p2', { type: 'start' }, ids, ['p2'])
+    expect(outcome.changed).toBe(false)
+    expect(outcome.state.hostId).toBe('p1')
   })
 
   it('passes engine errors through, such as starting alone', () => {
@@ -445,8 +460,16 @@ describe('kick', () => {
   it('is host only', () => {
     const { state, ids } = roomWith(['Ann', 'Bob'])
     expect(
-      errorOf(handleMessage(state, 'p2', { type: 'kick', playerId: 'p1' }, ids, [])),
+      errorOf(handleMessage(state, 'p2', { type: 'kick', playerId: 'p1' }, ids, ['p1', 'p2'])),
     ).toMatchObject({ code: 'NOT_HOST' })
+  })
+
+  it('stays host only while the host is away', () => {
+    // Away has no grace period, so a stand-in kick could put out a host whose wifi blinked.
+    const { state, ids } = roomWith(['Ann', 'Bob'])
+    const outcome = handleMessage(state, 'p2', { type: 'kick', playerId: 'p1' }, ids, ['p2'])
+    expect(errorOf(outcome)).toMatchObject({ code: 'NOT_HOST' })
+    expect(outcome.state).toBe(state)
   })
 
   it('rejects someone not at the table', () => {
@@ -717,12 +740,19 @@ describe('public rooms', () => {
     const { state, ids } = roomWith(['Ann', 'Bob'])
     expect(stateMessage(state, 'p2', [])).toMatchObject({ public: false })
     expect(
-      errorOf(handleMessage(state, 'p2', { type: 'setPublic', public: true }, ids, [])),
+      errorOf(handleMessage(state, 'p2', { type: 'setPublic', public: true }, ids, ['p1', 'p2'])),
     ).toMatchObject({ code: 'NOT_HOST' })
     const outcome = handleMessage(state, 'p1', { type: 'setPublic', public: true }, ids, [])
     expect(outcome.changed).toBe(true)
     expect(outcome.broadcast).toBe(true)
     expect(stateMessage(outcome.state, 'p2', [])).toMatchObject({ public: true })
+  })
+
+  it('keeps listing the room host only while the host is away', () => {
+    const { state, ids } = roomWith(['Ann', 'Bob'])
+    const outcome = handleMessage(state, 'p2', { type: 'setPublic', public: true }, ids, ['p2'])
+    expect(errorOf(outcome)).toMatchObject({ code: 'NOT_HOST' })
+    expect(outcome.state).toBe(state)
   })
 
   it('reads a room saved before public rooms as private', () => {
@@ -862,8 +892,16 @@ describe('unkick', () => {
     const { state, ids } = kickedBob()
     const withCy = handleMessage(state, null, { type: 'join', name: 'Cy' }, ids, [], 'park').state
     expect(
-      errorOf(handleMessage(withCy, 'p3', { type: 'unkick', playerId: 'p2' }, ids, [])),
+      errorOf(handleMessage(withCy, 'p3', { type: 'unkick', playerId: 'p2' }, ids, ['p1', 'p3'])),
     ).toMatchObject({ code: 'NOT_HOST' })
+  })
+
+  it('stays host only while the host is away', () => {
+    const { state, ids } = kickedBob()
+    const withCy = handleMessage(state, null, { type: 'join', name: 'Cy' }, ids, [], 'park').state
+    const outcome = handleMessage(withCy, 'p3', { type: 'unkick', playerId: 'p2' }, ids, ['p3'])
+    expect(errorOf(outcome)).toMatchObject({ code: 'NOT_HOST' })
+    expect(outcome.state).toBe(withCy)
   })
 
   it('rejects someone who was never kicked', () => {
