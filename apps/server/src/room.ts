@@ -17,8 +17,10 @@ import {
   type Seed,
 } from '@canasta/engine'
 import {
+  EMPTY_SEAT_AFTER_MS,
   TAKE_OVER_AFTER_MS,
   type ClientMessage,
+  type EmptySeats,
   type ProtocolErrorCode,
   type RemovedReason,
   type ServerMessage,
@@ -102,6 +104,32 @@ export function stateMessage(
         ? (state.kicked ?? []).map(({ playerId, name }) => ({ playerId, name }))
         : [],
     away,
+  }
+}
+
+/**
+ * The join form's list of empty seats, for a socket from `address` that hasn't joined. `away`
+ * says how long each seated player without a connection has been away (ms). A blocked address
+ * gets an empty list, so a kicked player learns nothing more about the table.
+ */
+export function emptySeats(
+  state: RoomState,
+  connected: readonly string[],
+  away: Readonly<Record<string, number>>,
+  address: string | null,
+): EmptySeats {
+  const { status, players, waiting = [] } = state.game
+  const started = status === 'playing' || status === 'roundOver'
+  if (!started || (address !== null && blockedAddresses(state).includes(address))) {
+    return { started, host: null, away: [] }
+  }
+  const host = [...players, ...waiting].find((p) => p.id === state.hostId)
+  return {
+    started,
+    host: host && connected.includes(host.id) ? host.name : null,
+    away: players
+      .filter((p) => !connected.includes(p.id) && (away[p.id] ?? 0) >= EMPTY_SEAT_AFTER_MS)
+      .map((p) => ({ name: p.name, host: p.id === state.hostId })),
   }
 }
 

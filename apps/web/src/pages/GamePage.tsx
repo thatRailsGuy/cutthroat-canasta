@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useId, useMemo, useState, type FormEvent } from 'react'
+import type { EmptySeats } from '@canasta/server/protocol'
 import { Link, useLocation, useNavigate, useParams } from 'react-router'
 import { gameExists, normalizeCode } from '../api'
 import type { ConnectionStatus } from '../connection'
@@ -156,6 +157,8 @@ function Session({ code, linkToken, autoJoinName, joinsByItself }: SessionProps)
         code={code}
         error={state.joinError}
         seatTaken={state.joinErrorCode === 'SEAT_TAKEN'}
+        nameTaken={state.joinErrorCode === 'NAME_TAKEN'}
+        emptySeats={state.emptySeats}
         waiting={state.connection !== 'open'}
         onJoin={join}
       />
@@ -236,29 +239,41 @@ function ConnectionBanner({
   )
 }
 
-function JoinForm({
-  code,
-  error,
-  seatTaken,
-  waiting,
-  onJoin,
-}: {
+export interface JoinFormProps {
   code: string
   error: string | null
   /** Someone took over this player's seat while they were away: say so first. */
   seatTaken: boolean
+  /** The error says someone at the table already has the name. */
+  nameTaken: boolean
+  emptySeats: EmptySeats | null
   waiting: boolean
   onJoin: (name: string) => void
-}) {
+}
+
+export function JoinForm({
+  code,
+  error,
+  seatTaken,
+  nameTaken,
+  emptySeats,
+  waiting,
+  onJoin,
+}: JoinFormProps) {
   const [name, setName] = useState(loadName)
   const submit = (event: FormEvent) => {
     event.preventDefault()
     if (name.trim()) onJoin(name.trim())
   }
+  // Only mid-game: in the lobby a player who lost their link can join again by name.
+  const away = emptySeats?.started && !seatTaken ? emptySeats.away : []
+  const typed = name.trim().toLowerCase()
+  const yours = away.find((seat) => seat.name.toLowerCase() === typed)
   return (
     <main className={styles.home}>
       <h1>{seatTaken ? 'Your seat was taken' : `Join game ${code}`}</h1>
       {seatTaken && error && <p role="alert">{error}</p>}
+      {emptySeats && away.length > 0 && <EmptySeatList seats={emptySeats} />}
       <form className={styles.join} onSubmit={submit}>
         <label>
           Your name
@@ -268,11 +283,58 @@ function JoinForm({
           {seatTaken ? 'Join again' : 'Join'}
         </button>
       </form>
-      {error && !seatTaken && (
+      {/* The server refuses the name either way. This says why, and what to do instead. */}
+      {emptySeats && yours && (
+        <p className={styles.error} role="alert">
+          That's the name on {away.length === 1 ? 'the' : 'an'} empty seat. If you're {yours.name},{' '}
+          ask {linkMaker(emptySeats)} for your rejoin link. If not, choose another name.
+        </p>
+      )}
+      {error && !seatTaken && !(yours && nameTaken) && (
         <p className={styles.error} role="alert">
           {error}
         </p>
       )}
     </main>
+  )
+}
+
+/** Who can make a rejoin link: the host, or anyone playing while the host is away. */
+function linkMaker({ host }: EmptySeats): string {
+  return host ? `${host}, the host,` : 'someone at the table'
+}
+
+/**
+ * Seats whose players have been away a while, so one whose rejoin link went astray asks for it
+ * instead of sitting down as someone new.
+ */
+function EmptySeatList({ seats }: { seats: EmptySeats }) {
+  const id = useId()
+  const { away } = seats
+  const awayHost = seats.host === null ? away.find((seat) => seat.host) : undefined
+  return (
+    <section className={styles.emptySeats} aria-labelledby={id}>
+      <h2 id={id}>{away.length === 1 ? 'Empty seat' : `${away.length} empty seats`}</h2>
+      <ul>
+        {away.map((seat) => (
+          <li key={seat.name}>
+            <span className={styles.offline} aria-hidden="true" />
+            {seat.name}
+            {seat.host && <span className={styles.emptyHost}>host</span>}
+          </li>
+        ))}
+      </ul>
+      <p>
+        <strong>{away.length === 1 ? `Are you ${away[0].name}?` : 'Is one of them yours?'}</strong>{' '}
+        Ask {linkMaker(seats)} for your rejoin link.
+        {awayHost && ` While ${awayHost.name} is away, anyone playing can make one.`}
+        {away.length === 1 && ' It puts you back in your seat with your cards and score.'} Joining
+        here gives you a new seat instead.
+      </p>
+      <p>
+        <strong>New to the table?</strong> Join below. You'll watch this hand and be dealt in with
+        the next one.
+      </p>
+    </section>
   )
 }

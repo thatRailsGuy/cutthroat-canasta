@@ -27,6 +27,11 @@ export const STALE_CLOSE_CODE = 4000
  * a locked phone or a reload doesn't cost a seat.
  */
 export const TAKE_OVER_AFTER_MS = 120_000
+/**
+ * How long a seat must be away before the join form lists it as empty, so a reload doesn't
+ * flash it onto the list.
+ */
+export const EMPTY_SEAT_AFTER_MS = 10_000
 
 const cardId = z.number().int().nonnegative()
 const cardIds = z.array(cardId).max(60)
@@ -160,8 +165,24 @@ export type ServerMessage =
   | { type: 'chat'; line: ChatLine }
   /** The room's recent chat, sent once after `joined`, so a reconnect gets the backlog. */
   | { type: 'chatLog'; lines: ChatLine[] }
+  /** Only to sockets that haven't joined. */
+  | ({ type: 'seats' } & EmptySeats)
   /** The heartbeat reply. The runtime's auto-response sends it, never the room handler. */
   | { type: 'pong' }
+
+/**
+ * What the join form shows a socket that hasn't joined: the seats whose players are away, so
+ * one whose rejoin link went astray asks for it instead of joining as someone new. Sent when
+ * the socket connects and again whenever it changes. Names only: no ids, tokens or hands.
+ */
+export interface EmptySeats {
+  /** Whether a game is going. In the lobby and after the game, the list is always empty. */
+  started: boolean
+  /** The host's name while they are connected, or null. */
+  host: string | null
+  /** Seats away for at least EMPTY_SEAT_AFTER_MS, in seat order. */
+  away: { name: string; host: boolean }[]
+}
 
 /** A public lobby, as the home page lists it. */
 export interface OpenTable {

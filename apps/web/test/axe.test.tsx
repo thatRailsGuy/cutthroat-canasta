@@ -5,10 +5,12 @@ import { MemoryRouter } from 'react-router'
 import { describe, expect, it, vi } from 'vitest'
 import { DisplaySwitches } from '../src/components/DisplayOptions'
 import { initialGameState } from '../src/gameState'
+import { JoinForm } from '../src/pages/GamePage'
 import { HomePage } from '../src/pages/HomePage'
 import { Lobby } from '../src/pages/Lobby'
 import { RulesPage } from '../src/pages/RulesPage'
 import { Table } from '../src/pages/Table'
+import { saveName } from '../src/storage'
 import { card, makeView } from './fixtures'
 
 /**
@@ -74,6 +76,31 @@ describe('accessibility', () => {
     expect(
       await violations(<Table code="HT7KM4" view={view} state={state} send={() => true} />),
     ).toEqual([])
+  })
+
+  it('join form, with empty seats and a taken name', async () => {
+    saveName('Ann')
+    expect(
+      await violations(
+        <JoinForm
+          code="HT7KM4"
+          error="Someone at the table is already called Ann."
+          seatTaken={false}
+          nameTaken
+          emptySeats={{
+            started: true,
+            host: null,
+            away: [
+              { name: 'Ann', host: false },
+              { name: 'Bea', host: true },
+            ],
+          }}
+          waiting={false}
+          onJoin={() => {}}
+        />,
+      ),
+    ).toEqual([])
+    localStorage.clear()
   })
 
   it('display options', async () => {

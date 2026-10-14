@@ -5,14 +5,23 @@ import { allowSend, appendLine, stampLine } from './chat'
 import { randomSeed } from './codes'
 import { isStale, lastSeen } from './presence'
 import {
+  EMPTY_SEAT_AFTER_MS,
   HEARTBEAT_PING,
   HEARTBEAT_PONG,
   STALE_CLOSE_CODE,
   parseClientMessage,
   type ChatLine,
+  type EmptySeats,
   type ServerMessage,
 } from './protocol'
-import { createRoom, handleMessage, stateMessage, type RoomIds, type RoomState } from './room'
+import {
+  createRoom,
+  emptySeats,
+  handleMessage,
+  stateMessage,
+  type RoomIds,
+  type RoomState,
+} from './room'
 import { REFRESH_MS, tableListing } from './tables'
 
 interface Attachment {
@@ -53,6 +62,11 @@ export class GameRoom extends DurableObject<Env> {
    * survives hibernation: a seat can be taken over only after a while away.
    */
   private awaySince: Record<string, number> = {}
+  /**
+   * The empty seats last sent to sockets that haven't joined, to skip sending the same ones
+   * again. Only in memory: after hibernation the list is sent once more.
+   */
+  private seatsSent: string | null = null
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env)
@@ -91,6 +105,9 @@ export class GameRoom extends DurableObject<Env> {
     if ((await this.ctx.storage.getAlarm()) === null) {
       await this.ctx.storage.setAlarm(Date.now() + PRESENCE_CHECK_MS)
     }
+    // The join form's first list. If it changed since it was last sent, every socket that
+    // hasn't joined gets it, this one too.
+    if (!(await this.updateSeats())) send(server, this.seatsFor(address))
     return new Response(null, { status: 101, webSocket: client })
   }
 
@@ -140,6 +157,7 @@ export class GameRoom extends DurableObject<Env> {
     const awayChanged = await this.trackAway()
     // A dropped player's dot must go grey even when this message changed nothing.
     if (outcome.broadcast || droppedPlayer || awayChanged) this.broadcast()
+    await this.updateSeats()
     await this.report()
   }
 
@@ -172,12 +190,56 @@ export class GameRoom extends DurableObject<Env> {
     if (this.ctx.getWebSockets().length > 0 || this.listed) {
       await this.ctx.storage.setAlarm(Date.now() + PRESENCE_CHECK_MS)
     }
+    // Also lists a seat that has now been away long enough, and sets the alarm for the next.
+    await this.updateSeats()
   }
 
   private async presenceChanged(except?: WebSocket): Promise<void> {
     await this.trackAway(except)
     this.broadcast(except)
+    await this.updateSeats(except)
     await this.report({ except })
+  }
+
+  /** The join form's empty seats for a socket from `address`. */
+  private seatsFor(address: string | null, except?: WebSocket): { type: 'seats' } & EmptySeats {
+    return {
+      type: 'seats',
+      ...emptySeats(this.room!, this.connected(except), this.awayFor(), address),
+    }
+  }
+
+  /**
+   * Sends every socket that hasn't joined the join form's empty seats, if they changed since
+   * they were last sent, and sets the alarm for when the next away seat goes on the list.
+   * Returns true if it sent them. `except` is a socket that is closing.
+   */
+  private async updateSeats(except?: WebSocket): Promise<boolean> {
+    if (!this.room) return false
+    const seats = this.seatsFor(null, except)
+    const json = JSON.stringify(seats)
+    const changed = json !== this.seatsSent
+    this.seatsSent = json
+    const waiting = this.ctx
+      .getWebSockets()
+      .filter((ws) => ws !== except && !attachmentOf(ws).playerId)
+    if (changed) {
+      for (const ws of waiting) {
+        const { address } = attachmentOf(ws)
+        send(ws, address ? this.seatsFor(address, except) : seats)
+      }
+    }
+    if (waiting.length === 0 || !seats.started) return changed
+    // A seat goes on the list EMPTY_SEAT_AFTER_MS after it went away: wake up for the first.
+    const now = Date.now()
+    const due = Object.values(this.awaySince)
+      .map((since) => since + EMPTY_SEAT_AFTER_MS)
+      .filter((at) => at > now)
+    if (due.length === 0) return changed
+    const next = Math.min(...due)
+    const alarm = await this.ctx.storage.getAlarm()
+    if (alarm === null || alarm > next) await this.ctx.storage.setAlarm(next)
+    return changed
   }
 
   /**

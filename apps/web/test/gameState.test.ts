@@ -32,6 +32,11 @@ describe('gameReducer', () => {
     expect(state).toMatchObject({ view, hostId: 'you', connected: ['you'], isPublic: true })
   })
 
+  it('keeps the empty seats for the join form', () => {
+    const seats = { started: true, host: 'Bea', away: [{ name: 'Ann', host: false }] }
+    expect(receive(initialGameState, { type: 'seats', ...seats }).emptySeats).toEqual(seats)
+  })
+
   it('turns rule errors into toasts that link to their section', () => {
     const state = receive(initialGameState, {
       type: 'error',
