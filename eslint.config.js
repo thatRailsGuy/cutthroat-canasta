@@ -10,6 +10,7 @@ export default tseslint.config(
       '**/.wrangler/**',
       '**/coverage/**',
       '**/worker-configuration.d.ts',
+      '.claude/worktrees/**',
     ],
   },
   js.configs.recommended,
