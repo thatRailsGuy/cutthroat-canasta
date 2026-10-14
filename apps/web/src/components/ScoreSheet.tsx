@@ -1,5 +1,6 @@
 import type { PlayerView } from '@canasta/engine'
 import { useEffect, useRef } from 'react'
+import { useModal } from '../modals'
 import { BreakdownTable } from './BreakdownTable'
 import styles from './ScoreSheet.module.css'
 
@@ -19,6 +20,7 @@ export function ScoreSheet({ view, open, onClose }: ScoreSheetProps) {
     if (open && !dialog.open) dialog.showModal?.()
     if (!open && dialog.open) dialog.close()
   }, [open])
+  useModal(dialogRef, open)
 
   // Players who quit keep their columns, marked, after the players still seated.
   const quitIds = new Set(view.quit.map((q) => q.id))

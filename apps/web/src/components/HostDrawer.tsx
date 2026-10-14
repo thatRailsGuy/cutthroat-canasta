@@ -1,5 +1,6 @@
 import type { PublicPlayer } from '@canasta/engine'
 import { useEffect, useRef, useState } from 'react'
+import { useModal } from '../modals'
 import { Avatar } from './Avatar'
 import { GameCode } from './GameCode'
 import styles from './HostDrawer.module.css'
@@ -59,6 +60,7 @@ export function HostDrawer(props: HostDrawerProps) {
     if (open && !dialog.open) dialog.showModal?.()
     if (!open && dialog.open) dialog.close()
   }, [open])
+  useModal(dialogRef, open)
 
   const close = () => {
     setConfirmRedeal(false)

@@ -1,4 +1,5 @@
 import { useEffect, useRef, type ReactNode } from 'react'
+import { useModal } from '../modals'
 import styles from './SideSheet.module.css'
 
 export interface SideSheetProps {
@@ -20,6 +21,7 @@ export function SideSheet({ open, onClose, children }: SideSheetProps) {
     if (open && !dialog.open) dialog.showModal?.()
     if (!open && dialog.open) dialog.close()
   }, [open])
+  useModal(dialogRef, open)
 
   return (
     <dialog

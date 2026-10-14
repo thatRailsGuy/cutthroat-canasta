@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { Toast } from '../gameState'
+import { AboveModals } from './AboveModals'
 import styles from './Toasts.module.css'
 import { WhyLink } from './WhyLink'
 
@@ -13,11 +14,13 @@ export function Toasts({
   onDismiss: (id: number) => void
 }) {
   return (
-    <div className={styles.toasts} role="alert" aria-live="assertive">
-      {toasts.map((t) => (
-        <ToastItem key={t.id} toast={t} onDismiss={onDismiss} />
-      ))}
-    </div>
+    <AboveModals>
+      <div className={styles.toasts} role="alert" aria-live="assertive">
+        {toasts.map((t) => (
+          <ToastItem key={t.id} toast={t} onDismiss={onDismiss} />
+        ))}
+      </div>
+    </AboveModals>
   )
 }
 

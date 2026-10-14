@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react
 import { Link, useLocation, useNavigate, useParams } from 'react-router'
 import { gameExists, normalizeCode } from '../api'
 import type { ConnectionStatus } from '../connection'
+import { AboveModals } from '../components/AboveModals'
 import { Announcer } from '../components/Announcer'
 import { ChatSounds } from '../components/ChatSounds'
 import { RulesDrawer } from '../components/RulesDrawer'
@@ -215,7 +216,8 @@ function Session({ code, linkToken, autoJoinName, joinsByItself }: SessionProps)
   )
 }
 
-function ConnectionBanner({
+/** Shown at the top of the page, or of the open dialog, while the game isn't connected. */
+export function ConnectionBanner({
   connection,
   failures,
   code,
@@ -226,13 +228,15 @@ function ConnectionBanner({
 }) {
   if (connection === 'open') return null
   return (
-    <p className={styles.banner} role="status">
-      {failures >= UNREACHABLE_AFTER
-        ? `Can't reach game ${code}. Check the code, or wait while we keep trying.`
-        : connection === 'connecting'
-          ? 'Connecting…'
-          : 'Reconnecting…'}
-    </p>
+    <AboveModals first>
+      <p className={styles.banner} role="status">
+        {failures >= UNREACHABLE_AFTER
+          ? `Can't reach game ${code}. Check the code, or wait while we keep trying.`
+          : connection === 'connecting'
+            ? 'Connecting…'
+            : 'Reconnecting…'}
+      </p>
+    </AboveModals>
   )
 }
 

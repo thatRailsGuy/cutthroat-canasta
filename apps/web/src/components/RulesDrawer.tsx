@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { useModal } from '../modals'
 import { RulesContent } from '../rules/RulesContent'
 import type { DrawerRequest } from '../rules/drawer'
 import styles from './RulesDrawer.module.css'
@@ -26,6 +27,7 @@ export function RulesDrawer({ request, onClose }: RulesDrawerProps) {
     dialog.querySelector(`#${section}`)?.scrollIntoView?.({ block: 'start' })
     // `requestId` is a dependency so that asking for the open section again scrolls to it again.
   }, [section, requestId])
+  useModal(dialogRef, section !== null)
 
   return (
     <dialog
