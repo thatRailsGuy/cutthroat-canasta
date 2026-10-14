@@ -65,6 +65,27 @@ describe('accessibility', () => {
     ).toEqual([])
   })
 
+  it('lobby, standing in for an away host', async () => {
+    const view = { ...makeView({ hand: [], phase: 'draw' }), status: 'lobby' as const }
+    expect(
+      await violations(
+        <Lobby
+          code="HT7KM4"
+          view={view}
+          playerId="you"
+          hostId="bob"
+          connected={['you']}
+          isPublic={false}
+          kicked={[]}
+          chat={[]}
+          offline={false}
+          send={() => true}
+          talk={{ text: '', onType: () => {}, onSend: () => true, onRead: () => {} }}
+        />,
+      ),
+    ).toEqual([])
+  })
+
   it('table, on your turn', async () => {
     const view = makeView({
       hand: [card('Kh', 1), card('Ks', 2), card('2c', 3), card('3h', 4), card('7d', 5)],

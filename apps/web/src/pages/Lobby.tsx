@@ -39,6 +39,9 @@ export function Lobby({
   talk,
 }: LobbyProps) {
   const isHost = playerId === hostId
+  // While the host is away anyone can start, and the server makes them host (as at the table).
+  const hostAway = hostId === null || !connected.includes(hostId)
+  const hostName = view.players.find((p) => p.id === hostId)?.name
   // The host's last kick, or the last player they let back in. Only this browser knows, so it
   // goes on a reload; the Kicked list stays.
   const [note, setNote] = useState<{ player: KickedPlayer; undone: boolean } | null>(null)
@@ -138,7 +141,14 @@ export function Lobby({
         offline={offline}
         talk={talk}
       />
-      {isHost ? (
+      {!isHost && hostAway && (
+        <p>
+          {hostName
+            ? `${hostName} is the host, but they're away. If you start the game, you become the host.`
+            : 'The host is away. If you start the game, you become the host.'}
+        </p>
+      )}
+      {isHost || hostAway ? (
         <button
           type="button"
           disabled={view.players.length < MIN_PLAYERS}

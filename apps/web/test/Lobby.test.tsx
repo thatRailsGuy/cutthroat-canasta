@@ -83,4 +83,43 @@ describe('Lobby', () => {
     setup({ hostId: 'bob', kicked: [{ playerId: 'dave', name: 'Dave' }] })
     expect(screen.queryByRole('region', { name: 'Kicked' })).not.toBeInTheDocument()
   })
+
+  it('waits for a host who is here', () => {
+    setup({ hostId: 'bob' })
+    expect(screen.getByText('Waiting for the host to start.')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Start game' })).not.toBeInTheDocument()
+    expect(screen.queryByText(/If you start the game/)).not.toBeInTheDocument()
+  })
+
+  it('lets a player start for an away host', async () => {
+    const { send } = setup({ hostId: 'bob', connected: ['you'] })
+    expect(
+      screen.getByText(
+        "Bob is the host, but they're away. If you start the game, you become the host.",
+      ),
+    ).toBeInTheDocument()
+    expect(screen.queryByText('Waiting for the host to start.')).not.toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Start game' }))
+    expect(send).toHaveBeenCalledWith({ type: 'start' })
+  })
+
+  it('lets a player start when there is no host', () => {
+    setup({ hostId: null })
+    expect(
+      screen.getByText('The host is away. If you start the game, you become the host.'),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Start game' })).toBeInTheDocument()
+  })
+
+  it('keeps Kick and the switch host-only while the host is away', () => {
+    setup({ hostId: 'bob', connected: ['you'] })
+    expect(screen.queryByRole('button', { name: 'Kick' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('switch')).not.toBeInTheDocument()
+  })
+
+  it('tells the host nothing about standing in', () => {
+    setup()
+    expect(screen.queryByText(/If you start the game/)).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Start game' })).toBeInTheDocument()
+  })
 })
