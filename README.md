@@ -43,6 +43,10 @@ npm run dev:web          # Run the web client (Vite, http://localhost:5173; prox
 npm run deploy           # Build the web client and deploy it with the server to Cloudflare
 ```
 
+`npm test` runs axe-core over the pages in jsdom, which has no layout, so contrast and target size are left out. `npm run axe:browser -w @canasta/web` checks those too: it starts the server and the web client on their dev ports, seeds a public table, and runs axe-core in headless Chromium on the home page, the lobby, `/dev/table` (desktop and phone), `/rules` and `/learn`. It fails only on violations, and lists what needs review. Install the browser once with `npx playwright install chromium`.
+
+GitHub Actions ([ci.yml](.github/workflows/ci.yml)) runs lint, the format check, the type check and the tests on every push and pull request, and `axe:browser` in a second job.
+
 To play locally, run `npm run dev:server` and `npm run dev:web` together in two terminals, then open `http://localhost:5173`.
 
 To play from phones on the same Wi-Fi, start the web client with `--host` instead of `npm run dev:web`, then open the Network address Vite prints (such as `http://192.168.1.20:5173`) on each phone:
