@@ -25,14 +25,16 @@ function completed(canastas: readonly CompletedCanasta[] | undefined): string {
 
 /**
  * One line for the action feed, such as "Ann picked up 9 cards". `quit` supplies the names of
- * players who have left, so their earlier events still read correctly. `spoken` names cards in
- * words ("7 of hearts") for a screen reader, which reads suit symbols inconsistently.
+ * players who have left, so their earlier events still read correctly. `later` is the events
+ * after this one in the deal's feed: a seat taken over since then is named as it was then.
+ * `spoken` names cards in words ("7 of hearts") for a screen reader, which reads suit symbols
+ * inconsistently.
  */
 export function describeEvent(
   event: FeedEvent,
   players: readonly PublicPlayer[],
   quit: readonly QuitPlayer[] = [],
-  { spoken = false }: { spoken?: boolean } = {},
+  { spoken = false, later = [] }: { spoken?: boolean; later?: readonly FeedEvent[] } = {},
 ): string {
   const label = spoken ? cardName : cardLabel
   const list = (cards: readonly Card[]) => cards.map(label).join(spoken ? ', ' : ' ')
@@ -40,7 +42,10 @@ export function describeEvent(
   if (event.type === 'quit') return `${event.name} quit the game`
   if (event.type === 'joined') return `${event.name} pulled up a chair and is dealt in next hand`
   if (event.type === 'tookOver') return `${event.name} took over ${event.was}'s seat`
-  const name = [...players, ...quit].find((p) => p.id === event.playerId)?.name ?? 'Someone'
+  const was = later.flatMap((e) =>
+    e.type === 'tookOver' && e.playerId === event.playerId ? [e.was] : [],
+  )[0]
+  const name = was ?? [...players, ...quit].find((p) => p.id === event.playerId)?.name ?? 'Someone'
   switch (event.type) {
     case 'drewStock':
       return event.red3s.length === 0

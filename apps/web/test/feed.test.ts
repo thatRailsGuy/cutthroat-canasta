@@ -83,4 +83,15 @@ describe('describeEvent', () => {
     const quit = [{ id: 'z', name: 'Zed', score: 0, round: 1 }]
     expect(describeEvent({ type: 'wentOut', playerId: 'z' }, players, quit)).toBe('Zed went out')
   })
+
+  it('names a taken-over seat as it was before the take-over', () => {
+    const later: FeedEvent[] = [
+      { type: 'discarded', playerId: 'a', card: card('7h', 1) },
+      { type: 'tookOver', playerId: 'a', name: 'Ann', was: 'Bob' },
+      { type: 'tookOver', playerId: 'a', name: 'Cat', was: 'Ann' },
+    ]
+    const drew: FeedEvent = { type: 'drewStock', playerId: 'a', red3s: [] }
+    expect(describeEvent(drew, players, [], { later })).toBe('Bob drew a card')
+    expect(describeEvent(drew, players, [], { later: later.slice(2) })).toBe('Ann drew a card')
+  })
 })

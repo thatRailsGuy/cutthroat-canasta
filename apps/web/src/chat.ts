@@ -17,8 +17,10 @@ export function cleanChat(text: string): string {
     .trim()
 }
 
+/** `index` is the event's place in the deal's feed. */
 export type TalkItem =
-  { kind: 'event'; key: string; event: FeedEvent } | { kind: 'chat'; key: string; line: ChatLine }
+  | { kind: 'event'; key: string; event: FeedEvent; index: number }
+  | { kind: 'chat'; key: string; line: ChatLine }
 
 /**
  * Where the events worth showing start: the last finished turn and the turn being played.
@@ -51,7 +53,7 @@ export function mergeTalk(
   events.forEach((event, i) => {
     if (i < start) return
     items.push(...here.filter((l) => l.anchor.after === i).map(say))
-    items.push({ kind: 'event', key: `e${i}`, event })
+    items.push({ kind: 'event', key: `e${i}`, event, index: i })
   })
   items.push(...here.filter((l) => l.anchor.after >= events.length).map(say))
   return items

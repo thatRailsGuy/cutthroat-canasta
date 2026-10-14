@@ -24,10 +24,12 @@ export function announcements(
     prevRound.number === round.number &&
     prevRound.redeals === round.redeals
   if (events && sameDeal) {
-    for (const event of round.feed.slice(prevRound.feed.length)) {
-      if ('playerId' in event && event.playerId === playerId) continue
-      out.push(describeEvent(event, next.players, next.quit, { spoken: true }))
-    }
+    round.feed.forEach((event, i) => {
+      if (i < prevRound.feed.length) return
+      if ('playerId' in event && event.playerId === playerId) return
+      const later = round.feed.slice(i + 1)
+      out.push(describeEvent(event, next.players, next.quit, { spoken: true, later }))
+    })
   }
   if (yourTurn(next, playerId) && !(sameDeal && yourTurn(prev, playerId))) out.push('Your turn.')
   if (next.status === 'roundOver' && prev.status !== 'roundOver' && round) {

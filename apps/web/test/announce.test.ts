@@ -41,6 +41,26 @@ describe('announcements', () => {
     expect(announcements(before, after, 'you', { events: false })).toEqual(['Your turn.'])
   })
 
+  it('keeps the old name on a move made before a take-over', () => {
+    const before = makeView({ hand: [], phase: 'draw' })
+    const after = withRound(
+      {
+        ...before,
+        players: before.players.map((p) => (p.id === 'bob' ? { ...p, name: 'Cat' } : p)),
+      },
+      {
+        feed: [
+          { type: 'discarded', playerId: 'bob', card: card('7h', 5) },
+          { type: 'tookOver', playerId: 'bob', name: 'Cat', was: 'Bob' },
+        ],
+      },
+    )
+    expect(announcements(before, after, 'you', { events: true })).toEqual([
+      'Bob discarded 7 of hearts',
+      "Cat took over Bob's seat",
+    ])
+  })
+
   it('leaves out your own moves', () => {
     const before = makeView({ hand: [], phase: 'draw' })
     const after = withRound(before, {

@@ -129,7 +129,7 @@ export function TableTalk({
           if (item.kind === 'event') {
             return (
               <li key={item.key} className={styles.event}>
-                {describeEvent(item.event, players, quit)}
+                {describeEvent(item.event, players, quit, { later: events.slice(item.index + 1) })}
               </li>
             )
           }

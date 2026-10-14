@@ -6,6 +6,7 @@ import { useState } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 import { TableTalk } from '../src/components/TableTalk'
 import { useSoundLevel } from '../src/soundLevel'
+import { card } from './fixtures'
 
 const player = (id: string, name: string): PublicPlayer => ({
   id,
@@ -104,6 +105,32 @@ describe('TableTalk', () => {
       'Bob: my turn',
       'Bob went out',
       'You: nice one',
+    ])
+  })
+
+  it('keeps the old name on lines from before a take-over', () => {
+    render(
+      <TableTalk
+        events={[
+          { type: 'drewStock', playerId: 'bob', red3s: [] },
+          { type: 'tookOver', playerId: 'bob', name: 'Cat', was: 'Bob' },
+          { type: 'discarded', playerId: 'bob', card: card('7h', 1) },
+        ]}
+        deal={{ game: 1, round: 1, redeals: 0 }}
+        chat={[]}
+        notices={[]}
+        players={[player('you', 'Ann'), player('bob', 'Cat')]}
+        playerId="you"
+        offline={false}
+      />,
+    )
+    const items = within(screen.getByRole('list', { name: 'Table events and chat' })).getAllByRole(
+      'listitem',
+    )
+    expect(items.map((li) => li.textContent)).toEqual([
+      'Bob drew a card',
+      "Cat took over Bob's seat",
+      'Cat discarded 7♥',
     ])
   })
 
