@@ -18,7 +18,8 @@
   box-shadow: var(--shadow);
 }
 
-.toast a {
+.toast a,
+.toast a:hover {
   color: var(--gold);
 }
 
