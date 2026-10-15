@@ -1,6 +1,6 @@
-import { render, screen } from '@testing-library/react'
+import { act, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Lobby, type LobbyProps } from '../src/pages/Lobby'
 import { makeView } from './fixtures'
 
@@ -12,9 +12,11 @@ function setup(overrides: Partial<LobbyProps> = {}) {
     playerId: 'you',
     hostId: 'you',
     connected: ['you', 'bob'],
+    awaySince: {},
     isPublic: false,
     kicked: [],
     chat: [],
+    notices: [],
     offline: false,
     send: vi.fn(() => true),
     talk: { text: '', onType: vi.fn(), onSend: vi.fn(() => true), onRead: vi.fn() },
@@ -24,7 +26,18 @@ function setup(overrides: Partial<LobbyProps> = {}) {
   return props
 }
 
+/** Bob, the host, went away this long ago. */
+const bobAway = (ms: number): Partial<LobbyProps> => ({
+  hostId: 'bob',
+  connected: ['you'],
+  awaySince: { bob: Date.now() - ms },
+})
+
 describe('Lobby', () => {
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
   it('lets the host list the room', async () => {
     const { send } = setup()
     const toggle = screen.getByRole('switch', { name: 'Private' })
@@ -92,16 +105,26 @@ describe('Lobby', () => {
   })
 
   it('lets a player start for an away host', async () => {
-    const { send } = setup({ hostId: 'bob', connected: ['you'] })
+    const { send } = setup(bobAway(60_000))
     expect(
       screen.getByText(
         "Bob is the host, but they're away. If you start the game, you become the host. " +
-          "Bob will be dealt in too. If Bob doesn't come back, someone can take over that seat.",
+          "Bob will be dealt in too. If Bob doesn't come back, use the Host button at the table " +
+          "to make a rejoin link for Bob's seat.",
       ),
     ).toBeInTheDocument()
     expect(screen.queryByText('Waiting for the host to start.')).not.toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Start game' }))
     expect(send).toHaveBeenCalledWith({ type: 'start' })
+  })
+
+  it("waits out the host's grace before offering to start", () => {
+    vi.useFakeTimers({ now: 10_000_000, toFake: ['Date', 'setInterval', 'clearInterval'] })
+    setup(bobAway(10_000))
+    expect(screen.getByText('Waiting for the host to start.')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Start game' })).not.toBeInTheDocument()
+    act(() => vi.advanceTimersByTime(30_000))
+    expect(screen.getByRole('button', { name: 'Start game' })).toBeInTheDocument()
   })
 
   it('lets a player start when there is no host', () => {
@@ -114,7 +137,7 @@ describe('Lobby', () => {
   })
 
   it('keeps Kick and the switch host-only while the host is away', () => {
-    setup({ hostId: 'bob', connected: ['you'] })
+    setup(bobAway(60_000))
     expect(screen.queryByRole('button', { name: 'Kick' })).not.toBeInTheDocument()
     expect(screen.queryByRole('switch')).not.toBeInTheDocument()
   })
@@ -123,5 +146,12 @@ describe('Lobby', () => {
     setup()
     expect(screen.queryByText(/If you start the game/)).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Start game' })).toBeInTheDocument()
+  })
+
+  it('says who stood in for the host with Play again', () => {
+    setup({ notices: [{ id: 1, standIn: 'bob', via: 'playAgain' }] })
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Bob started another game and is the host now.',
+    )
   })
 })

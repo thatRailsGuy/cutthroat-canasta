@@ -1,6 +1,7 @@
 import { RULE_ERROR_SECTIONS, type PlayerView, type RuleSection } from '@canasta/engine'
 import type {
   ChatLine,
+  ClientMessage,
   RemovedReason,
   ServerErrorCode,
   ServerMessage,
@@ -16,8 +17,8 @@ export interface Toast {
 }
 
 /**
- * A seat got a new rejoin link, or a player started the game while the host was away. Kept only
- * in memory, and only for the current round: a player who reconnects misses it.
+ * A seat got a new rejoin link, or a player stood in for an away host. Kept only in memory, and
+ * only for the current round: a player who reconnects misses it.
  */
 export type SeatNotice =
   | {
@@ -26,8 +27,8 @@ export type SeatNotice =
       /** Who made the link while the host was away, and became host. */
       newHost?: string
     }
-  /** Who started the game while the host was away, and became host. */
-  | { id: number; startedBy: string }
+  /** Who stood in for the away host and became host, and the message that did it. */
+  | { id: number; standIn: string; via: ClientMessage['type'] }
 
 export type KickedPlayer = Extract<ServerMessage, { type: 'state' }>['kicked'][number]
 
@@ -51,6 +52,11 @@ export interface GameState {
   awaySince: Record<string, number>
   toasts: Toast[]
   notices: SeatNotice[]
+  /**
+   * `nextId` when the last state arrived. The server sends a notice before the state it goes
+   * with, so notices from this id on came with the next state.
+   */
+  noticeMark: number
   /** Host only: the latest rejoin token for each reissued seat. */
   rejoinTokens: Record<string, string>
   removed: RemovedReason | null
@@ -95,6 +101,7 @@ export const initialGameState: GameState = {
   awaySince: {},
   toasts: [],
   notices: [],
+  noticeMark: 1,
   rejoinTokens: {},
   removed: null,
   chat: [],
@@ -164,10 +171,10 @@ function onMessage(state: GameState, message: ServerMessage, joinFailed: boolean
     case 'joined':
       return { ...state, playerId: message.playerId, joining: false, removed: null }
     case 'state': {
-      // Seat notices belong to the round they happened in. The lobby has no round, so a notice
-      // that comes just before the first deal (a stand-in's start) stays for the first round.
-      const newRound =
-        state.view?.round != null && message.view.round?.number !== state.view.round.number
+      // Seat notices belong to the round they happened in. At a new round, or the lobby after
+      // Play again, only the notices that came with this state stay, such as who stood in for
+      // the host to start it.
+      const newRound = message.view.round?.number !== state.view?.round?.number
       return {
         ...state,
         view: message.view,
@@ -176,7 +183,8 @@ function onMessage(state: GameState, message: ServerMessage, joinFailed: boolean
         isPublic: message.public,
         kicked: message.kicked,
         awaySince: awaySince(message.away, Date.now()),
-        notices: newRound ? [] : state.notices,
+        notices: newRound ? state.notices.filter((n) => n.id >= state.noticeMark) : state.notices,
+        noticeMark: state.nextId,
       }
     }
     case 'error': {
@@ -190,6 +198,7 @@ function onMessage(state: GameState, message: ServerMessage, joinFailed: boolean
           joinErrorCode: message.code,
           playerId: initialGameState.playerId,
           view: initialGameState.view,
+          notices: initialGameState.notices,
           hostId: initialGameState.hostId,
           connected: initialGameState.connected,
           isPublic: initialGameState.isPublic,
@@ -223,15 +232,14 @@ function onMessage(state: GameState, message: ServerMessage, joinFailed: boolean
         nextId: state.nextId + 1,
       }
     }
-    case 'standInStarted':
+    case 'standInHost': {
+      const notice: SeatNotice = { id: state.nextId, standIn: message.playerId, via: message.via }
       return {
         ...state,
-        notices: [{ id: state.nextId, startedBy: message.playerId }, ...state.notices].slice(
-          0,
-          MAX_NOTICES,
-        ),
+        notices: [notice, ...state.notices].slice(0, MAX_NOTICES),
         nextId: state.nextId + 1,
       }
+    }
     case 'playerQuit':
       // The one who quit is on their way out; everyone else gets a toast.
       if (message.playerId === state.playerId) return state

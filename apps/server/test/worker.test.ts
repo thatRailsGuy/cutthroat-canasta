@@ -2,6 +2,7 @@ import { SELF, env, runDurableObjectAlarm, runInDurableObject } from 'cloudflare
 import { describe, expect, it } from 'vitest'
 import {
   HEARTBEAT_PING,
+  HOST_AWAY_AFTER_MS,
   STALE_CLOSE_CODE,
   type OpenTable,
   type ServerMessage,
@@ -329,12 +330,25 @@ describe('seats', () => {
   })
 
   it('tells the table who started for an away host, before the first deal', async () => {
-    const { ann, bob, bobJoined } = await lobbyGame()
+    const { code, ann, annJoined, bob, bobJoined } = await lobbyGame()
     ann.close()
     await nextState(bob)
     bob.send({ type: 'start' })
+    expect(await bob.next()).toMatchObject({ type: 'error', code: 'NOT_HOST' })
+
+    // Fakes the host's grace running out by backdating when they went away.
+    const stub = env.GAME_ROOM.get(env.GAME_ROOM.idFromName(code))
+    await runInDurableObject(stub, async (instance) => {
+      const { awaySince } = instance as unknown as { awaySince: Record<string, number> }
+      awaySince[annJoined.playerId] -= HOST_AWAY_AFTER_MS
+    })
+    bob.send({ type: 'start' })
     // The notice comes first, so the client still has the lobby view when it lands.
-    expect(await bob.next()).toEqual({ type: 'standInStarted', playerId: bobJoined.playerId })
+    expect(await bob.next()).toEqual({
+      type: 'standInHost',
+      playerId: bobJoined.playerId,
+      via: 'start',
+    })
     const state = await nextState(bob)
     expect(state.view.status).toBe('playing')
     expect(state.hostId).toBe(bobJoined.playerId)

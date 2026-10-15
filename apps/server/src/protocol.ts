@@ -27,6 +27,27 @@ export const STALE_CLOSE_CODE = 4000
  * a locked phone or a reload doesn't cost a seat.
  */
 export const TAKE_OVER_AFTER_MS = 120_000
+/**
+ * How long the host must be away before another player can stand in for them: start the game,
+ * play again, or make a rejoin link, and so become host. A reload or a blink of the wifi doesn't
+ * cost the host their table.
+ */
+export const HOST_AWAY_AFTER_MS = 30_000
+
+/**
+ * There is no host, or the host has no open connection and has been away long enough for someone
+ * to stand in. `away` is how long each seated player without a connection has been away (ms). A
+ * host missing from it, such as one waiting for the next hand, counts as away at once.
+ */
+export function hostAway(
+  hostId: string | null,
+  connected: readonly string[],
+  away: Readonly<Record<string, number>>,
+): boolean {
+  if (hostId === null) return true
+  if (connected.includes(hostId)) return false
+  return (away[hostId] ?? Infinity) >= HOST_AWAY_AFTER_MS
+}
 
 const cardId = z.number().int().nonnegative()
 const cardIds = z.array(cardId).max(60)
@@ -155,8 +176,11 @@ export type ServerMessage =
   | { type: 'reissued'; playerId: string; token: string }
   /** `newHost`: the player who made the link while the host was away, and is host now. */
   | { type: 'seatReissued'; playerId: string; newHost?: string }
-  /** A player started the game while the host was away, and is host now. */
-  | { type: 'standInStarted'; playerId: string }
+  /**
+   * A player stood in for an away host and is host now. `via` is the message that did it, such
+   * as `start` or `playAgain`. A rejoin link says so in `seatReissued` instead.
+   */
+  | { type: 'standInHost'; playerId: string; via: ClientMessage['type'] }
   /** A player quit a started game. The name is sent too, since they are no longer seated. */
   | { type: 'playerQuit'; playerId: string; name: string }
   | { type: 'chat'; line: ChatLine }

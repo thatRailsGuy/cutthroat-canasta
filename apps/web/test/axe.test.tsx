@@ -54,9 +54,11 @@ describe('accessibility', () => {
           playerId="you"
           hostId="you"
           connected={['you']}
+          awaySince={{ bob: Date.now() }}
           isPublic
           kicked={[{ playerId: 'dave', name: 'Dave' }]}
           chat={[]}
+          notices={[{ id: 1, standIn: 'you', via: 'playAgain' }]}
           offline={false}
           send={() => true}
           talk={{ text: '', onType: () => {}, onSend: () => true, onRead: () => {} }}
@@ -75,9 +77,11 @@ describe('accessibility', () => {
           playerId="you"
           hostId="bob"
           connected={['you']}
+          awaySince={{ bob: Date.now() - 60_000 }}
           isPublic={false}
           kicked={[]}
           chat={[]}
+          notices={[]}
           offline={false}
           send={() => true}
           talk={{ text: '', onType: () => {}, onSend: () => true, onRead: () => {} }}
