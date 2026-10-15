@@ -356,8 +356,9 @@ export interface RejoinTicketProps {
 }
 
 /**
- * A rejoin link's ticket: the seat's QR code in a dashed red frame, under an ink band with the
- * seat's avatar. The band is ink for every seat colour, so its text always has the contrast.
+ * A rejoin link's ticket: the seat's QR code in a dashed red frame, with the seat's avatar on its
+ * corner, under an ink band. The band is ink for every seat colour, so its text always has the
+ * contrast.
  * The privacy line repeats the name: the game doesn't know anyone's pronouns.
  */
 export function RejoinTicket({ name, seat, link, onHide, ticketRef }: RejoinTicketProps) {
@@ -371,7 +372,6 @@ export function RejoinTicket({ name, seat, link, onHide, ticketRef }: RejoinTick
       tabIndex={-1}
     >
       <div className={styles.band}>
-        <Avatar name={name} seat={seat} />
         <div>
           <h4 id={`${id}-title`}>Rejoin link for {name}</h4>
           <p>Opens {name}'s seat and hand</p>
