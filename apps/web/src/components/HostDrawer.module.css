@@ -213,7 +213,7 @@
   border: 2px solid var(--ink);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
-  background: #f6e2b3;
+  background: var(--gold-pale);
 }
 
 .band {
@@ -241,7 +241,7 @@
 .band p {
   font-weight: 800;
   font-size: 0.875rem;
-  color: #f6e2b3;
+  color: var(--gold-pale);
 }
 
 .ticketBody {

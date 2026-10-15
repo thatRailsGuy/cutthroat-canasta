@@ -22,7 +22,8 @@ function setup(overrides: Partial<HostDrawerProps> = {}) {
     offline: false,
     connected: ['cy'],
     links: {},
-    onReissue: vi.fn(),
+    refusals: 0,
+    onReissue: vi.fn(() => true),
     onRedeal: vi.fn(),
     ...overrides,
   }
@@ -216,6 +217,63 @@ describe('HostDrawer', () => {
       await user.click(button('Show QR for Bob'))
       expect(qrCodes(drawer)).toEqual(["QR code for Bob's rejoin link"])
       expect(button('Show QR for Cy')).toBeInTheDocument()
+    })
+
+    it('closes the ticket and unfolds the invite when its player leaves', async () => {
+      const { drawer, props, rerender } = await withBobsTicket()
+      rerender(<HostDrawer {...props} seats={[{ player: cy, seat: 2 }]} links={{ bob: bobLink }} />)
+      expect(qrCodes(drawer)).toEqual(['QR code for the invite link'])
+      expect(drawer.queryByText(/rejoin QR is up/)).toBeNull()
+      // Focus went with the ticket, so the invite takes it.
+      expect(drawer.getByRole('heading', { name: 'Invite a player', hidden: true })).toHaveFocus()
+    })
+
+    it("doesn't open a link over a ticket opened since it was asked for", async () => {
+      const { user, drawer, button, props, rerender } = await withBobsTicket()
+      await user.click(button('Hide QR'))
+      await user.click(button('Seat stuck? Make a rejoin link for Cy'))
+      await user.click(button('Show QR for Bob'))
+      rerender(<HostDrawer {...props} links={{ bob: bobLink, cy: cyLink }} />)
+      expect(qrCodes(drawer)).toEqual(["QR code for Bob's rejoin link"])
+      expect(drawer.getByRole('group', { name: 'Rejoin link for Bob', hidden: true })).toHaveFocus()
+      expect(button('Show QR for Cy')).toBeInTheDocument()
+    })
+
+    it('forgets a request the server refused, so a late link opens no ticket', async () => {
+      const user = userEvent.setup()
+      const { drawer, button, props, rerender } = setup()
+      await user.click(button('Make a rejoin link for Bob'))
+      rerender(<HostDrawer {...props} refusals={1} />)
+      rerender(<HostDrawer {...props} refusals={1} links={{ bob: bobLink }} />)
+      expect(qrCodes(drawer)).toEqual(['QR code for the invite link'])
+      expect(button('Show QR for Bob')).not.toHaveFocus()
+    })
+
+    it("forgets a request that couldn't be sent", async () => {
+      const user = userEvent.setup()
+      const { drawer, button, props, rerender } = setup({ onReissue: vi.fn(() => false) })
+      await user.click(button('Make a rejoin link for Bob'))
+      rerender(<HostDrawer {...props} links={{ bob: bobLink }} />)
+      expect(qrCodes(drawer)).toEqual(['QR code for the invite link'])
+    })
+
+    it('leaves focus alone if the host has moved on while the link comes', async () => {
+      const user = userEvent.setup()
+      const { drawer, button, props, rerender } = setup()
+      await user.click(button('Make a rejoin link for Bob'))
+      button('Seat stuck? Make a rejoin link for Cy').focus()
+      rerender(<HostDrawer {...props} links={{ bob: bobLink }} />)
+      expect(qrCodes(drawer)).toEqual(["QR code for Bob's rejoin link"])
+      expect(button('Seat stuck? Make a rejoin link for Cy')).toHaveFocus()
+    })
+
+    it('moves focus to the new ticket when it closes the one that had focus', async () => {
+      const { user, drawer, button, props, rerender } = await withBobsTicket()
+      await user.click(button('Seat stuck? Make a rejoin link for Cy'))
+      const bobsTicket = drawer.getByRole('group', { name: 'Rejoin link for Bob', hidden: true })
+      within(bobsTicket).getByRole('button', { name: 'Copy', hidden: true }).focus()
+      rerender(<HostDrawer {...props} links={{ bob: bobLink, cy: cyLink }} />)
+      expect(drawer.getByRole('group', { name: 'Rejoin link for Cy', hidden: true })).toHaveFocus()
     })
 
     it("doesn't open the ticket again with the drawer", async () => {

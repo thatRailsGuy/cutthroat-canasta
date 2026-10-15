@@ -155,6 +155,32 @@ describe('gameReducer', () => {
     expect(state.notices).toEqual([{ id: 1, playerId: 'bob' }])
   })
 
+  it('drops the rejoin token of a player who is no longer seated', () => {
+    const view = makeView({ hand: [], phase: 'draw' })
+    let state = receive(initialGameState, {
+      type: 'reissued',
+      playerId: view.players[1].id,
+      token: 'kept',
+    })
+    state = receive(state, { type: 'reissued', playerId: 'gone', token: 'dead' })
+    state = receive(state, {
+      type: 'state',
+      view,
+      hostId: 'you',
+      connected: ['you'],
+      public: false,
+      kicked: [],
+      away: {},
+    })
+    expect(state.rejoinTokens).toEqual({ [view.players[1].id]: 'kept' })
+  })
+
+  it('counts errors outside a join, so a page can tell its request was refused', () => {
+    const error = { type: 'error', code: 'PLAYER_CONNECTED', message: 'Still here.' } as const
+    expect(receive(initialGameState, error).refusals).toBe(1)
+    expect(receive(initialGameState, error, true).refusals).toBe(0)
+  })
+
   it('counts how long each away seat has been gone by this clock, and keeps the join error code', () => {
     vi.useFakeTimers({ now: 1_000_000 })
     const view = makeView({ hand: [], phase: 'draw' })

@@ -26,12 +26,15 @@ export interface HostDrawerProps {
   standIn?: { hostName: string | null }
   /** playerId → the newest rejoin link made for that seat. */
   links: Record<string, string>
+  /** How many errors the server has sent. One that comes after a link was asked for refuses it. */
+  refusals: number
   /**
    * Ask the server for a rejoin link. Offered for every seat, because a dead phone can still
    * count as connected: the server checks for silent sockets every 30 seconds, and whenever a
-   * message arrives, so the reissue request itself is a check.
+   * message arrives, so the reissue request itself is a check. Returns false, like `send`, if
+   * it couldn't be sent.
    */
-  onReissue: (playerId: string) => void
+  onReissue: (playerId: string) => boolean
   onRedeal: () => void
 }
 
@@ -49,40 +52,56 @@ export function HostDrawer(props: HostDrawerProps) {
     props
   const dialogRef = useRef<HTMLDialogElement>(null)
   const [confirmRedeal, setConfirmRedeal] = useState(false)
-  // Set when the confirm closes, so the button that opened it gets focus back as it returns.
-  const refocusRedeal = useRef(false)
+  /**
+   * What takes focus once it renders, as the button that was pressed goes away: the ticket that
+   * opened, the Show QR button of the ticket that closed, the invite that unfolded, or Deal a
+   * new hand as its confirm closes. With `ifLost`, the server caused the change, so it takes
+   * focus only if focus went with the element that left, not if the host has moved on.
+   */
+  const [focusNext, setFocusNext] = useState<{ key: string; ifLost?: boolean } | null>(null)
+  const focusOnMount = (key: string) => (el: HTMLElement | null) => {
+    if (!el || focusNext?.key !== key) return
+    setFocusNext(null)
+    const active = document.activeElement
+    if (!focusNext.ifLost || !active || active === document.body) el.focus()
+  }
   const cancelRedeal = () => {
-    refocusRedeal.current = true
+    setFocusNext({ key: 'redeal' })
     setConfirmRedeal(false)
   }
   const invite = `${window.location.origin}/g/${code}`
-  // The seat whose ticket is open, and the seat whose link was asked for and hasn't come yet.
+  const seated = (playerId: string) => seats.some((s) => s.player.id === playerId)
+  // The seat whose ticket is open, and the seat whose link was asked for and hasn't come yet,
+  // with the server's error count then.
   const [ticket, setTicket] = useState<string | null>(null)
-  const [asked, setAsked] = useState<string | null>(null)
-  // The link has come: its ticket opens, and closes any other.
-  if (asked && links[asked]) {
-    setAsked(null)
-    setTicket(asked)
-  }
-  const shown = ticket && links[ticket] ? ticket : null
-  const shownName = seats.find((s) => s.player.id === shown)?.player.name
-  /**
-   * What takes focus once it renders, as the button that was pressed goes away: the ticket that
-   * opened, the Show QR button of the ticket that closed, or the invite that unfolded.
-   */
-  const focusNext = useRef<string | null>(null)
-  const focusOnMount = (key: string) => (el: HTMLElement | null) => {
-    if (el && focusNext.current === key) {
-      focusNext.current = null
-      el.focus()
+  const [asked, setAsked] = useState<{ playerId: string; refusals: number } | null>(null)
+  if (asked) {
+    if (props.refusals !== asked.refusals || !seated(asked.playerId)) {
+      // The server refused, or the player is gone: no link is coming.
+      setAsked(null)
+    } else if (links[asked.playerId]) {
+      // The link has come: its ticket opens, and closes any other.
+      setAsked(null)
+      setTicket(asked.playerId)
+      setFocusNext({ key: `ticket-${asked.playerId}`, ifLost: true })
     }
   }
+  if (ticket && !seated(ticket)) {
+    // The ticket's player quit or was kicked, so their link is dead: the invite unfolds.
+    setTicket(null)
+    setFocusNext({ key: 'invite', ifLost: true })
+  }
+  const shown = ticket && links[ticket] && seated(ticket) ? ticket : null
+  const shownName = seats.find((s) => s.player.id === shown)?.player.name
   const showTicket = (playerId: string) => {
-    focusNext.current = `ticket-${playerId}`
+    // Opening a ticket by hand means a link still on its way doesn't open over it.
+    setAsked(null)
+    setFocusNext({ key: `ticket-${playerId}` })
     setTicket(playerId)
   }
-  const hideTicket = () => {
-    focusNext.current = shown ? `show-${shown}` : null
+  /** Closes the ticket. `focusKey` is what takes focus, as the button pressed goes away. */
+  const hideTicket = (focusKey: string) => {
+    setFocusNext({ key: focusKey })
     setTicket(null)
   }
 
@@ -98,6 +117,7 @@ export function HostDrawer(props: HostDrawerProps) {
     // A rejoin QR code is private, so it doesn't open again with the drawer.
     setTicket(null)
     setAsked(null)
+    setFocusNext(null)
     onClose()
   }
 
@@ -140,13 +160,7 @@ export function HostDrawer(props: HostDrawerProps) {
                 <>
                   <div className={styles.folded}>
                     <h3 id="host-invite">Invite a player</h3>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        focusNext.current = 'invite'
-                        setTicket(null)
-                      }}
-                    >
+                    <button type="button" onClick={() => hideTicket('invite')}>
                       Show invite
                     </button>
                   </div>
@@ -215,12 +229,7 @@ export function HostDrawer(props: HostDrawerProps) {
                 ) : (
                   <button
                     type="button"
-                    ref={(el) => {
-                      if (el && refocusRedeal.current) {
-                        refocusRedeal.current = false
-                        el.focus()
-                      }
-                    }}
+                    ref={focusOnMount('redeal')}
                     onClick={() => setConfirmRedeal(true)}
                   >
                     Deal a new hand…
@@ -258,7 +267,7 @@ export function HostDrawer(props: HostDrawerProps) {
                           name={player.name}
                           seat={seat}
                           link={links[player.id]}
-                          onHide={hideTicket}
+                          onHide={() => hideTicket(`show-${player.id}`)}
                           ticketRef={focusOnMount(`ticket-${player.id}`)}
                         />
                       ) : (
@@ -267,9 +276,10 @@ export function HostDrawer(props: HostDrawerProps) {
                           key={links[player.id]}
                           name={player.name}
                           onReissue={() => {
-                            focusNext.current = `ticket-${player.id}`
-                            setAsked(player.id)
-                            props.onReissue(player.id)
+                            // Offline, nothing went, so no link is coming.
+                            if (props.onReissue(player.id)) {
+                              setAsked({ playerId: player.id, refusals: props.refusals })
+                            }
                           }}
                           onShow={() => showTicket(player.id)}
                           showRef={focusOnMount(`show-${player.id}`)}

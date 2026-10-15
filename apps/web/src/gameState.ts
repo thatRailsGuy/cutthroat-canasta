@@ -48,8 +48,13 @@ export interface GameState {
   awaySince: Record<string, number>
   toasts: Toast[]
   notices: SeatNotice[]
-  /** Host only: the latest rejoin token for each reissued seat. */
+  /** Host only: the latest rejoin token for each reissued seat that is still taken. */
   rejoinTokens: Record<string, string>
+  /**
+   * How many errors the server has sent outside a join. A page waiting on an answer can tell
+   * from a change that it was refused, since the server answers each message in turn.
+   */
+  refusals: number
   removed: RemovedReason | null
   /** Table talk, oldest first: the backlog from `chatLog`, then each new line. */
   chat: ChatLine[]
@@ -93,6 +98,7 @@ export const initialGameState: GameState = {
   toasts: [],
   notices: [],
   rejoinTokens: {},
+  refusals: 0,
   removed: null,
   chat: [],
   chatSeen: null,
@@ -156,6 +162,15 @@ function addToast(state: GameState, message: string, section: RuleSection | null
   }
 }
 
+/** The tokens for seats that are still taken: one for a player who quit or was kicked is dead. */
+function seatedOnly(tokens: Record<string, string>, view: PlayerView): Record<string, string> {
+  const ids = Object.keys(tokens)
+  const seated = ids.filter((id) => view.players.some((p) => p.id === id))
+  return seated.length === ids.length
+    ? tokens
+    : Object.fromEntries(seated.map((id) => [id, tokens[id]]))
+}
+
 function onMessage(state: GameState, message: ServerMessage, joinFailed: boolean): GameState {
   switch (message.type) {
     case 'joined':
@@ -173,6 +188,7 @@ function onMessage(state: GameState, message: ServerMessage, joinFailed: boolean
         kicked: message.kicked,
         awaySince: awaySince(message.away, Date.now()),
         notices: newRound ? [] : state.notices,
+        rejoinTokens: seatedOnly(state.rejoinTokens, message.view),
       }
     }
     case 'error': {
@@ -194,7 +210,11 @@ function onMessage(state: GameState, message: ServerMessage, joinFailed: boolean
       }
       // Two players can press Next round together; the second one's ROUND_NOT_OVER is noise.
       if (message.code === 'ROUND_NOT_OVER') return state
-      const toasted = addToast(state, message.message, sectionFor(message.code))
+      const toasted = addToast(
+        { ...state, refusals: state.refusals + 1 },
+        message.message,
+        sectionFor(message.code),
+      )
       if (message.code !== 'CHAT_TOO_FAST' || state.chatSent === null) return toasted
       // Put the refused line back, unless the player has started typing another.
       return {
