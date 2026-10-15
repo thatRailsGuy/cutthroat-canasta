@@ -1,8 +1,7 @@
 .home,
 .lobby {
   max-width: 28rem;
-  /* Starts below the fixed Rules and Aa buttons (0.5rem from the top, 44px tall). */
-  margin: calc(0.5rem + 44px + 0.75rem) auto 2rem;
+  margin: 2rem auto;
   padding: 1.5rem 1.5rem 2rem;
   display: grid;
   gap: 1rem;
@@ -226,9 +225,23 @@
 
 .rulesButton {
   position: fixed;
-  top: 0.5rem;
+  top: var(--corner-top);
   right: 0.5rem;
   z-index: 5;
+}
+
+/* Pages with the fixed Rules button start below it, so a banner or card never runs under it. */
+.belowTools {
+  padding-top: var(--corner-clear);
+}
+
+.belowTools > .banner {
+  margin-bottom: 0.75rem;
+  border-top: 2px solid var(--ink);
+}
+
+.belowTools > :is(.home, .lobby) {
+  margin-top: 0;
 }
 
 .links {
@@ -237,7 +250,7 @@
 
 .pageTools {
   position: fixed;
-  top: 0.5rem;
+  top: var(--corner-top);
   right: 6.25rem;
   z-index: 5;
   display: flex;
