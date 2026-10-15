@@ -14,8 +14,12 @@ import {
 } from '@canasta/engine'
 import { RULES_EXAMPLES } from '@canasta/engine/examples'
 import type { ReactNode } from 'react'
+import { Link } from 'react-router'
+import { lessMotion } from '../display'
+import { useOpenRules } from './drawer'
 import { RuleExample } from './RuleExample'
 import styles from './Rules.module.css'
+import { PAGE_SECTIONS, type PageSection } from './sections'
 import { cardValueRows, initialMeldRows, tableSizeRows } from './tables'
 
 const fmt = (n: number) => n.toLocaleString('en-US')
@@ -32,9 +36,9 @@ function Section({ id, title, children }: { id: string; title: string; children:
 }
 
 /** A [clarified] item from the spec: not on the V3 sheet, or settling an ambiguity in it. */
-function House({ children }: { children: ReactNode }) {
+function House({ id, children }: { id?: string; children: ReactNode }) {
   return (
-    <aside className={styles.house}>
+    <aside id={id} className={styles.house}>
       <strong>House rule</strong> {children}
     </aside>
   )
@@ -90,9 +94,10 @@ export function RulesContent() {
   return (
     <>
       <QuickReference />
+      <HouseRules />
 
       <Section id="overview" title="Overview">
-        <p>
+        <p id="house-solo">
           Cutthroat Canasta is Canasta for {MIN_PLAYERS} to {MAX_PLAYERS} players, each playing for
           themselves. You score by laying down melds of the same rank, and above all by building
           canastas: melds of {CANASTA_SIZE} or more cards. A round ends when someone goes out or the
@@ -125,13 +130,13 @@ export function RulesContent() {
           nobody holds one. One card is turned up to start the discard pile. The dealer moves one
           seat to the left each round, and the player on the dealer's left goes first.
         </p>
-        <House>
+        <House id="house-upcard">
           If the first upcard is a Red 3 or a wild, it stays in the pile and freezes it for
           everyone. It lies sideways under the pile, so everyone can see why the pile is frozen.
           Nobody can pick up the pile while it is on top. A Red 3 picked up with the pile is laid
           face up like any other Red 3.
         </House>
-        <House>
+        <House id="house-hand-size">
           Everyone is dealt {HAND_SIZE} cards, even in a two-player game, where standard Canasta
           deals 15.
         </House>
@@ -162,7 +167,7 @@ export function RulesContent() {
             </tr>
           </tbody>
         </table>
-        <House>
+        <House id="house-red-threes">
           Red 3s score a flat {RED_THREE_BONUS} each. There is no bonus for holding all four.
         </House>
       </Section>
@@ -181,7 +186,7 @@ export function RulesContent() {
             out.
           </li>
         </ol>
-        <House>
+        <House id="house-empty-stock">
           If the stock is empty when you must draw, you may pick up the pile if that is legal for
           you. Otherwise, drawing ends the round at once: nobody gets a going-out bonus, and
           everyone scores what they have. The round also ends this way if the only cards left to
@@ -195,7 +200,7 @@ export function RulesContent() {
             A meld is {MIN_MELD_SIZE} or more cards of one natural rank (4 through Ace), with at
             least 2 natural cards.
           </li>
-          <li>3s can never be melded, Black or Red, not even when going out.</li>
+          <li id="house-threes">3s can never be melded, Black or Red, not even when going out.</li>
           <li>
             You can add cards from your hand to any of your own melds, including a finished canasta,
             as long as the meld stays legal. You can never add to another player's melds.
@@ -210,10 +215,10 @@ export function RulesContent() {
             initial meld.
           </li>
         </ul>
-        <House>
+        <House id="house-wilds">
           Jokers and 2s together may not outnumber the natural cards in a meld: wilds ≤ naturals.
         </House>
-        <House>
+        <House id="house-second-meld">
           You may have only one unfinished meld of each rank. Once your meld of a rank is a canasta,
           you may start another meld of that rank with at least {MIN_MELD_SIZE} cards that make a
           legal meld on their own.
@@ -253,7 +258,7 @@ export function RulesContent() {
 
       <Section id="pickup" title="Picking up the pile">
         <ul>
-          <li>
+          <li id="house-frozen">
             The pile is <strong>frozen for you</strong> until you have picked it up once this round.
             It is also frozen for everyone while a wild is anywhere in it, or when a wild or Red 3
             started it. The card that froze it lies sideways under the pile.
@@ -282,7 +287,7 @@ export function RulesContent() {
             wild freezes it again.
           </li>
         </ul>
-        <House>
+        <House id="house-canasta-pickup">
           A finished canasta can never take the top card. With a canasta of 5s and no unfinished
           meld of 5s, you can only take a discarded 5 by starting a new meld of 5s from your hand.
         </House>
@@ -295,7 +300,7 @@ export function RulesContent() {
             To go out you need at least one canasta after your play. Then either meld every card
             left in your hand, or discard your last card.
           </li>
-          <li>You can't go out on your own first turn of a round.</li>
+          <li id="house-first-turn">You can't go out on your own first turn of a round.</li>
           <li>Going out ends the round immediately.</li>
         </ul>
         <House>
@@ -318,7 +323,7 @@ export function RulesContent() {
             each if they did not
           </li>
           <li>− the value of every card left in their hand</li>
-          <li>
+          <li id="house-concealed">
             For the player who went out: + {GOING_OUT_BONUS}, and + {CONCEALED_HAND_BONUS} more for
             a concealed hand: they had not melded at all before the turn they went out on
           </li>
@@ -335,53 +340,207 @@ export function RulesContent() {
         </p>
         <House>An exact tie for the highest total is a shared win.</House>
       </Section>
-
-      <Section id="house-rules" title="Our house rules vs. standard Canasta">
-        <p>Standard here means the usual four-player partnership game.</p>
-        <table className={styles.table}>
-          <thead>
-            <tr>
-              <th scope="col">Here</th>
-              <th scope="col">Standard Canasta</th>
-            </tr>
-          </thead>
-          <tbody>
-            {HOUSE_DIFFERENCES.map(([here, standard]) => (
-              <tr key={here}>
-                <td>{here}</td>
-                <td>{standard}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </Section>
     </>
   )
 }
 
-const HOUSE_DIFFERENCES: [string, string][] = [
-  ['Everyone plays for themselves', 'Two partnerships share melds and scores'],
-  [`Everyone is dealt ${HAND_SIZE} cards`, '11 cards each (15 in a two-player game)'],
-  ['Wilds may not outnumber naturals in a meld', 'At most 3 wilds in a meld'],
-  ['3s can never be melded', 'Black 3s can be melded when going out'],
-  [`Red 3s are a flat ${RED_THREE_BONUS} each`, 'All four Red 3s score double'],
-  [
-    'The pile is frozen for you until your first pickup of the round',
-    'The pile is frozen for a side until it has made its initial meld',
-  ],
-  ['You may start another meld of a rank once your first one is a canasta', 'One meld per rank'],
-  [
-    'A wild or Red 3 upcard stays in the pile and freezes it',
-    'The same, but a further card is turned up on top of it',
-  ],
-  ['A finished canasta cannot take the top discard', 'The top discard can join a canasta'],
-  ["You can't go out on your first turn", 'You may go out on any turn'],
-  [
-    `Going out concealed earns ${GOING_OUT_BONUS} + ${CONCEALED_HAND_BONUS}`,
-    'Going out concealed earns 200 instead of 100',
-  ],
-  [
-    "An empty stock ends the round when a player must draw and can't legally pick up the pile",
-    'Play continues while players can take the discard',
-  ],
+interface Difference {
+  here: string
+  standard: string
+  /** The section with the full rule. */
+  section: PageSection
+  /** The note or line there that says it, which flashes when a link here leads to it. */
+  note: string
+}
+
+/** The house rules beside standard Canasta's, in the groups the section shows them in. */
+const HOUSE_DIFFERENCES: { group: string; rows: Difference[] }[] = [
+  {
+    group: 'At the table',
+    rows: [
+      {
+        here: 'Everyone plays for themselves',
+        standard: 'Two partnerships share melds and scores',
+        section: 'overview',
+        note: 'house-solo',
+      },
+      {
+        here: `Everyone is dealt ${HAND_SIZE} cards`,
+        standard: '11 cards each (15 in a two-player game)',
+        section: 'setup',
+        note: 'house-hand-size',
+      },
+      {
+        here: 'A wild or Red 3 upcard stays in the pile and freezes it',
+        standard: 'The same, but a further card is turned up on top of it',
+        section: 'setup',
+        note: 'house-upcard',
+      },
+    ],
+  },
+  {
+    group: 'Melds',
+    rows: [
+      {
+        here: 'Wilds may not outnumber naturals in a meld',
+        standard: 'At most 3 wilds in a meld',
+        section: 'melds',
+        note: 'house-wilds',
+      },
+      {
+        here: '3s can never be melded',
+        standard: 'Black 3s can be melded when going out',
+        section: 'melds',
+        note: 'house-threes',
+      },
+      {
+        here: 'You may start another meld of a rank once your first one is a canasta',
+        standard: 'One meld per rank',
+        section: 'melds',
+        note: 'house-second-meld',
+      },
+    ],
+  },
+  {
+    group: 'The pile',
+    rows: [
+      {
+        here: 'The pile is frozen for you until your first pickup of the round',
+        standard: 'The pile is frozen for a side until it has made its initial meld',
+        section: 'pickup',
+        note: 'house-frozen',
+      },
+      {
+        here: 'A finished canasta cannot take the top discard',
+        standard: 'The top discard can join a canasta',
+        section: 'pickup',
+        note: 'house-canasta-pickup',
+      },
+    ],
+  },
+  {
+    group: 'Ending the round and scoring',
+    rows: [
+      {
+        here: "You can't go out on your first turn",
+        standard: 'You may go out on any turn',
+        section: 'going-out',
+        note: 'house-first-turn',
+      },
+      {
+        here: `Going out concealed earns ${GOING_OUT_BONUS + CONCEALED_HAND_BONUS} (${GOING_OUT_BONUS} + ${CONCEALED_HAND_BONUS} bonus)`,
+        standard: 'Going out concealed earns 200 instead of 100',
+        section: 'scoring',
+        note: 'house-concealed',
+      },
+      {
+        here: `Red 3s are a flat ${RED_THREE_BONUS} each`,
+        standard: 'All four Red 3s score double',
+        section: 'card-values',
+        note: 'house-red-threes',
+      },
+      {
+        here: "An empty stock ends the round when a player must draw and can't legally pick up the pile",
+        standard: 'Play continues while players can take the discard',
+        section: 'turn',
+        note: 'house-empty-stock',
+      },
+    ],
+  },
 ]
+
+const DIFFERENCE_COUNT = HOUSE_DIFFERENCES.flatMap((g) => g.rows).length
+
+/** A section's name in the contents, for the links to it. */
+const titleOf = (id: PageSection) => PAGE_SECTIONS.find((s) => s.id === id)?.title ?? id
+
+/**
+ * Shows which line a "Full rule" link was about: brings it into view after the jump to its
+ * section, and flashes it gold unless the player or their device asks for less motion.
+ */
+function showNote(id: string) {
+  requestAnimationFrame(() => {
+    const note = document.getElementById(id)
+    if (!note) return
+    note.scrollIntoView?.({ block: 'nearest' })
+    if (lessMotion() || typeof note.animate !== 'function') return
+    note.animate(
+      [
+        {
+          backgroundColor: 'rgb(242 178 51 / 0.55)',
+          boxShadow: '0 0 0 6px rgb(242 178 51 / 0.55)',
+        },
+        {
+          backgroundColor: getComputedStyle(note).backgroundColor,
+          boxShadow: '0 0 0 6px rgb(242 178 51 / 0)',
+        },
+      ],
+      { duration: 1600, easing: 'ease-out' },
+    )
+  })
+}
+
+/** For players who already know Canasta: only what is different here, each linked to its rule. */
+function HouseRules() {
+  // In a game the rules are a drawer over the table: the links scroll the drawer, and the
+  // practice hand, which would leave the game, isn't offered.
+  const openRules = useOpenRules()
+  return (
+    <Section id="house-rules" title="For Canasta players: what's different here">
+      <p>
+        If you already play Canasta, these {DIFFERENCE_COUNT} rules are all you need to learn.
+        Standard here means the usual four-player partnership game. Each link goes to the full rule.
+      </p>
+      <table className={`${styles.table} ${styles.differences}`}>
+        <thead>
+          <tr>
+            <th scope="col">Here</th>
+            <th scope="col">Standard Canasta</th>
+            <th scope="col">Full rule</th>
+          </tr>
+        </thead>
+        {HOUSE_DIFFERENCES.map(({ group, rows }) => (
+          <tbody key={group}>
+            <tr>
+              <th scope="rowgroup" colSpan={3} className={styles.group}>
+                {group}
+              </th>
+            </tr>
+            {rows.map((d) => (
+              <tr key={d.note}>
+                <th scope="row">{d.here}</th>
+                <td>
+                  <span className={styles.standard}>Standard: </span>
+                  {d.standard}
+                </td>
+                <td>
+                  <a
+                    href={`#${d.section}`}
+                    onClick={(event) => {
+                      if (openRules) {
+                        // The game page keeps its address free of hashes.
+                        event.preventDefault()
+                        openRules(d.section)
+                      }
+                      showNote(d.note)
+                    }}
+                  >
+                    {titleOf(d.section)} <span aria-hidden="true">→</span>
+                  </a>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        ))}
+      </table>
+      {!openRules && (
+        <p className={styles.practice}>
+          <span>
+            Want to try them on a real table first? The practice hand is one round against Dot.
+          </span>
+          <Link to="/learn">Play the practice hand</Link>
+        </p>
+      )}
+    </Section>
+  )
+}

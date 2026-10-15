@@ -137,6 +137,11 @@ export function Coach({ step, hint, refusals, focus, moves, onNext, onRestart }:
         </ul>
       )}
       {(!phone || open || !current.task) && <p className={styles.body}>{current.body}</p>}
+      {current.aside && (!phone || open || !current.task) && (
+        <p className={styles.aside}>
+          {current.aside.text} <Link to={current.aside.to}>{current.aside.link}</Link>
+        </p>
+      )}
       <p className={styles.hint} role="status">
         {hint}
       </p>
