@@ -1,6 +1,6 @@
 import type { PlayerView } from '@canasta/engine'
-import { useEffect, useRef } from 'react'
-import { useModal } from '../modals'
+import { useRef } from 'react'
+import { useModalDialog } from '../modals'
 import { BreakdownTable } from './BreakdownTable'
 import styles from './ScoreSheet.module.css'
 
@@ -14,13 +14,7 @@ export interface ScoreSheetProps {
 export function ScoreSheet({ view, open, onClose }: ScoreSheetProps) {
   const dialogRef = useRef<HTMLDialogElement>(null)
 
-  useEffect(() => {
-    const dialog = dialogRef.current
-    if (!dialog) return
-    if (open && !dialog.open) dialog.showModal?.()
-    if (!open && dialog.open) dialog.close()
-  }, [open])
-  useModal(dialogRef, open)
+  useModalDialog(dialogRef, open)
 
   // Players who quit keep their columns, marked, after the players still seated.
   const quitIds = new Set(view.quit.map((q) => q.id))
@@ -35,60 +29,63 @@ export function ScoreSheet({ view, open, onClose }: ScoreSheetProps) {
 
   return (
     <dialog ref={dialogRef} className={styles.sheet} onClose={onClose} aria-label="Scores">
-      <button type="button" className={styles.close} onClick={onClose}>
-        Close
-      </button>
-      <h2>Scores</h2>
-      {view.history.length === 0 ? (
-        <p>No round has been scored yet.</p>
-      ) : (
-        <>
-          <table className={styles.totals}>
-            <caption>Running totals</caption>
-            <thead>
-              <tr>
-                <th scope="col">Round</th>
-                {everyone.map((p) => (
-                  <th key={p.id} scope="col">
-                    {label(p)}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {view.history.map((r) => (
-                <tr key={r.round}>
-                  <th scope="row">{r.round}</th>
-                  {everyone.map((p) => {
-                    const b = r.breakdown[p.id]
-                    if (!b) return <td key={p.id}>{quitIds.has(p.id) ? 'quit' : '–'}</td>
-                    const total = (running.get(p.id) ?? 0) + b.total
-                    running.set(p.id, total)
-                    return <td key={p.id}>{total.toLocaleString('en-US')}</td>
-                  })}
+      {/* One child that never changes, so nothing new lands after the toasts (see AboveModals). */}
+      <div className={styles.body}>
+        <button type="button" className={styles.close} onClick={onClose}>
+          Close
+        </button>
+        <h2>Scores</h2>
+        {view.history.length === 0 ? (
+          <p>No round has been scored yet.</p>
+        ) : (
+          <>
+            <table className={styles.totals}>
+              <caption>Running totals</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Round</th>
+                  {everyone.map((p) => (
+                    <th key={p.id} scope="col">
+                      {label(p)}
+                    </th>
+                  ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
-          {[...view.history].reverse().map((r) => {
-            const scored = everyone.filter((p) => r.breakdown[p.id])
-            return (
-              <section key={r.round} className={styles.round} aria-label={`Round ${r.round}`}>
-                <h3>Round {r.round}</h3>
-                <p>
-                  {r.endedBy === 'goingOut' && r.wentOut
-                    ? `${nameOf(r.wentOut)} went out.`
-                    : 'The stock ran out.'}
-                </p>
-                <BreakdownTable
-                  names={scored.map(label)}
-                  breakdowns={scored.map((p) => r.breakdown[p.id])}
-                />
-              </section>
-            )
-          })}
-        </>
-      )}
+              </thead>
+              <tbody>
+                {view.history.map((r) => (
+                  <tr key={r.round}>
+                    <th scope="row">{r.round}</th>
+                    {everyone.map((p) => {
+                      const b = r.breakdown[p.id]
+                      if (!b) return <td key={p.id}>{quitIds.has(p.id) ? 'quit' : '–'}</td>
+                      const total = (running.get(p.id) ?? 0) + b.total
+                      running.set(p.id, total)
+                      return <td key={p.id}>{total.toLocaleString('en-US')}</td>
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {[...view.history].reverse().map((r) => {
+              const scored = everyone.filter((p) => r.breakdown[p.id])
+              return (
+                <section key={r.round} className={styles.round} aria-label={`Round ${r.round}`}>
+                  <h3>Round {r.round}</h3>
+                  <p>
+                    {r.endedBy === 'goingOut' && r.wentOut
+                      ? `${nameOf(r.wentOut)} went out.`
+                      : 'The stock ran out.'}
+                  </p>
+                  <BreakdownTable
+                    names={scored.map(label)}
+                    breakdowns={scored.map((p) => r.breakdown[p.id])}
+                  />
+                </section>
+              )
+            })}
+          </>
+        )}
+      </div>
     </dialog>
   )
 }

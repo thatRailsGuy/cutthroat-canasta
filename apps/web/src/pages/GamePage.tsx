@@ -1,17 +1,17 @@
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router'
 import { gameExists, normalizeCode } from '../api'
 import type { ConnectionStatus } from '../connection'
-import { AboveModals } from '../components/AboveModals'
+import { AboveModals, useLiveRegion } from '../components/AboveModals'
 import { Announcer } from '../components/Announcer'
 import { ChatSounds } from '../components/ChatSounds'
 import { RulesDrawer } from '../components/RulesDrawer'
 import { TableSounds } from '../components/TableSounds'
 import { Toasts } from '../components/Toasts'
-import { RulesDrawerContext, type DrawerRequest } from '../rules/drawer'
-import type { PageSection } from '../rules/sections'
+import { RulesDrawerContext, useRulesDrawer } from '../rules/drawer'
 import { useFocusRescue } from '../focusRescue'
 import { usePhone } from '../layout'
+import { useTopModal } from '../modals'
 import { loadName, loadToken, tokenFromHash } from '../storage'
 import { useTitle } from '../title'
 import { useGame } from '../useGame'
@@ -120,11 +120,7 @@ function Session({ code, linkToken, autoJoinName, joinsByItself }: SessionProps)
     [state.chatText, typeChat, sendChat, readChat],
   )
   // The drawer lives here, inside the session, so opening it never unmounts the connection.
-  const [drawer, setDrawer] = useState<DrawerRequest | null>(null)
-  const openRules = useCallback(
-    (section: PageSection) => setDrawer((d) => ({ section, id: (d?.id ?? 0) + 1 })),
-    [],
-  )
+  const rules = useRulesDrawer()
 
   useEffect(() => {
     if (!state.removed) return
@@ -195,7 +191,7 @@ function Session({ code, linkToken, autoJoinName, joinsByItself }: SessionProps)
   }
 
   return (
-    <RulesDrawerContext.Provider value={openRules}>
+    <RulesDrawerContext.Provider value={rules.open}>
       <ConnectionBanner connection={state.connection} failures={state.failures} code={code} />
       {body}
       {/* Outside the table, which remounts with each deal, so the deal itself can play a sound. */}
@@ -207,16 +203,20 @@ function Session({ code, linkToken, autoJoinName, joinsByItself }: SessionProps)
         chatHeard={state.chatHeard}
         events={phone}
       />
-      <button type="button" className={styles.rulesButton} onClick={() => openRules('overview')}>
+      <button type="button" className={styles.rulesButton} onClick={() => rules.open('overview')}>
         Rules
       </button>
       <Toasts toasts={state.toasts} onDismiss={dismissToast} />
-      <RulesDrawer request={drawer} onClose={() => setDrawer(null)} />
+      <RulesDrawer request={rules.request} onClose={rules.close} />
     </RulesDrawerContext.Provider>
   )
 }
 
-/** Shown at the top of the page, or of the open dialog, while the game isn't connected. */
+/**
+ * Shown at the top of the page while the game isn't connected. The page behind an open dialog
+ * is dimmed and inert, so the dialog shows it at its top too. The one on the page stays put, so
+ * the page doesn't jump behind the dialog.
+ */
 export function ConnectionBanner({
   connection,
   failures,
@@ -226,17 +226,30 @@ export function ConnectionBanner({
   failures: number
   code: string
 }) {
-  if (connection === 'open') return null
+  const live = useLiveRegion('status')
+  const inModal = useTopModal() !== null
+  const text =
+    connection === 'open'
+      ? null
+      : failures >= UNREACHABLE_AFTER
+        ? `Can't reach game ${code}. Check the code, or wait while we keep trying.`
+        : connection === 'connecting'
+          ? 'Connecting…'
+          : 'Reconnecting…'
+  // The live region stays in the page while connected, because it has to be there before its
+  // text changes.
+  useEffect(() => {
+    if (text) live.say(text)
+    else live.clear()
+  }, [text, live])
+
   return (
-    <AboveModals first>
-      <p className={styles.banner} role="status">
-        {failures >= UNREACHABLE_AFTER
-          ? `Can't reach game ${code}. Check the code, or wait while we keep trying.`
-          : connection === 'connecting'
-            ? 'Connecting…'
-            : 'Reconnecting…'}
-      </p>
-    </AboveModals>
+    <>
+      {text && <p className={styles.banner}>{text}</p>}
+      <AboveModals first live={live}>
+        {text && inModal && <p className={styles.banner}>{text}</p>}
+      </AboveModals>
+    </>
   )
 }
 

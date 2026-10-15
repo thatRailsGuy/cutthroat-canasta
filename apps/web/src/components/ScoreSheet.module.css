@@ -9,6 +9,11 @@
   color: var(--ink);
 }
 
+/* It only holds the sheet's contents together, and draws no box of its own. */
+.body {
+  display: contents;
+}
+
 .sheet::backdrop {
   background: rgb(0 0 0 / 0.4);
 }

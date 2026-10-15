@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { useModal } from '../modals'
+import { useModalDialog } from '../modals'
 import { RulesContent } from '../rules/RulesContent'
 import type { DrawerRequest } from '../rules/drawer'
 import styles from './RulesDrawer.module.css'
@@ -16,18 +16,12 @@ export function RulesDrawer({ request, onClose }: RulesDrawerProps) {
   const section = request?.section ?? null
   const requestId = request?.id ?? null
 
+  useModalDialog(dialogRef, section !== null)
   useEffect(() => {
-    const dialog = dialogRef.current
-    if (!dialog) return
-    if (section === null) {
-      if (dialog.open) dialog.close()
-      return
-    }
-    if (!dialog.open) dialog.showModal?.()
-    dialog.querySelector(`#${section}`)?.scrollIntoView?.({ block: 'start' })
+    if (section === null) return
+    dialogRef.current?.querySelector(`#${section}`)?.scrollIntoView?.({ block: 'start' })
     // `requestId` is a dependency so that asking for the open section again scrolls to it again.
   }, [section, requestId])
-  useModal(dialogRef, section !== null)
 
   return (
     <dialog
