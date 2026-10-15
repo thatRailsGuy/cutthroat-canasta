@@ -61,6 +61,14 @@ describe('TutorialPage', () => {
     expect(title()).toBe('Pick up the pile')
   })
 
+  it('points players who know Canasta to the house rules on the first step', () => {
+    const { lesson } = setup()
+    expect(lesson().getByRole('link', { name: 'Learn our house rules' })).toHaveAttribute(
+      'href',
+      '/rules#house-rules',
+    )
+  })
+
   it('asks before starting the lesson over', async () => {
     const { lesson, title, click } = setup()
     await click(lesson().getByRole('button', { name: 'Next' }))

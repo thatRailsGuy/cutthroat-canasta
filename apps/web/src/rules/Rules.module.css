@@ -84,6 +84,88 @@
   text-align: left;
 }
 
+/* The house rules beside standard Canasta's: a heading row for each group, then the rule here,
+   the standard one, and a link to the full rule. */
+.differences th,
+.differences td {
+  padding: 0.45rem 0.5rem;
+  vertical-align: top;
+}
+
+.differences thead th {
+  font-size: 0.8rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.differences tbody th[scope='row'] {
+  font-weight: 600;
+}
+
+.differences td:nth-child(2) {
+  color: var(--muted);
+}
+
+.differences td:last-child {
+  white-space: nowrap;
+}
+
+.differences td:last-child a {
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.differences td:last-child a:hover {
+  text-decoration: underline;
+}
+
+.differences .group {
+  padding-top: 1.4rem;
+  font-size: 0.85rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--teal-dark);
+}
+
+/* Said by the column heading on a wide screen; needed once the table is a list. */
+.standard {
+  display: none;
+}
+
+.practice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem 1rem;
+  margin: 1.6rem 0 0;
+  padding: 0.9rem 1rem;
+  border: 2px solid var(--teal);
+  border-radius: var(--radius);
+  font-family: var(--font);
+  font-size: 1rem;
+}
+
+.practice span {
+  flex: 1 1 18rem;
+}
+
+.practice a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 1.1rem;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: var(--shadow);
+  font-weight: 800;
+  text-decoration: none;
+}
+
 .examples {
   display: grid;
   gap: 1rem;
@@ -204,6 +286,68 @@
   }
 }
 
+/* A phone: each difference is a short list item, the rule here over the standard one, then the
+   link, so nothing scrolls sideways. The column headings stay for screen readers. */
+@media (max-width: 600px) {
+  .differences,
+  .differences tbody,
+  .differences tr,
+  .differences th,
+  .differences td {
+    display: block;
+  }
+
+  .differences thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .differences tr {
+    display: grid;
+    gap: 0.1rem;
+    padding: 0.6rem 0;
+    border-bottom: 1px solid #ddd6c8;
+  }
+
+  .differences tr:has(.group) {
+    padding: 0;
+    border-bottom: none;
+  }
+
+  .differences th,
+  .differences td {
+    padding: 0;
+    border-bottom: none;
+  }
+
+  .differences tbody th[scope='row'] {
+    font-weight: 800;
+  }
+
+  .differences .group {
+    padding-top: 1.2rem;
+  }
+
+  .differences td:last-child {
+    white-space: normal;
+  }
+
+  .differences td:last-child a {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3em;
+    min-height: 2rem;
+  }
+
+  .standard {
+    display: inline;
+  }
+}
+
 @media print {
   .page {
     display: block;
@@ -212,7 +356,8 @@
 
   .toc,
   .print,
-  .credits {
+  .credits,
+  .practice {
     display: none;
   }
 

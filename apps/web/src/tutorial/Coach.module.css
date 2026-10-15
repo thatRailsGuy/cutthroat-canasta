@@ -232,6 +232,11 @@
   color: var(--muted);
 }
 
+.aside {
+  margin: 0.75rem 0 0;
+  font-weight: 600;
+}
+
 /* A refused move: a red sticky note slapped on the card. */
 .hint {
   margin: 0;

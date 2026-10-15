@@ -6,10 +6,10 @@ Make a mockup artifact for every visual change, and agree on it before anyone wr
 
 ## Web client
 
-- [ ] Add a tutorial section on how our house rules differ from standard Canasta, for players who already know the game. The tutorial ([lesson.ts](../apps/web/src/tutorial/lesson.ts)) teaches the game from the start, and the rules page ([RulesContent.tsx](../apps/web/src/rules/RulesContent.tsx)) has a house-rules table. Open question: a separate short lesson, or a page that links each difference to its rules section?
 - [ ] Show toasts while the rules drawer is open. The drawer is a modal `<dialog>` in the top layer ([RulesDrawer.tsx](../apps/web/src/components/RulesDrawer.tsx)), so rule-error and "Not connected" toasts sit behind it until it closes ([Toasts.tsx](../apps/web/src/components/Toasts.tsx)). Needs a mockup if the toasts move.
 - [ ] Show a QR code for a rejoin link once it's made. In the host drawer ([HostDrawer.tsx](../apps/web/src/components/HostDrawer.tsx)) a rejoin link is only a text box with **Copy**, and the only QR code is the invite link's, so it's easy to send someone the invite link when they need their seat back. The invite link opens the join form, and joining there takes a new seat. Label the rejoin link as opening that player's seat and hand. Needs a mockup.
 - [ ] Say on the join form when a seat is waiting for its player. A game link without a token shows only the join form ([GamePage.tsx](../apps/web/src/pages/GamePage.tsx)), even mid-game with a seat away, so a player whose rejoin link went astray sits down as a new player. The form could say "Ann's seat is waiting for a rejoin link. Ask the host for it." A socket gets no state before it joins, so the server would need to send the away seats. Needs a mockup.
+- [ ] Check the rules page's "For Canasta players" table on an iPhone with VoiceOver. Under 600px wide the table is restyled as a stacked list ([Rules.module.css](../apps/web/src/rules/Rules.module.css)) with no explicit ARIA table roles, and Safari can stop reading a restyled table as a table. It was only checked in Chromium. If VoiceOver reads it as plain text, add `role="table"`, `"row"`, `"rowheader"` and `"cell"` to the elements.
 
 ## Server and project
 
