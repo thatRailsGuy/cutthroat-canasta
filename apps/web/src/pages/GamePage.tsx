@@ -339,8 +339,8 @@ function EmptySeatList({ seats }: { seats: EmptySeats }) {
         <strong>{away.length === 1 ? `Are you ${away[0].name}?` : 'Is one of them yours?'}</strong>{' '}
         Ask {linkMaker(seats)} for your rejoin link.
         {awayHost && ` While ${awayHost.name} is away, anyone playing can make one.`}
-        {away.length === 1 && ' It puts you back in your seat with your cards and score.'} Joining
-        here gives you a new seat instead.
+        {away.length === 1 && ' It puts you back where you were.'} Joining here gives you a new seat
+        instead.
       </p>
       <p>
         <strong>New to the table?</strong> Join below. You'll watch this hand and be dealt in with

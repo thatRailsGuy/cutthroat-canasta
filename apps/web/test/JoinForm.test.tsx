@@ -52,7 +52,7 @@ describe('JoinForm', () => {
     const region = screen.getByRole('region', { name: 'Empty seat' })
     expect(screen.getByRole('listitem')).toHaveTextContent('Ann')
     expect(region).toHaveTextContent(
-      'Are you Ann? Ask Bea, the host, for your rejoin link. It puts you back in your seat with your cards and score. Joining here gives you a new seat instead.',
+      'Are you Ann? Ask Bea, the host, for your rejoin link. It puts you back where you were. Joining here gives you a new seat instead.',
     )
     expect(region).toHaveTextContent(
       "New to the table? Join below. You'll watch this hand and be dealt in with the next one.",
