@@ -152,7 +152,10 @@ export type ServerMessage =
       public: boolean
       /** Players the host kicked and can let back in. Empty for everyone but the host. */
       kicked: { playerId: string; name: string }[]
-      /** How long each seated player without a connection has been away (ms). */
+      /**
+       * How long each player without a connection has been away (ms), players waiting for the
+       * next hand too.
+       */
       away: Record<string, number>
     }
   | { type: 'error'; code: ServerErrorCode; message: string }
@@ -180,7 +183,10 @@ export interface EmptySeats {
   started: boolean
   /** The host's name while they are connected, or null. */
   host: string | null
-  /** Seats away for at least EMPTY_SEAT_AFTER_MS, in seat order. */
+  /**
+   * Seats away for at least EMPTY_SEAT_AFTER_MS, in seat order, then players waiting for the next
+   * hand who are away as long.
+   */
   away: { name: string; host: boolean }[]
 }
 

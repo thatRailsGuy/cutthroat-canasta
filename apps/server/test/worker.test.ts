@@ -384,8 +384,7 @@ describe('play again', () => {
     expect(view.players.map((p) => p.name)).toEqual(['Ann', 'Bob'])
     expect(hostId).toBe(bobJoined.playerId)
     expect(connected).toEqual([bobJoined.playerId])
-    // A socket without a seat hears about empty seats, though the client has stopped listening.
-    expect(await ann.next()).toMatchObject({ type: 'seats', started: false })
+    // The list her socket got when it connected still holds, so it isn't sent again.
     await ann.expectQuiet()
 
     const stale = await connect(code)
@@ -640,6 +639,35 @@ describe('empty seats', () => {
     expect((await connect(code, { ip: '192.0.2.9' })).seats.away).toEqual([
       { name: 'Bob', host: false },
     ])
+    // Without an address it could be Dave, so it gets the empty list too.
+    expect((await connect(code)).seats.away).toEqual([])
+  })
+
+  it('lists a player waiting for the next hand who went away', async () => {
+    const { code, ann, bob } = await startedGame()
+    const cat = await connect(code)
+    const catJoined = await join(cat, 'Cat')
+    await Promise.all([nextState(cat), nextState(ann), nextState(bob)])
+    cat.close()
+    await Promise.all([nextState(ann), nextState(bob)])
+    await awayFor(code, catJoined.playerId, EMPTY_SEAT_AFTER_MS)
+    expect((await connect(code)).seats).toEqual({
+      type: 'seats',
+      started: true,
+      host: 'Ann',
+      away: [{ name: 'Cat', host: false }],
+    })
+  })
+
+  it('sends a socket on the join form nothing while the list stays the same', async () => {
+    const { code, ann, bob } = await startedGame()
+    const visitor = await connect(code)
+    ann.send({ type: 'chat', text: 'hi' })
+    await Promise.all([ann.next(), bob.next()])
+    bob.close()
+    await nextState(ann)
+    await visitor.expectQuiet()
+    expect(visitor.seats.away).toEqual([])
   })
 
   it('updates the list when a seat comes back or is taken over', async () => {

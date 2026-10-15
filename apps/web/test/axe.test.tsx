@@ -80,27 +80,30 @@ describe('accessibility', () => {
 
   it('join form, with empty seats and a taken name', async () => {
     saveName('Ann')
-    expect(
-      await violations(
-        <JoinForm
-          code="HT7KM4"
-          error="Someone at the table is already called Ann."
-          seatTaken={false}
-          nameTaken
-          emptySeats={{
-            started: true,
-            host: null,
-            away: [
-              { name: 'Ann', host: false },
-              { name: 'Bea', host: true },
-            ],
-          }}
-          waiting={false}
-          onJoin={() => {}}
-        />,
-      ),
-    ).toEqual([])
-    localStorage.clear()
+    try {
+      expect(
+        await violations(
+          <JoinForm
+            code="HT7KM4"
+            error="Someone at the table is already called Ann."
+            seatTaken={false}
+            nameTaken
+            emptySeats={{
+              started: true,
+              host: null,
+              away: [
+                { name: 'Ann', host: false },
+                { name: 'Bea', host: true },
+              ],
+            }}
+            waiting={false}
+            onJoin={() => {}}
+          />,
+        ),
+      ).toEqual([])
+    } finally {
+      localStorage.clear()
+    }
   })
 
   it('display options', async () => {

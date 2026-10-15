@@ -261,9 +261,13 @@ export function JoinForm({
   onJoin,
 }: JoinFormProps) {
   const [name, setName] = useState(loadName)
+  // A taken name is about the name that was sent: once the box changes, it no longer fits.
+  const [edited, setEdited] = useState(false)
   const submit = (event: FormEvent) => {
     event.preventDefault()
-    if (name.trim()) onJoin(name.trim())
+    if (!name.trim()) return
+    setEdited(false)
+    onJoin(name.trim())
   }
   // Only mid-game: in the lobby a player who lost their link can join again by name.
   const away = emptySeats?.started && !seatTaken ? emptySeats.away : []
@@ -277,7 +281,14 @@ export function JoinForm({
       <form className={styles.join} onSubmit={submit}>
         <label>
           Your name
-          <input value={name} maxLength={20} onChange={(e) => setName(e.target.value)} />
+          <input
+            value={name}
+            maxLength={20}
+            onChange={(e) => {
+              setName(e.target.value)
+              setEdited(true)
+            }}
+          />
         </label>
         <button type="submit" disabled={waiting || !name.trim()}>
           {seatTaken ? 'Join again' : 'Join'}
@@ -290,7 +301,7 @@ export function JoinForm({
           ask {linkMaker(emptySeats)} for your rejoin link. If not, choose another name.
         </p>
       )}
-      {error && !seatTaken && !(yours && nameTaken) && (
+      {error && !seatTaken && !(nameTaken && (yours || edited)) && (
         <p className={styles.error} role="alert">
           {error}
         </p>

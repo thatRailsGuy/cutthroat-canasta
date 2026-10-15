@@ -94,4 +94,29 @@ describe('JoinForm', () => {
     rerender({ emptySeats: seats({ away: [ann] }) })
     expect(screen.getByRole('alert')).toHaveTextContent(error)
   })
+
+  it("drops the server's refusal once the name is changed, since it was about the old one", async () => {
+    saveName('Cat')
+    const error = 'Someone at the table is already called Cat.'
+    const { props } = setup({ error, nameTaken: true })
+    expect(screen.getByRole('alert')).toHaveTextContent(error)
+
+    const input = screen.getByRole('textbox', { name: 'Your name' })
+    await userEvent.type(input, 'h')
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+    // Typing it back doesn't bring back an answer about a name that wasn't sent again.
+    await userEvent.type(input, '{Backspace}')
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+
+    await userEvent.type(input, '{Enter}')
+    expect(props.onJoin).toHaveBeenCalledWith('Cat')
+    expect(screen.getByRole('alert')).toHaveTextContent(error)
+  })
+
+  it('keeps other refusals while the name changes', async () => {
+    const error = "The host of this game removed you, so you can't join it again."
+    setup({ error })
+    await userEvent.type(screen.getByRole('textbox', { name: 'Your name' }), 'Dan')
+    expect(screen.getByRole('alert')).toHaveTextContent(error)
+  })
 })
