@@ -232,10 +232,6 @@ html[data-contrast] body {
   background-image: none;
 }
 
-html[data-contrast] button {
-  border-width: 3px;
-}
-
 .card-ghost {
   position: fixed;
   left: 0;

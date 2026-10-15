@@ -1,6 +1,11 @@
 /* Page-wide rules that win over a component's own: main.tsx loads this after every component's
    styles, where global.css comes before them. */
 
+/* High contrast thickens every button's border, including ones a component draws itself. */
+html[data-contrast] button {
+  border-width: 3px;
+}
+
 /* Dark teal, which keeps 3:1 against the darkest gingham square (the lighter teal didn't). */
 :focus-visible {
   outline: 3px solid var(--teal-dark);
