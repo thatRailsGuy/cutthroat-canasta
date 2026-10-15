@@ -98,16 +98,16 @@ Messages are JSON. The client sends:
 
 The server sends:
 
-| Message                                              | Meaning                                                                                               |
-| ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| `{ "type": "joined", "code", "playerId", "token" }`  | Your seat. Save the token to reconnect                                                                |
-| `{ "type": "state", "view", "hostId", "connected" }` | Your view after any change, with the round's public feed. Other hands are counts until the round ends |
-| `{ "type": "error", "code", "message" }`             | Your last message was rejected. Only you receive it                                                   |
-| `{ "type": "removed", "reason" }`                    | Your seat is gone (`left` or `kicked`). The connection is unjoined                                    |
-| `{ "type": "reissued", "playerId", "token" }`        | Host only: share this token as a rejoin link. Old tokens stop working                                 |
-| `{ "type": "seatReissued", "playerId" }`             | Everyone: the host issued a rejoin link for this seat                                                 |
-| `{ "type": "seats", "started", "host", "away" }`     | Not joined yet: names of the seats away 10 s or more mid-game, and the host's name if connected       |
-| `{ "type": "pong" }`                                 | The heartbeat reply                                                                                   |
+| Message                                              | Meaning                                                                                                         |
+| ---------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `{ "type": "joined", "code", "playerId", "token" }`  | Your seat. Save the token to reconnect                                                                          |
+| `{ "type": "state", "view", "hostId", "connected" }` | Your view after any change, with the round's public feed. Other hands are counts until the round ends           |
+| `{ "type": "error", "code", "message" }`             | Your last message was rejected. Only you receive it                                                             |
+| `{ "type": "removed", "reason" }`                    | Your seat is gone (`left` or `kicked`). The connection is unjoined                                              |
+| `{ "type": "reissued", "playerId", "token" }`        | Host only: share this token as a rejoin link. Old tokens stop working                                           |
+| `{ "type": "seatReissued", "playerId" }`             | Everyone: the host issued a rejoin link for this seat                                                           |
+| `{ "type": "seats", "started", "host", "away" }`     | Not joined yet: names of seats and waiting players away 10 s or more mid-game, and the host's name if connected |
+| `{ "type": "pong" }`                                 | The heartbeat reply                                                                                             |
 
 Error codes are the engine's rule errors plus the protocol errors `BAD_MESSAGE`, `NOT_JOINED`, `NOT_HOST`, `ALREADY_JOINED`, `NO_SUCH_PLAYER`, `PLAYER_CONNECTED` and `UNKNOWN_TOKEN`. `UNKNOWN_TOKEN` answers a `join` whose token belongs to no seat (it was left, kicked or reissued); the client then forgets the token and asks for a name.
 
