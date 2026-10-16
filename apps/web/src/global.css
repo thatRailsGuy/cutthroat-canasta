@@ -173,12 +173,6 @@ a:hover {
   color: var(--red-dark);
 }
 
-/* Dark teal, which keeps 3:1 against the darkest gingham square (the lighter teal didn't). */
-:focus-visible {
-  outline: 3px solid var(--teal-dark);
-  outline-offset: 2px;
-}
-
 /* A phone: smaller cards, so a hand fits in two rows. */
 @media (max-width: 600px) {
   :root {
@@ -236,35 +230,6 @@ html[data-contrast] {
 
 html[data-contrast] body {
   background-image: none;
-}
-
-html[data-contrast] button {
-  border-width: 3px;
-}
-
-/*
- * Dragging cards (cardDrag.ts). Places that would take the dragged cards get a dashed mustard
- * outline; the one under the pointer turns solid and tinted, or red when the move isn't allowed.
- */
-[data-drop-state='can'] {
-  outline: 2px dashed var(--gold-ink);
-  outline-offset: 3px;
-}
-
-[data-drop-state='ok'] {
-  outline: 3px solid var(--gold-ink);
-  outline-offset: 3px;
-  background-color: rgb(242 178 51 / 0.3);
-}
-
-[data-drop-state='no'] {
-  outline: 3px solid var(--bad);
-  outline-offset: 3px;
-}
-
-/* The cards being dragged stay in place, faded, until they're dropped. */
-[data-lifted] {
-  opacity: 0.25;
 }
 
 .card-ghost {
