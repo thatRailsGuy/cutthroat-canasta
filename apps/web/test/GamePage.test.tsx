@@ -57,4 +57,13 @@ describe('GamePage', () => {
     await page({ connection: 'open', playerId: 'you', view: makeView({ hand: [], phase: 'draw' }) })
     expect(document.querySelector(`.${styles.belowTools}`)).toBeNull()
   })
+
+  it("starts the table's connection banner below the buttons, ahead of the table", async () => {
+    const view = makeView({ hand: [], phase: 'draw' })
+    await page({ connection: 'reconnecting', playerId: 'you', view })
+    const banner = screen.getByText('Reconnecting…', { selector: 'p' })
+    expect(styles.atTable).toBeTruthy()
+    expect(banner.parentElement).toHaveClass(styles.atTable)
+    expect(banner.parentElement?.firstElementChild).toBe(banner)
+  })
 })

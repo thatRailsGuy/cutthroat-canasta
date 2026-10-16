@@ -28,6 +28,7 @@ import { SoundButton } from '../components/SoundButton'
 import { FrozenChip } from '../components/Snowflake'
 import { StagingArea } from '../components/StagingArea'
 import { TableEffects } from '../components/TableEffects'
+import { TableMenu } from '../components/TableMenu'
 import { TableTalk, type TalkControls } from '../components/TableTalk'
 import { TurnRail } from '../components/TurnRail'
 import styles from '../components/Table.module.css'
@@ -384,9 +385,21 @@ export function Table({
         )}
       </div>
 
-      {/* Fixed at the top, beside the Rules button. */}
-      <div className={styles.gameTools}>
-        {(isHost || standIn) && inPlay && (
+      {/* Fixed at the top, beside the Rules button. On a phone, Menu holds all but Scores. */}
+      <div className="corner-tools">
+        {phone && (
+          <TableMenu
+            buttonRef={quitButton}
+            className={styles.toolButton}
+            host={(isHost || standIn) && inPlay ? (isHost ? 'Host tools' : 'Host is away') : null}
+            onHost={() => setHostOpen(true)}
+            onQuit={you && inPlay ? () => setConfirmQuit(true) : undefined}
+            level={soundLevel}
+            onLevel={setSoundLevel}
+            onOpen={() => setConfirmQuit(false)}
+          />
+        )}
+        {!phone && (isHost || standIn) && inPlay && (
           <button
             type="button"
             className={styles.toolButton}
@@ -398,7 +411,7 @@ export function Table({
             {isHost ? 'Host' : 'Host is away'}
           </button>
         )}
-        {you && inPlay && (
+        {!phone && you && inPlay && (
           <button
             ref={quitButton}
             type="button"
@@ -428,12 +441,16 @@ export function Table({
             )}
           </button>
         )}
-        <SoundButton
-          level={soundLevel}
-          onLevel={setSoundLevel}
-          onOpen={() => setConfirmQuit(false)}
-        />
-        <DisplayButton />
+        {!phone && (
+          <>
+            <SoundButton
+              level={soundLevel}
+              onLevel={setSoundLevel}
+              onOpen={() => setConfirmQuit(false)}
+            />
+            <DisplayButton />
+          </>
+        )}
       </div>
       {confirmQuit && (
         <div

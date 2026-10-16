@@ -85,6 +85,8 @@
   --tap: 44px;
   /* The strip they take up, with room below them: where a page's own content starts. */
   --corner-clear: calc(var(--corner-top) + var(--tap) + 0.75rem);
+  /* Where a panel dropped down from one of them starts. */
+  --corner-drop: calc(var(--corner-top) + var(--tap) + 0.5rem);
   --hand: Caveat, 'Bradley Hand', cursive;
   --serif: 'Iowan Old Style', 'Palatino Linotype', Georgia, serif;
   color-scheme: light;
@@ -302,6 +304,16 @@ html[data-contrast] body {
   background: var(--gold);
   box-shadow: 0 0 0 2px var(--ink);
   pointer-events: none;
+}
+
+/* A page's own buttons, fixed at the top beside the Rules button: the lobby's and the table's. */
+.corner-tools {
+  position: fixed;
+  top: var(--corner-top);
+  right: 6.25rem;
+  z-index: 5;
+  display: flex;
+  gap: 0.5rem;
 }
 
 /* Hidden until a keyboard player tabs to it, then in the top corner. */

@@ -61,7 +61,7 @@ describe('Table, on a phone', () => {
     anchor: { game: 1, round: 1, redeals: 0, after: 0 },
   })
 
-  it('counts unread chat on the Scores button until the sheet opens', async () => {
+  const onAPhone = () =>
     vi.stubGlobal(
       'matchMedia',
       (query: string) =>
@@ -71,6 +71,47 @@ describe('Table, on a phone', () => {
           removeEventListener: () => {},
         }) as unknown as MediaQueryList,
     )
+
+  function hosting() {
+    onAPhone()
+    const view = makeView({ hand: [], phase: 'draw' })
+    const state = {
+      ...initialGameState,
+      playerId: 'you',
+      hostId: 'you',
+      connected: ['you'],
+      view,
+      connection: 'open' as const,
+    }
+    render(
+      <MemoryRouter>
+        <Table code="HT7KM4" view={view} state={state} send={vi.fn(() => true)} />
+      </MemoryRouter>,
+    )
+  }
+
+  it('puts Host, Quit game, sound and Aa in Menu, so only Menu and Scores sit by Rules', async () => {
+    hosting()
+    const tools = within(document.querySelector<HTMLElement>('.corner-tools')!)
+    expect(tools.getAllByRole('button').map((b) => b.textContent)).toEqual(['Menu', 'Scores'])
+    await userEvent.click(tools.getByRole('button', { name: 'Menu' }))
+    const menu = within(screen.getByRole('dialog', { name: 'Menu' }))
+    expect(menu.getByRole('button', { name: 'Host tools' })).toBeInTheDocument()
+    expect(menu.getByRole('button', { name: 'Quit game' })).toBeInTheDocument()
+  })
+
+  it('asks before quitting from Menu, and Keep playing puts focus back on Menu', async () => {
+    hosting()
+    await userEvent.click(screen.getByRole('button', { name: 'Menu' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Quit game' }))
+    const confirm = within(screen.getByRole('alertdialog', { name: 'Quit the game?' }))
+    await userEvent.click(confirm.getByRole('button', { name: 'Keep playing' }))
+    expect(screen.queryByRole('alertdialog')).toBeNull()
+    expect(screen.getByRole('button', { name: 'Menu' })).toHaveFocus()
+  })
+
+  it('counts unread chat on the Scores button until the sheet opens', async () => {
+    onAPhone()
     const view = makeView({ hand: [], phase: 'draw' })
     const state = {
       ...initialGameState,

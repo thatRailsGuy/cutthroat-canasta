@@ -383,18 +383,20 @@
   box-shadow: none;
 }
 
-/* The right column clears the fixed Rules button. */
+/* The right column clears the fixed Rules button, unless the connection banner already does. */
 .side {
   position: sticky;
-  top: 3.75rem;
+  top: var(--corner-drop);
   display: grid;
   gap: 1.5rem;
-  margin-top: 3.25rem;
+  margin-top: calc(3.25rem * var(--clear-tools, 1));
 }
 
 .feed {
   padding: 0.8rem 1rem;
   display: grid;
+  /* The message box's own width can't widen the lobby card it sits in. */
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.5rem;
   font-size: 0.9rem;
 }
@@ -865,16 +867,6 @@
   max-width: none;
 }
 
-/* The game's own buttons, fixed at the top beside the Rules button: on a phone, Scores too. */
-.gameTools {
-  position: fixed;
-  top: var(--corner-top);
-  right: 6.25rem;
-  z-index: 5;
-  display: flex;
-  gap: 0.5rem;
-}
-
 .toolButton {
   background: var(--teal-dark);
   color: var(--paper);
@@ -883,7 +875,7 @@
 /* "Are you sure?" for New hand and Quit game, dropped down under the buttons. */
 .toolConfirm {
   position: fixed;
-  top: 3.75rem;
+  top: var(--corner-drop);
   right: 0.5rem;
   z-index: 6;
   display: flex;
@@ -914,9 +906,10 @@
     margin-top: 0;
   }
 
-  /* Without the right column, the top of the play area clears the fixed buttons. */
+  /* Without the right column, the top of the play area clears the fixed buttons, unless the
+     connection banner already does. */
   .play {
-    padding-top: 3rem;
+    padding-top: calc(3rem * var(--clear-tools, 1));
   }
 }
 
@@ -943,7 +936,8 @@
     font-size: 0.85rem;
   }
 
-  .gameTools button {
+  .toolButton,
+  .scoresButton {
     padding: 0 0.6rem;
     font-size: 0.8rem;
   }

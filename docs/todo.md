@@ -6,12 +6,8 @@ Make a mockup artifact for every visual change, and agree on it before anyone wr
 
 ## Web client
 
-- [ ] Keep the table's toolbar on screen on phones. The `.gameTools` row runs off the left edge: **Host** is off screen at 320 and 360px wide and clipped at 390px, and **Quit game** is cut off at 320px, so a host on a small phone can't open Host tools. The lobby's `.pageTools` row ([Pages.module.css](../apps/web/src/pages/Pages.module.css)) copies the same fixed position, so fix both, or give them one shared rule. Mockup: [Phone Toolbar Fixes](https://claude.ai/artifact/4Ye1n9fQRmmYyjkofQsM71).
-- [ ] Keep the lobby's Public/Private switch inside the card. Its box runs past the card's right edge at 320px wide, and at 390px with Larger text on. Mockup: [Phone Toolbar Fixes](https://claude.ai/artifact/4Ye1n9fQRmmYyjkofQsM71).
 - [ ] Check the rules page's "For Canasta players" table on an iPhone with VoiceOver. Under 600px wide the table is restyled as a stacked list ([Rules.module.css](../apps/web/src/rules/Rules.module.css)) with no explicit ARIA table roles, and Safari can stop reading a restyled table as a table. It was only checked in Chromium. If VoiceOver reads it as plain text, add `role="table"`, `"row"`, `"rowheader"` and `"cell"` to the elements.
-- [ ] Keep the connection banner clear of the table's toolbar. At the table the banner sits at the top under the fixed `.gameTools` row and **Rules** ([Table.module.css](../apps/web/src/components/Table.module.css)), which cover its right end on phones. PR #8 moved the banner below the buttons on the other pages, but the table has its own top padding and was left out. Needs a mockup. Mockup: [Phone Toolbar Fixes](https://claude.ai/artifact/4Ye1n9fQRmmYyjkofQsM71).
 - [ ] Tell the lobby that the host is away during the stand-in grace. Other players can start only once the host has been away for `HOST_AWAY_AFTER_MS` (30s). Until then they see "Waiting for the host to start." with no sign that Start is coming. Needs a mockup.
-- [ ] Put the drop-down panels' `top: 3.75rem` on the corner tokens from PR #8 (`--corner-top`, `--tap`). It is the same offset, hard-coded in [DisplayOptions.module.css](../apps/web/src/components/DisplayOptions.module.css), [SoundButton.module.css](../apps/web/src/components/SoundButton.module.css) and [Table.module.css](../apps/web/src/components/Table.module.css). Mockup: [Phone Toolbar Fixes](https://claude.ai/artifact/4Ye1n9fQRmmYyjkofQsM71).
 
 ## Server and project
 
