@@ -118,13 +118,24 @@ describe('Lobby', () => {
     expect(send).toHaveBeenCalledWith({ type: 'start' })
   })
 
-  it("waits out the host's grace before offering to start", () => {
+  it("counts down the host's grace over a Start button that isn't on yet", () => {
     vi.useFakeTimers({ now: 10_000_000, toFake: ['Date', 'setInterval', 'clearInterval'] })
     setup(bobAway(10_000))
-    expect(screen.getByText('Waiting for the host to start.')).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Start game' })).not.toBeInTheDocument()
-    act(() => vi.advanceTimersByTime(30_000))
-    expect(screen.getByRole('button', { name: 'Start game' })).toBeInTheDocument()
+    const countdown = (seconds: string) =>
+      `Bob is away. If Bob isn't back in ${seconds}, you can start the game instead.`
+    expect(screen.getByText(countdown('20 seconds'))).toBeInTheDocument()
+    expect(screen.queryByText('Waiting for the host to start.')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Start game' })).toBeDisabled()
+
+    act(() => vi.advanceTimersByTime(1_000))
+    expect(screen.getByText(countdown('19 seconds'))).toBeInTheDocument()
+    act(() => vi.advanceTimersByTime(18_000))
+    expect(screen.getByText(countdown('1 second'))).toBeInTheDocument()
+
+    act(() => vi.advanceTimersByTime(11_000))
+    expect(screen.queryByText(/isn't back in/)).not.toBeInTheDocument()
+    expect(screen.getByText(/If you start the game, you become the host/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Start game' })).toBeEnabled()
   })
 
   it('lets a player start when there is no host', () => {
