@@ -80,6 +80,11 @@
   --shadow: 0 3px 0 var(--ink);
   --font: Karla, system-ui, -apple-system, 'Segoe UI', sans-serif;
   --display: Shrikhand, Georgia, serif;
+  /* The fixed buttons in the top corners: their gap from the top, and a finger's height. */
+  --corner-top: 0.5rem;
+  --tap: 44px;
+  /* The strip they take up, with room below them: where a page's own content starts. */
+  --corner-clear: calc(var(--corner-top) + var(--tap) + 0.75rem);
   --hand: Caveat, 'Bradley Hand', cursive;
   --serif: 'Iowan Old Style', 'Palatino Linotype', Georgia, serif;
   color-scheme: light;
@@ -136,7 +141,7 @@ h2 {
 button {
   font: inherit;
   font-weight: 800;
-  min-height: 44px;
+  min-height: var(--tap);
   padding: 0 1.1rem;
   border-radius: 999px;
   border: 2px solid var(--ink);
@@ -302,7 +307,7 @@ html[data-contrast] body {
 /* Hidden until a keyboard player tabs to it, then in the top corner. */
 .skip-link {
   position: fixed;
-  top: 0.5rem;
+  top: var(--corner-top);
   left: 0.5rem;
   z-index: 70;
   display: inline-flex;

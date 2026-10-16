@@ -2,6 +2,7 @@ import { RULE_ERROR_SECTIONS, type PlayerView, type RuleSection } from '@canasta
 import type {
   ChatLine,
   ClientMessage,
+  EmptySeats,
   RemovedReason,
   ServerErrorCode,
   ServerMessage,
@@ -48,6 +49,8 @@ export interface GameState {
   /** Why the last join failed; the page shows the join form with it. */
   joinError: string | null
   joinErrorCode: ServerErrorCode | null
+  /** The seats whose players are away, for the join form. Null until the first list arrives. */
+  emptySeats: EmptySeats | null
   /** playerId → when each seated player without a connection went away, by this device's clock. */
   awaySince: Record<string, number>
   toasts: Toast[]
@@ -103,6 +106,7 @@ export const initialGameState: GameState = {
   kicked: [],
   joinError: null,
   joinErrorCode: null,
+  emptySeats: null,
   awaySince: {},
   toasts: [],
   notices: [],
@@ -280,6 +284,11 @@ function onMessage(state: GameState, message: ServerMessage, joinFailed: boolean
         chatSent: mine ? null : state.chatSent,
       }
     }
+    case 'seats':
+      return {
+        ...state,
+        emptySeats: { started: message.started, host: message.host, away: message.away },
+      }
     case 'pong':
       return state
   }
