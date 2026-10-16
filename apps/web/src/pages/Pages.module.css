@@ -4,6 +4,8 @@
   margin: 2rem auto;
   padding: 1.5rem 1.5rem 2rem;
   display: grid;
+  /* A child's minimum width, such as Table talk's message box, can't widen the card. */
+  grid-template-columns: minmax(0, 1fr);
   gap: 1rem;
   background: var(--paper);
   border: 2px solid var(--ink);
@@ -240,6 +242,16 @@
   border-top: 2px solid var(--ink);
 }
 
+/* At the table the banner starts below the buttons too. The table then needs no room for them. */
+.atTable > .banner {
+  margin-top: var(--corner-clear);
+  border-top: 2px solid var(--ink);
+}
+
+.atTable > .banner ~ * {
+  --clear-tools: 0;
+}
+
 .belowTools > :is(.home, .lobby) {
   margin-top: 0;
 }
@@ -258,15 +270,6 @@
 
 .knowCanasta a {
   font-weight: 800;
-}
-
-.pageTools {
-  position: fixed;
-  top: var(--corner-top);
-  right: 6.25rem;
-  z-index: 5;
-  display: flex;
-  gap: 0.5rem;
 }
 
 /* A button that reads as one of the links beside it. */

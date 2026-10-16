@@ -1,0 +1,51 @@
+.root {
+  display: flex;
+}
+
+/* Dropped down under the top buttons, like the sound and display panels. */
+.panel {
+  position: fixed;
+  top: var(--corner-drop);
+  right: 0.5rem;
+  z-index: 6;
+  width: min(18rem, calc(100vw - 1rem));
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border: 2px solid var(--ink);
+  border-radius: 16px;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: var(--shadow);
+}
+
+/* A full-width row: what it opens on the left, its current setting on the right. */
+.item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.note {
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.note small {
+  font-size: 0.75em;
+}
+
+/* Sets Quit game apart from the rows that only change how the table looks and sounds. */
+.rule {
+  width: 100%;
+  margin: 0.15rem 0;
+  border: 0;
+  border-top: 2px dashed rgb(43 35 32 / 0.35);
+}
+
+.quit {
+  background: var(--teal-dark);
+  color: var(--paper);
+}

@@ -1,4 +1,5 @@
-import { useEffect, useId, useRef, useState } from 'react'
+import { useId, useRef, useState } from 'react'
+import { useDropDown } from '../dropDown'
 import { useModalDialog } from '../modals'
 import { useChatSound } from '../soundLevel'
 import { playTest } from '../soundPlayer'
@@ -35,48 +36,14 @@ const TEST_CUES: Record<SoundLevel, Cue | null> = {
  */
 export function SoundButton({ level, onLevel, onOpen }: SoundButtonProps) {
   const [open, setOpen] = useState(false)
-  const [chartOpen, setChartOpen] = useState(false)
-  const [chatOn, setChatOn] = useChatSound()
   const root = useRef<HTMLDivElement>(null)
   const button = useRef<HTMLButtonElement>(null)
-  const chart = useRef<HTMLDialogElement>(null)
   const id = useId()
   const name = SOUND_LEVELS[level].name
-
-  // Escape or a click anywhere else closes the panel. The chart closes first, on its own.
-  // Escape puts focus back on the speaker button, which opened the panel.
-  useEffect(() => {
-    if (!open) return
-    const onPointer = (e: PointerEvent) => {
-      if (!root.current?.contains(e.target as Node)) setOpen(false)
-    }
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape' || chart.current?.open) return
-      setOpen(false)
-      button.current?.focus()
-    }
-    document.addEventListener('pointerdown', onPointer)
-    document.addEventListener('keydown', onKey)
-    return () => {
-      document.removeEventListener('pointerdown', onPointer)
-      document.removeEventListener('keydown', onKey)
-    }
-  }, [open])
-
-  useModalDialog(chart, chartOpen)
-
-  const test = TEST_CUES[level]
+  const onBlur = useDropDown(root, button, open, () => setOpen(false))
 
   return (
-    <div
-      ref={root}
-      className={styles.root}
-      onBlur={(e) => {
-        // Tabbing out of the panel closes it, as a click elsewhere does.
-        const next = e.relatedTarget as Node | null
-        if (next && !root.current?.contains(next)) setOpen(false)
-      }}
-    >
+    <div ref={root} className={styles.root} onBlur={onBlur}>
       <button
         ref={button}
         type="button"
@@ -94,62 +61,90 @@ export function SoundButton({ level, onLevel, onOpen }: SoundButtonProps) {
           {level === 0 ? WAVES[0] : WAVES.slice(1, level + 1)}
         </svg>
       </button>
-      {open && (
-        <div id={`${id}-panel`} className={styles.panel} role="dialog" aria-label="Sound">
-          <h2>Sound</h2>
-          <div className={styles.levels}>
-            <label htmlFor={`${id}-level`} className={styles.label}>
-              What you hear
-            </label>
-            <input
-              id={`${id}-level`}
-              // The panel opens to the slider, so arrow keys change the step at once.
-              autoFocus
-              type="range"
-              min={0}
-              max={3}
-              step={1}
-              value={level}
-              aria-valuetext={name}
-              aria-describedby={`${id}-hint`}
-              onChange={(e) => onLevel(Number(e.target.value) as SoundLevel)}
-            />
-            <div className={styles.stops} aria-hidden="true">
-              {SOUND_LEVELS.map((step, i) => (
-                <span key={step.name} className={i === level ? styles.on : undefined}>
-                  {step.name}
-                </span>
-              ))}
-            </div>
-          </div>
-          <p id={`${id}-hint`} className={styles.hint}>
-            {SOUND_LEVELS[level].hint}
-          </p>
-          {/* Off silences it too, so it's greyed out but keeps its tick for later. */}
-          <label className={styles.chat}>
-            <input
-              type="checkbox"
-              checked={chatOn}
-              disabled={level === 0}
-              onChange={(e) => setChatOn(e.target.checked)}
-            />
-            Clink for new chat lines
+      {open && <SoundPanel id={`${id}-panel`} level={level} onLevel={onLevel} />}
+    </div>
+  )
+}
+
+/**
+ * The sound panel, dropped down under the top buttons from the speaker or, on a phone, from
+ * the table's Menu.
+ */
+export function SoundPanel({
+  id: panelId,
+  level,
+  onLevel,
+}: {
+  id: string
+  level: SoundLevel
+  onLevel: (level: SoundLevel) => void
+}) {
+  const [chartOpen, setChartOpen] = useState(false)
+  const [chatOn, setChatOn] = useChatSound()
+  const chart = useRef<HTMLDialogElement>(null)
+  const id = useId()
+  const name = SOUND_LEVELS[level].name
+
+  useModalDialog(chart, chartOpen)
+
+  const test = TEST_CUES[level]
+
+  return (
+    <>
+      <div id={panelId} className={styles.panel} role="dialog" aria-label="Sound">
+        <h2>Sound</h2>
+        <div className={styles.levels}>
+          <label htmlFor={`${id}-level`} className={styles.label}>
+            What you hear
           </label>
-          <div className={styles.row}>
-            <button type="button" disabled={!test} onClick={() => test && playTest(test)}>
-              Play a test sound
-            </button>
-            <button
-              type="button"
-              className={styles.link}
-              aria-haspopup="dialog"
-              onClick={() => setChartOpen(true)}
-            >
-              What each step plays
-            </button>
+          <input
+            id={`${id}-level`}
+            // The panel opens to the slider, so arrow keys change the step at once.
+            autoFocus
+            type="range"
+            min={0}
+            max={3}
+            step={1}
+            value={level}
+            aria-valuetext={name}
+            aria-describedby={`${id}-hint`}
+            onChange={(e) => onLevel(Number(e.target.value) as SoundLevel)}
+          />
+          <div className={styles.stops} aria-hidden="true">
+            {SOUND_LEVELS.map((step, i) => (
+              <span key={step.name} className={i === level ? styles.on : undefined}>
+                {step.name}
+              </span>
+            ))}
           </div>
         </div>
-      )}
+        <p id={`${id}-hint`} className={styles.hint}>
+          {SOUND_LEVELS[level].hint}
+        </p>
+        {/* Off silences it too, so it's greyed out but keeps its tick for later. */}
+        <label className={styles.chat}>
+          <input
+            type="checkbox"
+            checked={chatOn}
+            disabled={level === 0}
+            onChange={(e) => setChatOn(e.target.checked)}
+          />
+          Clink for new chat lines
+        </label>
+        <div className={styles.row}>
+          <button type="button" disabled={!test} onClick={() => test && playTest(test)}>
+            Play a test sound
+          </button>
+          <button
+            type="button"
+            className={styles.link}
+            aria-haspopup="dialog"
+            onClick={() => setChartOpen(true)}
+          >
+            What each step plays
+          </button>
+        </div>
+      </div>
       <dialog
         ref={chart}
         className={styles.chart}
@@ -208,6 +203,6 @@ export function SoundButton({ level, onLevel, onOpen }: SoundButtonProps) {
           ))}
         </table>
       </dialog>
-    </div>
+    </>
   )
 }

@@ -60,7 +60,7 @@ export function Lobby({
   return (
     <main className={styles.lobby}>
       {/* Fixed at the top, beside the Rules button, as at the table. */}
-      <div className={styles.pageTools}>
+      <div className="corner-tools">
         <DisplayButton />
       </div>
       <h1>Pull up a chair</h1>

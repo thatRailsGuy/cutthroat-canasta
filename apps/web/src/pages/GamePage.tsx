@@ -201,7 +201,7 @@ function Session({ code, linkToken, autoJoinName, joinsByItself }: SessionProps)
   return (
     <RulesDrawerContext.Provider value={rules.open}>
       {/* Always rendered, so the body keeps its place in the tree when the table starts. */}
-      <div className={atTable ? undefined : styles.belowTools}>
+      <div className={atTable ? styles.atTable : styles.belowTools}>
         <ConnectionBanner connection={state.connection} failures={state.failures} code={code} />
         {body}
       </div>

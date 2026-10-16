@@ -23,7 +23,7 @@
 /* Dropped down under the top buttons, like the sound panel. */
 .panel {
   position: fixed;
-  top: 3.75rem;
+  top: var(--corner-drop);
   right: 0.5rem;
   z-index: 6;
   width: min(22rem, calc(100vw - 1rem));
