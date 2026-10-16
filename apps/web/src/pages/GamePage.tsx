@@ -144,6 +144,8 @@ function Session({ code, linkToken, autoJoinName, joinsByItself }: SessionProps)
     view.players[view.round.current]?.id === state.playerId
   useTitle(yourTurn ? `Your turn · Game ${code}` : `Game ${code}`)
   let body
+  // The table clears the fixed buttons itself; every other body starts below them.
+  let atTable = false
   const waitingForSeat = !state.playerId && (state.joining || (joinsByItself && !state.joinError))
   // Seated but no view yet: the first state is on its way, so don't flash the join form.
   if (waitingForSeat || (state.playerId && !view)) {
@@ -182,6 +184,7 @@ function Session({ code, linkToken, autoJoinName, joinsByItself }: SessionProps)
     // A new key each round, and each new hand of a round, remounts the table, which resets
     // staging: card ids repeat per deal.
     const deal = view.round ? `${view.round.number}.${view.round.redeals}` : undefined
+    atTable = true
     body = (
       <Table
         key={deal}
@@ -197,8 +200,11 @@ function Session({ code, linkToken, autoJoinName, joinsByItself }: SessionProps)
 
   return (
     <RulesDrawerContext.Provider value={rules.open}>
-      <ConnectionBanner connection={state.connection} failures={state.failures} code={code} />
-      {body}
+      {/* Always rendered, so the body keeps its place in the tree when the table starts. */}
+      <div className={atTable ? undefined : styles.belowTools}>
+        <ConnectionBanner connection={state.connection} failures={state.failures} code={code} />
+        {body}
+      </div>
       {/* Outside the table, which remounts with each deal, so the deal itself can play a sound. */}
       {view && state.playerId && <TableSounds view={view} live={state.connection === 'open'} />}
       {state.playerId && <ChatSounds heard={state.chatHeard} playerId={state.playerId} />}

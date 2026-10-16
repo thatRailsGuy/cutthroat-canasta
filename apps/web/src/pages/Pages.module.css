@@ -225,9 +225,23 @@
 
 .rulesButton {
   position: fixed;
-  top: 0.5rem;
+  top: var(--corner-top);
   right: 0.5rem;
   z-index: 5;
+}
+
+/* Pages with the fixed Rules button start below it, so a banner or card never runs under it. */
+.belowTools {
+  padding-top: var(--corner-clear);
+}
+
+.belowTools > .banner {
+  margin-bottom: 0.75rem;
+  border-top: 2px solid var(--ink);
+}
+
+.belowTools > :is(.home, .lobby) {
+  margin-top: 0;
 }
 
 .links {
@@ -248,7 +262,7 @@
 
 .pageTools {
   position: fixed;
-  top: 0.5rem;
+  top: var(--corner-top);
   right: 6.25rem;
   z-index: 5;
   display: flex;
