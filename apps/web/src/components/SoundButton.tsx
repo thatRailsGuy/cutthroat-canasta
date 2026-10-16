@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState } from 'react'
+import { useModalDialog } from '../modals'
 import { useChatSound } from '../soundLevel'
 import { playTest } from '../soundPlayer'
 import { SOUND_CHART, SOUND_LEVELS, type Cue, type SoundLevel } from '../sounds'
@@ -62,12 +63,7 @@ export function SoundButton({ level, onLevel, onOpen }: SoundButtonProps) {
     }
   }, [open])
 
-  useEffect(() => {
-    const dialog = chart.current
-    if (!dialog) return
-    if (chartOpen && !dialog.open) dialog.showModal?.()
-    if (!chartOpen && dialog.open) dialog.close()
-  }, [chartOpen])
+  useModalDialog(chart, chartOpen)
 
   const test = TEST_CUES[level]
 

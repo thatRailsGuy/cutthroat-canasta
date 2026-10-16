@@ -41,7 +41,9 @@ describe('GamePage', () => {
     const form = screen.getByRole('heading', { name: 'Join game HT7KM4' }).closest('main')
     expect(styles.belowTools).toBeTruthy()
     expect(form?.parentElement).toHaveClass(styles.belowTools)
-    expect(screen.getByText('Connecting…').parentElement).toBe(form?.parentElement)
+    expect(screen.getByText('Connecting…', { selector: 'p' }).parentElement).toBe(
+      form?.parentElement,
+    )
   })
 
   it('starts the lobby below the fixed Rules button', async () => {

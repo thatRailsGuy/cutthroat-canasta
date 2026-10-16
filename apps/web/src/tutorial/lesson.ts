@@ -169,6 +169,8 @@ export interface Step {
   allow?: (action: Action, game: Game) => string | null
   /** Dot is playing: the step moves on by itself. */
   waiting?: boolean
+  /** A link under the explanation, for players who need something else from the lesson. */
+  aside?: { text: string; link: string; to: string }
 }
 
 function cardsOf(action: Action, game: Game): Card[] {
@@ -198,6 +200,11 @@ export const STEPS: Step[] = [
   {
     title: 'Welcome to the table',
     body: 'This practice hand teaches you one round against Dot. You make melds: three or more cards of one rank. A meld of seven cards is a canasta, and canastas score big. The game ends after the round in which someone reaches 5,000 points, and the highest total wins.',
+    aside: {
+      text: 'Already play Canasta?',
+      link: 'Learn our house rules',
+      to: '/rules#house-rules',
+    },
   },
   {
     title: 'Find your way around',

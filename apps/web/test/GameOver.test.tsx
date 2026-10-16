@@ -18,6 +18,7 @@ function renderGameOver(props: Partial<GameOverProps> = {}) {
         playerId="you"
         hostId="you"
         connected={['you', 'bob']}
+        hostAway={false}
         offline={false}
         onPlayAgain={onPlayAgain}
         onLeave={onLeave}
@@ -54,7 +55,7 @@ describe('GameOver', () => {
   })
 
   it('lets anyone play again while the host is away', () => {
-    renderGameOver({ hostId: 'bob', connected: ['you'] })
+    renderGameOver({ hostId: 'bob', connected: ['you'], hostAway: true })
     expect(screen.getByRole('button', { name: 'Play again' })).toBeEnabled()
   })
 

@@ -1,5 +1,5 @@
 import type { FeedEvent, PublicPlayer, QuitPlayer } from '@canasta/engine'
-import type { ChatLine } from '@canasta/server/protocol'
+import type { ChatLine, ClientMessage } from '@canasta/server/protocol'
 import { useEffect, useLayoutEffect, useRef, type FormEvent } from 'react'
 import { CHAT_COUNT_FROM, CHAT_LENGTH, cleanChat, mergeTalk } from '../chat'
 import { describeEvent } from '../feed'
@@ -107,9 +107,11 @@ export function TableTalk({
       <div role="status">
         {notices.map((n) => (
           <p key={n.id} className={styles.notice}>
-            {n.newHost
-              ? `${nameOf(n.newHost)} made a rejoin link for ${nameOf(n.playerId)}'s seat and is the host now.`
-              : `The host made a rejoin link for ${nameOf(n.playerId)}'s seat.`}
+            {'standIn' in n
+              ? standInText(nameOf(n.standIn), n.via)
+              : n.newHost
+                ? `${nameOf(n.newHost)} made a rejoin link for ${nameOf(n.playerId)}'s seat and is the host now.`
+                : `The host made a rejoin link for ${nameOf(n.playerId)}'s seat.`}
           </p>
         ))}
       </div>
@@ -167,6 +169,13 @@ export function TableTalk({
       )}
     </section>
   )
+}
+
+/** Says who stood in for the away host, and how. */
+function standInText(name: string, via: ClientMessage['type']): string {
+  if (via === 'start') return `${name} started the game and is the host now.`
+  if (via === 'playAgain') return `${name} started another game and is the host now.`
+  return `${name} is the host now.`
 }
 
 /** The bell on the header that turns the clink for new chat lines on or off. */

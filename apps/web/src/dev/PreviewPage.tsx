@@ -11,10 +11,11 @@ import type { ClientMessage } from '@canasta/server/protocol'
 import { useState } from 'react'
 import { RulesDrawer } from '../components/RulesDrawer'
 import { TableSounds } from '../components/TableSounds'
+import { Toasts, useToastList } from '../components/Toasts'
 import { initialGameState, type GameState } from '../gameState'
 import pageStyles from '../pages/Pages.module.css'
 import { Table } from '../pages/Table'
-import type { DrawerRequest } from '../rules/drawer'
+import { RulesDrawerContext, useRulesDrawer } from '../rules/drawer'
 import styles from './PreviewPage.module.css'
 
 /**
@@ -24,7 +25,8 @@ import styles from './PreviewPage.module.css'
  */
 export default function PreviewPage() {
   const [view, setView] = useState(startingView)
-  const [rules, setRules] = useState<DrawerRequest | null>(null)
+  const rules = useRulesDrawer()
+  const toasts = useToastList()
   // Set to watch the table as a player who joined mid-hand, instead of as Ann.
   const [watcher, setWatcher] = useState<string | null>(null)
   const change = (fn: (draft: PlayerView) => void) =>
@@ -227,6 +229,15 @@ export default function PreviewPage() {
           d.round!.current = 1
         }),
     ],
+    [
+      'A rule error',
+      () =>
+        toasts.add({
+          id: nextId(),
+          message: 'A meld needs at least 2 natural cards.',
+          section: 'melds',
+        }),
+    ],
     ['Someone joins', () => change((d) => void join(d))],
     [
       'Watch as the newcomer',
@@ -264,7 +275,7 @@ export default function PreviewPage() {
   ]
 
   return (
-    <>
+    <RulesDrawerContext.Provider value={rules.open}>
       <Table
         code="PREVIEW"
         view={view}
@@ -276,11 +287,12 @@ export default function PreviewPage() {
       <button
         type="button"
         className={pageStyles.rulesButton}
-        onClick={() => setRules({ section: 'overview', id: 1 })}
+        onClick={() => rules.open('overview')}
       >
         Rules
       </button>
-      <RulesDrawer request={rules} onClose={() => setRules(null)} />
+      <Toasts toasts={toasts.toasts} onDismiss={toasts.dismiss} />
+      <RulesDrawer request={rules.request} onClose={rules.close} />
       <details className={styles.controls}>
         <summary>Preview controls</summary>
         {acts.map(([label, run]) => (
@@ -298,7 +310,7 @@ export default function PreviewPage() {
           Reset
         </button>
       </details>
-    </>
+    </RulesDrawerContext.Provider>
   )
 }
 
