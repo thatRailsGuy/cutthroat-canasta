@@ -135,6 +135,61 @@ describe('gameReducer', () => {
     expect(state.notices).toEqual([])
   })
 
+  describe('seat notices across a new round', () => {
+    const lobby = {
+      ...makeView({ hand: [], phase: 'draw' }),
+      round: null,
+      status: 'lobby' as const,
+    }
+    const dealt = makeView({ hand: [], phase: 'draw' })
+    const stateOf = (view: typeof dealt): ServerMessage => ({
+      type: 'state',
+      view,
+      hostId: 'bob',
+      connected: [],
+      public: false,
+      kicked: [],
+      away: {},
+    })
+
+    it('forgets them when a rejoin fails, so a later round shows none', () => {
+      let state = receive(initialGameState, stateOf(dealt))
+      state = receive(state, { type: 'seatReissued', playerId: 'bob' })
+      state = receive(
+        state,
+        { type: 'error', code: 'UNKNOWN_TOKEN', message: 'That seat link is no longer valid.' },
+        true,
+      )
+      expect(state.notices).toEqual([])
+      const later = { ...dealt, round: { ...dealt.round!, number: 3 } }
+      expect(receive(state, stateOf(later)).notices).toEqual([])
+    })
+
+    it("drops the lobby's notices at the first deal, but keeps the stand-in's start", () => {
+      let state = receive(initialGameState, stateOf(lobby))
+      state = receive(state, { type: 'seatReissued', playerId: 'cat' })
+      state = receive(state, stateOf(lobby))
+      // The server sends a stand-in's notice just before the state with the deal.
+      state = receive(state, { type: 'standInHost', playerId: 'bob', via: 'start' })
+      state = receive(state, stateOf(dealt))
+      expect(state.notices).toEqual([{ id: 2, standIn: 'bob', via: 'start' }])
+      state = receive(state, stateOf(dealt))
+      expect(state.notices).toHaveLength(1)
+      const nextRound = { ...dealt, round: { ...dealt.round!, number: 2 } }
+      expect(receive(state, stateOf(nextRound)).notices).toEqual([])
+    })
+
+    it("keeps a stand-in's Play again into the new lobby, but not the old game's notices", () => {
+      const over = { ...dealt, status: 'gameOver' as const }
+      let state = receive(initialGameState, stateOf(over))
+      state = receive(state, { type: 'seatReissued', playerId: 'cat' })
+      state = receive(state, stateOf(over))
+      state = receive(state, { type: 'standInHost', playerId: 'bob', via: 'playAgain' })
+      state = receive(state, stateOf(lobby))
+      expect(state.notices).toEqual([{ id: 2, standIn: 'bob', via: 'playAgain' }])
+    })
+  })
+
   it('toasts when another player quits, but not for the one who quit', () => {
     const seated = receive(initialGameState, {
       type: 'joined',

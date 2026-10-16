@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Seed } from '@canasta/engine'
-import type { ClientMessage } from '../src/protocol'
+import { HOST_AWAY_AFTER_MS, type ClientMessage } from '../src/protocol'
 import {
   blockedAddresses,
   createRoom,
@@ -38,6 +38,11 @@ function started(): { state: RoomState; ids: RoomIds } {
 }
 
 const errorOf = (outcome: { reply: unknown[] }) => outcome.reply[0]
+
+/** Longer than the host's grace (HOST_AWAY_AFTER_MS) and the take-over wait. */
+const LONG_AWAY = 3 * 60_000
+/** Gone, but not long enough for anyone to stand in for the host. */
+const JUST_GONE = 10_000
 
 describe('join', () => {
   it('seats the first player as host and replies with their token', () => {
@@ -286,10 +291,27 @@ describe('host controls', () => {
 
   it('lets anyone start while the host is away, and makes them host', () => {
     const { state, ids } = roomWith(['Ann', 'Bob'])
-    const outcome = handleMessage(state, 'p2', { type: 'start' }, ids, ['p2'])
+    const outcome = handleMessage(state, 'p2', { type: 'start' }, ids, ['p2'], null, {
+      p1: LONG_AWAY,
+    })
     expect(outcome).toMatchObject({ changed: true, broadcast: true, reply: [] })
     expect(outcome.state.game.status).toBe('playing')
     expect(outcome.state.hostId).toBe('p2')
+    expect(outcome.announce).toEqual({ type: 'standInHost', playerId: 'p2', via: 'start' })
+  })
+
+  it('waits out the grace before anyone can start for an away host', () => {
+    const { state, ids } = roomWith(['Ann', 'Bob'])
+    const start = (away: number) =>
+      handleMessage(state, 'p2', { type: 'start' }, ids, ['p2'], null, { p1: away })
+    expect(errorOf(start(JUST_GONE))).toMatchObject({ code: 'NOT_HOST' })
+    expect(start(HOST_AWAY_AFTER_MS).state.hostId).toBe('p2')
+  })
+
+  it("announces nothing when the host starts, even if they're away", () => {
+    const { state, ids } = roomWith(['Ann', 'Bob'])
+    expect(handleMessage(state, 'p1', { type: 'start' }, ids, ['p1']).announce).toBeUndefined()
+    expect(handleMessage(state, 'p1', { type: 'start' }, ids, []).announce).toBeUndefined()
   })
 
   it("keeps the host when a stand-in's start fails", () => {
@@ -297,6 +319,7 @@ describe('host controls', () => {
     const outcome = handleMessage(state, 'p2', { type: 'start' }, ids, ['p2'])
     expect(outcome.changed).toBe(false)
     expect(outcome.state.hostId).toBe('p1')
+    expect(outcome.announce).toBeUndefined()
   })
 
   it('passes engine errors through, such as starting alone', () => {
@@ -467,9 +490,10 @@ describe('kick', () => {
   })
 
   it('stays host only while the host is away', () => {
-    // Away has no grace period, so a stand-in kick could put out a host whose wifi blinked.
+    // However long they're gone, so a host who comes back still has their seat.
     const { state, ids } = roomWith(['Ann', 'Bob'])
-    const outcome = handleMessage(state, 'p2', { type: 'kick', playerId: 'p1' }, ids, ['p2'])
+    const kick = { type: 'kick', playerId: 'p1' } as const
+    const outcome = handleMessage(state, 'p2', kick, ids, ['p2'], null, { p1: LONG_AWAY })
     expect(errorOf(outcome)).toMatchObject({ code: 'NOT_HOST' })
     expect(outcome.state).toBe(state)
   })
@@ -533,7 +557,17 @@ describe('reissue', () => {
   it('lets anyone make a link while the host is away, and makes them host', () => {
     const { state, ids } = started()
     // Ann, the host, lost their seat's token, so Bob makes them a new link.
-    const outcome = handleMessage(state, 'p2', { type: 'reissue', playerId: 'p1' }, ids, ['p2'])
+    const outcome = handleMessage(
+      state,
+      'p2',
+      { type: 'reissue', playerId: 'p1' },
+      ids,
+      ['p2'],
+      null,
+      {
+        p1: LONG_AWAY,
+      },
+    )
     expect(outcome).toMatchObject({
       changed: true,
       broadcast: true,
@@ -542,6 +576,16 @@ describe('reissue', () => {
     })
     expect(outcome.state.hostId).toBe('p2')
     expect(outcome.state.tokens).toEqual({ t2: 'p2', t3: 'p1' })
+  })
+
+  it('waits out the grace before anyone can make a link for an away host', () => {
+    const { state, ids } = started()
+    const reissue = (away: number) =>
+      handleMessage(state, 'p2', { type: 'reissue', playerId: 'p1' }, ids, ['p2'], null, {
+        p1: away,
+      })
+    expect(errorOf(reissue(JUST_GONE))).toMatchObject({ code: 'NOT_HOST' })
+    expect(reissue(HOST_AWAY_AFTER_MS).state.hostId).toBe('p2')
   })
 
   it('rejects someone not at the table', () => {
@@ -727,11 +771,27 @@ describe('playAgain', () => {
     expect(outcome.changed).toBe(false)
   })
 
-  it('lets anyone go while the host is away, and makes them host', () => {
+  it('lets anyone go while the host is away, makes them host, and tells the table', () => {
     const { state, ids } = finished()
-    const outcome = handleMessage(state, 'p2', { type: 'playAgain' }, ids, ['p2'])
+    const outcome = handleMessage(state, 'p2', { type: 'playAgain' }, ids, ['p2'], null, {
+      p1: LONG_AWAY,
+    })
     expect(outcome.state.game.status).toBe('lobby')
     expect(outcome.state.hostId).toBe('p2')
+    expect(outcome.announce).toEqual({ type: 'standInHost', playerId: 'p2', via: 'playAgain' })
+  })
+
+  it('waits out the grace before anyone can go for an away host', () => {
+    const { state, ids } = finished()
+    const playAgain = (away: number) =>
+      handleMessage(state, 'p2', { type: 'playAgain' }, ids, ['p2'], null, { p1: away })
+    expect(errorOf(playAgain(JUST_GONE))).toMatchObject({ code: 'NOT_HOST' })
+    expect(playAgain(HOST_AWAY_AFTER_MS).state.hostId).toBe('p2')
+  })
+
+  it("announces nothing when the host plays again, even if they're away", () => {
+    const { state, ids } = finished()
+    expect(handleMessage(state, 'p1', { type: 'playAgain' }, ids, []).announce).toBeUndefined()
   })
 
   it('refuses before the game is over', () => {

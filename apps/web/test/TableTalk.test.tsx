@@ -95,6 +95,33 @@ describe('TableTalk', () => {
     )
   })
 
+  it('says who stood in for an away host, and how', () => {
+    render(
+      <TableTalk
+        events={[]}
+        deal={{ game: 1, round: 1, redeals: 0 }}
+        chat={[]}
+        notices={[
+          { id: 3, standIn: 'bob', via: 'start' },
+          { id: 2, standIn: 'bob', via: 'playAgain' },
+          { id: 1, standIn: 'bob', via: 'nextRound' },
+        ]}
+        players={players}
+        playerId="you"
+        offline={false}
+      />,
+    )
+    expect(
+      within(screen.getByRole('status'))
+        .getAllByRole('paragraph')
+        .map((p) => p.textContent),
+    ).toEqual([
+      'Bob started the game and is the host now.',
+      'Bob started another game and is the host now.',
+      'Bob is the host now.',
+    ])
+  })
+
   it('lists events and chat oldest first, with your own lines as You', () => {
     render(<Talk />)
     const items = within(screen.getByRole('list', { name: 'Table events and chat' })).getAllByRole(
