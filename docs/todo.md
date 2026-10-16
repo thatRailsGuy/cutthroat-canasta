@@ -7,7 +7,7 @@ Make a mockup artifact for every visual change, and agree on it before anyone wr
 ## Web client
 
 - [ ] Check the rules page's "For Canasta players" table on an iPhone with VoiceOver. Under 600px wide the table is restyled as a stacked list ([Rules.module.css](../apps/web/src/rules/Rules.module.css)) with no explicit ARIA table roles, and Safari can stop reading a restyled table as a table. It was only checked in Chromium. If VoiceOver reads it as plain text, add `role="table"`, `"row"`, `"rowheader"` and `"cell"` to the elements.
-- [ ] Tell the lobby that the host is away during the stand-in grace. Other players can start only once the host has been away for `HOST_AWAY_AFTER_MS` (30s). Until then they see "Waiting for the host to start." with no sign that Start is coming. Needs a mockup.
+- [ ] Tell the lobby that the host is away during the stand-in grace. Other players can start only once the host has been away for `HOST_AWAY_AFTER_MS` (30s). Until then they see "Waiting for the host to start." with no sign that Start is coming. Needs a mockup. Mockup: [Lobby Host-Away Notice](https://claude.ai/artifact/FP1MTLJsiEFY63nNoJuXhV).
 
 ## Server and project
 
