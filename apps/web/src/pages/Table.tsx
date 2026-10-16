@@ -471,6 +471,7 @@ export function Table({
           links={Object.fromEntries(
             Object.entries(state.rejoinTokens).map(([id, token]) => [id, rejoinLink(code, token)]),
           )}
+          refusals={state.refusals}
           onReissue={(playerId) => send({ type: 'reissue', playerId })}
           onRedeal={() => send({ type: 'redeal' })}
         />
