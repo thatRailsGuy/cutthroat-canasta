@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react'
+import { act, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router'
 import type { ChatLine } from '@canasta/server/protocol'
@@ -116,13 +116,18 @@ describe('Table, skip link', () => {
 })
 
 describe('Table, while the host is away', () => {
-  function seated(connected: string[]) {
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  function seated(connected: string[], awaySince: Record<string, number> = {}) {
     const view = makeView({ hand: [], phase: 'draw' })
     const state = {
       ...initialGameState,
       playerId: view.you!.id,
       hostId: 'bob',
       connected,
+      awaySince,
       view,
       connection: 'open' as const,
     }
@@ -134,7 +139,15 @@ describe('Table, while the host is away', () => {
   }
 
   it('lets another player open the host tools to stand in', () => {
-    seated(['you'])
+    seated(['you'], { bob: Date.now() - 60_000 })
+    expect(screen.getByRole('button', { name: 'Host is away' })).toBeInTheDocument()
+  })
+
+  it("waits out the host's grace before offering to stand in", () => {
+    vi.useFakeTimers({ now: 10_000_000, toFake: ['Date', 'setInterval', 'clearInterval'] })
+    seated(['you'], { bob: Date.now() - 10_000 })
+    expect(screen.queryByRole('button', { name: 'Host is away' })).toBeNull()
+    act(() => vi.advanceTimersByTime(30_000))
     expect(screen.getByRole('button', { name: 'Host is away' })).toBeInTheDocument()
   })
 
