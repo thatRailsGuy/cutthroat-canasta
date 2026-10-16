@@ -1,9 +1,11 @@
 import { SELF, env, runDurableObjectAlarm, runInDurableObject } from 'cloudflare:test'
 import { describe, expect, it } from 'vitest'
 import {
+  EMPTY_SEAT_AFTER_MS,
   HEARTBEAT_PING,
   HOST_AWAY_AFTER_MS,
   STALE_CLOSE_CODE,
+  TAKE_OVER_AFTER_MS,
   type OpenTable,
   type ServerMessage,
 } from '../src/protocol'
@@ -12,8 +14,11 @@ import type { RoomState } from '../src/room'
 type Joined = Extract<ServerMessage, { type: 'joined' }>
 type StateMessage = Extract<ServerMessage, { type: 'state' }>
 type ChatMessage = Extract<ServerMessage, { type: 'chat' }>
+type SeatsMessage = Extract<ServerMessage, { type: 'seats' }>
 
 interface Client {
+  /** The empty seats the room sent when the socket connected. */
+  seats: SeatsMessage
   send(message: unknown): void
   sendRaw(data: string): void
   next(): Promise<ServerMessage>
@@ -65,7 +70,8 @@ async function connect(
       wake = done
     })
 
-  return {
+  const client: Client = {
+    seats: undefined as unknown as SeatsMessage,
     send: (message) => ws.send(JSON.stringify(message)),
     sendRaw: (data) => ws.send(data),
     async next() {
@@ -81,6 +87,10 @@ async function connect(
     closed: () => closed,
     close: () => ws.close(1000, 'done'),
   }
+  const seats = await client.next()
+  expect(seats.type).toBe('seats')
+  client.seats = seats as SeatsMessage
+  return client
 }
 
 /** Joins, and reads past the chat backlog that follows `joined`. */
@@ -200,6 +210,7 @@ describe('game room', () => {
     expect(annState.view.players[1]).not.toHaveProperty('hand')
     expect(annState.view.players[1].handCount).toBe(13)
     expect(bobState.view.you?.name).toBe('Bob')
+    expect(await watcher.next()).toEqual({ type: 'seats', started: true, host: 'Ann', away: [] })
     await watcher.expectQuiet()
   })
 
@@ -306,7 +317,7 @@ describe('seats', () => {
     await nextState(bob)
     const watcher = await connect(code)
     ann.send({ type: 'start' })
-    await Promise.all([nextState(ann), nextState(bob), nextState(cat)])
+    await Promise.all([nextState(ann), nextState(bob), nextState(cat), watcher.next()])
 
     bob.close()
     await Promise.all([nextState(ann), nextState(cat)])
@@ -400,6 +411,7 @@ describe('play again', () => {
     expect(view.players.map((p) => p.name)).toEqual(['Ann', 'Bob'])
     expect(hostId).toBe(bobJoined.playerId)
     expect(connected).toEqual([bobJoined.playerId])
+    // The list her socket got when it connected still holds, so it isn't sent again.
     await ann.expectQuiet()
 
     const stale = await connect(code)
@@ -563,6 +575,151 @@ describe('heartbeat', () => {
     ann.sendRaw('not json')
     expect(await ann.next()).toMatchObject({ type: 'error', code: 'BAD_MESSAGE' })
     expect((await nextState(ann)).connected).toEqual([annJoined.playerId])
+  })
+})
+
+describe('empty seats', () => {
+  /** Backdates when a seat went away, then runs the alarm, as the room would at that time. */
+  async function awayFor(code: string, playerId: string, ms: number) {
+    const stub = env.GAME_ROOM.get(env.GAME_ROOM.idFromName(code))
+    await runInDurableObject(stub, async (instance) => {
+      ;(instance as unknown as { awaySince: Record<string, number> }).awaySince[playerId] =
+        Date.now() - ms
+    })
+    expect(await runDurableObjectAlarm(stub)).toBe(true)
+  }
+
+  /** A started game whose Bob has closed his socket. */
+  async function bobAway() {
+    const game = await startedGame()
+    game.bob.close()
+    await nextState(game.ann)
+    return game
+  }
+
+  it('tells a socket that has not joined which seats are away', async () => {
+    const { code, bobJoined } = await bobAway()
+    await awayFor(code, bobJoined.playerId, EMPTY_SEAT_AFTER_MS)
+    const visitor = await connect(code)
+    expect(visitor.seats).toEqual({
+      type: 'seats',
+      started: true,
+      host: 'Ann',
+      away: [{ name: 'Bob', host: false }],
+    })
+  })
+
+  it('lists no seats in the lobby', async () => {
+    const { code, bob } = await lobbyGame()
+    bob.close()
+    const visitor = await connect(code)
+    expect(visitor.seats).toEqual({ type: 'seats', started: false, host: null, away: [] })
+  })
+
+  it('lists a seat only once it has been away a while, so a reload does not flash it', async () => {
+    const { code, bobJoined } = await bobAway()
+    const visitor = await connect(code)
+    expect(visitor.seats.away).toEqual([])
+    const stub = env.GAME_ROOM.get(env.GAME_ROOM.idFromName(code))
+    await runInDurableObject(stub, async (_instance, state) => {
+      expect(await state.storage.getAlarm()).toBeLessThanOrEqual(Date.now() + EMPTY_SEAT_AFTER_MS)
+    })
+
+    await awayFor(code, bobJoined.playerId, EMPTY_SEAT_AFTER_MS)
+    expect(await visitor.next()).toMatchObject({ away: [{ name: 'Bob', host: false }] })
+  })
+
+  it('names the host only while they are connected, and marks an away host', async () => {
+    const { code, ann, annJoined } = await startedGame()
+    ann.close()
+    await awayFor(code, annJoined.playerId, EMPTY_SEAT_AFTER_MS)
+    const visitor = await connect(code)
+    expect(visitor.seats).toMatchObject({ host: null, away: [{ name: 'Ann', host: true }] })
+  })
+
+  it('gives a blocked address an empty list', async () => {
+    const code = await createGame()
+    const ann = await connect(code, { ip: '203.0.113.1' })
+    await join(ann, 'Ann')
+    await nextState(ann)
+    const dave = await connect(code, { ip: '198.51.100.7' })
+    const daveJoined = await join(dave, 'Dave')
+    await nextState(dave)
+    await nextState(ann)
+    const bob = await connect(code, { ip: '203.0.113.2' })
+    const bobJoined = await join(bob, 'Bob')
+    await Promise.all([nextState(bob), nextState(ann)])
+    ann.send({ type: 'kick', playerId: daveJoined.playerId })
+    await Promise.all([dave.next(), nextState(ann), nextState(bob)])
+    ann.send({ type: 'start' })
+    await Promise.all([nextState(ann), nextState(bob)])
+    bob.close()
+    await nextState(ann)
+    await awayFor(code, bobJoined.playerId, EMPTY_SEAT_AFTER_MS)
+
+    expect((await connect(code, { ip: '198.51.100.7' })).seats).toEqual({
+      type: 'seats',
+      started: true,
+      host: null,
+      away: [],
+    })
+    expect((await connect(code, { ip: '192.0.2.9' })).seats.away).toEqual([
+      { name: 'Bob', host: false },
+    ])
+    // Without an address it could be Dave, so it gets the empty list too.
+    expect((await connect(code)).seats.away).toEqual([])
+  })
+
+  it('lists a player waiting for the next hand who went away', async () => {
+    const { code, ann, bob } = await startedGame()
+    const cat = await connect(code)
+    const catJoined = await join(cat, 'Cat')
+    await Promise.all([nextState(cat), nextState(ann), nextState(bob)])
+    cat.close()
+    await Promise.all([nextState(ann), nextState(bob)])
+    await awayFor(code, catJoined.playerId, EMPTY_SEAT_AFTER_MS)
+    expect((await connect(code)).seats).toEqual({
+      type: 'seats',
+      started: true,
+      host: 'Ann',
+      away: [{ name: 'Cat', host: false }],
+    })
+  })
+
+  it('sends a socket on the join form nothing while the list stays the same', async () => {
+    const { code, ann, bob } = await startedGame()
+    const visitor = await connect(code)
+    ann.send({ type: 'chat', text: 'hi' })
+    await Promise.all([ann.next(), bob.next()])
+    bob.close()
+    await nextState(ann)
+    await visitor.expectQuiet()
+    expect(visitor.seats.away).toEqual([])
+  })
+
+  it('updates the list when a seat comes back or is taken over', async () => {
+    const { code, ann, bobJoined } = await bobAway()
+    await awayFor(code, bobJoined.playerId, EMPTY_SEAT_AFTER_MS)
+    const visitor = await connect(code)
+    expect(visitor.seats.away).toEqual([{ name: 'Bob', host: false }])
+
+    const bob = await connect(code)
+    await join(bob, 'Bob', bobJoined.token)
+    expect(await visitor.next()).toMatchObject({ away: [] })
+    await nextState(bob)
+    await nextState(ann)
+
+    bob.close()
+    await nextState(ann)
+    await awayFor(code, bobJoined.playerId, TAKE_OVER_AFTER_MS)
+    expect(await visitor.next()).toMatchObject({ away: [{ name: 'Bob', host: false }] })
+
+    const cat = await connect(code)
+    await join(cat, 'Cat')
+    await Promise.all([nextState(cat), nextState(ann)])
+    cat.send({ type: 'takeOver', playerId: bobJoined.playerId })
+    expect(await cat.next()).toMatchObject({ type: 'joined', playerId: bobJoined.playerId })
+    expect(await visitor.next()).toMatchObject({ away: [] })
   })
 })
 

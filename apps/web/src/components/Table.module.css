@@ -868,7 +868,7 @@
 /* The game's own buttons, fixed at the top beside the Rules button: on a phone, Scores too. */
 .gameTools {
   position: fixed;
-  top: 0.5rem;
+  top: var(--corner-top);
   right: 6.25rem;
   z-index: 5;
   display: flex;
