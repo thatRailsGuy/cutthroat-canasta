@@ -4,7 +4,9 @@ import { HOST_AWAY_AFTER_MS, type ClientMessage } from '../src/protocol'
 import {
   blockedAddresses,
   createRoom,
+  emptySeats,
   handleMessage,
+  seatsHiddenFrom,
   stateMessage,
   type RoomIds,
   type RoomState,
@@ -694,6 +696,21 @@ describe('takeOver', () => {
     )
     expect(errorOf(outcome)).toMatchObject({ code: 'NO_SUCH_PLAYER' })
   })
+
+  it("rejects another waiting player's spot, even one that's been away a while", () => {
+    const { state, ids } = withCat()
+    const withDan = handleMessage(state, null, { type: 'join', name: 'Dan' }, ids, []).state
+    const outcome = handleMessage(
+      withDan,
+      'p3',
+      { type: 'takeOver', playerId: 'p4' },
+      ids,
+      ['p1', 'p3'],
+      null,
+      { p2: LONG, p4: LONG },
+    )
+    expect(errorOf(outcome)).toMatchObject({ code: 'NO_SUCH_PLAYER' })
+  })
 })
 
 describe('actions', () => {
@@ -792,6 +809,60 @@ describe('stateMessage', () => {
     if (message.type !== 'state') throw new Error('expected a state message')
     expect(message.view.you?.id).toBe('p2')
     expect(message.view.players[0]).not.toHaveProperty('hand')
+  })
+})
+
+describe('emptySeats', () => {
+  const LONG = 60_000
+  /** Ann (host) and Bob playing, and Cat waiting for the next hand. */
+  function withCat() {
+    const { state, ids } = started()
+    return handleMessage(state, null, { type: 'join', name: 'Cat' }, ids, []).state
+  }
+
+  it('lists nothing in the lobby', () => {
+    const { state } = roomWith(['Ann', 'Bob'])
+    expect(emptySeats(state, ['p1'], { p2: LONG })).toEqual({
+      started: false,
+      host: null,
+      away: [],
+    })
+  })
+
+  it('lists a waiting player who has been away a while, after the seats', () => {
+    expect(emptySeats(withCat(), ['p2'], { p1: LONG, p3: LONG })).toEqual({
+      started: true,
+      host: null,
+      away: [
+        { name: 'Ann', host: true },
+        { name: 'Cat', host: false },
+      ],
+    })
+  })
+
+  it('names a waiting host while they are connected', () => {
+    const state = { ...withCat(), hostId: 'p3' }
+    expect(emptySeats(state, ['p1', 'p3'], { p2: LONG })).toEqual({
+      started: true,
+      host: 'Cat',
+      away: [{ name: 'Bob', host: false }],
+    })
+  })
+})
+
+describe('seatsHiddenFrom', () => {
+  it("hides the seats from a kicked player's address, and from an unknown one", () => {
+    const { state, ids } = roomWith(['Ann'])
+    const withBob = handleMessage(state, null, { type: 'join', name: 'Bob' }, ids, [], 'cafe')
+    const kicked = handleMessage(withBob.state, 'p1', { type: 'kick', playerId: 'p2' }, ids, [])
+    const hidden = seatsHiddenFrom(kicked.state)
+    expect(hidden('cafe')).toBe(true)
+    expect(hidden(null)).toBe(true)
+    expect(hidden('park')).toBe(false)
+  })
+
+  it('shows them to an unknown address while nobody is kicked, as in local dev', () => {
+    expect(seatsHiddenFrom(started().state)(null)).toBe(false)
   })
 })
 

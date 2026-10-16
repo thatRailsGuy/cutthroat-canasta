@@ -279,3 +279,50 @@
   margin: 0;
   font-size: 1.25rem;
 }
+
+/* The join form's seats whose players are away. */
+.emptySeats {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.7rem 0.85rem;
+  border: 2px solid var(--ink);
+  border-radius: var(--radius);
+  background: white;
+}
+
+.emptySeats h2 {
+  margin: 0;
+  font-family: var(--font);
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+}
+
+.emptySeats ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.3rem;
+}
+
+.emptySeats li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 0.5rem;
+  font-weight: 800;
+}
+
+.emptySeats p {
+  margin: 0;
+  font-size: 0.92rem;
+}
+
+.emptyHost {
+  font-size: 0.9rem;
+  font-weight: 400;
+  color: var(--muted);
+}

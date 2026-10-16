@@ -17,9 +17,11 @@ import {
   type Seed,
 } from '@canasta/engine'
 import {
+  EMPTY_SEAT_AFTER_MS,
   TAKE_OVER_AFTER_MS,
   hostAway,
   type ClientMessage,
+  type EmptySeats,
   type ProtocolErrorCode,
   type RemovedReason,
   type ServerMessage,
@@ -104,6 +106,42 @@ export function stateMessage(
         : [],
     away,
   }
+}
+
+/**
+ * The join form's list of empty seats, for a socket that hasn't joined. `present` lists the
+ * players with an open connection, players waiting for the next hand too, and `away` says how
+ * long each of them without one has been away (ms). A waiting player is listed like a seat, so
+ * one who lost their link is told to ask for it too.
+ */
+export function emptySeats(
+  state: RoomState,
+  present: readonly string[],
+  away: Readonly<Record<string, number>>,
+): EmptySeats {
+  const { status, players, waiting = [] } = state.game
+  const started = status === 'playing' || status === 'roundOver'
+  if (!started) return { started, host: null, away: [] }
+  const seated = [...players, ...waiting]
+  const host = seated.find((p) => p.id === state.hostId)
+  return {
+    started,
+    host: host && present.includes(host.id) ? host.name : null,
+    away: seated
+      .filter((p) => !present.includes(p.id) && (away[p.id] ?? 0) >= EMPTY_SEAT_AFTER_MS)
+      .map((p) => ({ name: p.name, host: p.id === state.hostId })),
+  }
+}
+
+/**
+ * Which addresses get an empty list instead, so a kicked player learns nothing more about the
+ * table. A socket whose address isn't known could be a kicked player's, so it gets an empty
+ * list too once anyone has been kicked. With nobody kicked, as in local dev, it gets the list.
+ */
+export function seatsHiddenFrom(state: RoomState): (address: string | null) => boolean {
+  const blocked = new Set(blockedAddresses(state))
+  const anyKicked = (state.kicked ?? []).length > 0
+  return (address) => (address === null ? anyKicked : blocked.has(address))
 }
 
 /** Chat is handled by the Durable Object, which has the clock and the chat log. */
