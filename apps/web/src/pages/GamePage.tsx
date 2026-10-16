@@ -168,9 +168,11 @@ function Session({ code, linkToken, autoJoinName, joinsByItself }: SessionProps)
         playerId={state.playerId}
         hostId={state.hostId}
         connected={state.connected}
+        awaySince={state.awaySince}
         isPublic={state.isPublic}
         kicked={state.kicked}
         chat={state.chat}
+        notices={state.notices}
         offline={state.connection !== 'open'}
         send={send}
         talk={talk}
