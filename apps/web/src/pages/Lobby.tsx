@@ -2,7 +2,7 @@ import type { ChatLine, ClientMessage } from '@canasta/server/protocol'
 import type { PlayerView } from '@canasta/engine'
 import { MIN_PLAYERS } from '@canasta/engine'
 import { useState } from 'react'
-import { useHostAway } from '../away'
+import { useHostAway, useStandInCountdown } from '../away'
 import { DisplayButton } from '../components/DisplayOptions'
 import { GameCode } from '../components/GameCode'
 import { QrCode } from '../components/QrCode'
@@ -49,6 +49,9 @@ export function Lobby({
   // Once the host has been away a while anyone can start, and the server makes them host (as at
   // the table).
   const hostAway = useHostAway(hostId, connected, awaySince)
+  // Until then, other players see how long is left, over a Start button that isn't on yet.
+  const countdown = useStandInCountdown(hostId, connected, awaySince)
+  const graceLeft = !isHost && !hostAway ? countdown : null
   const hostName = view.players.find((p) => p.id === hostId)?.name
   // The host's last kick, or the last player they let back in. Only this browser knows, so it
   // goes on a reload; the Kicked list stays.
@@ -156,10 +159,15 @@ export function Lobby({
             : 'The host is away. If you start the game, you become the host.'}
         </p>
       )}
-      {isHost || hostAway ? (
+      {graceLeft !== null && (
+        <p>
+          {`${hostName ?? 'The host'} is away. If ${hostName ?? 'the host'} isn't back in ${graceLeft} ${graceLeft === 1 ? 'second' : 'seconds'}, you can start the game instead.`}
+        </p>
+      )}
+      {isHost || hostAway || graceLeft !== null ? (
         <button
           type="button"
-          disabled={view.players.length < MIN_PLAYERS}
+          disabled={graceLeft !== null || view.players.length < MIN_PLAYERS}
           onClick={() => send({ type: 'start' })}
         >
           Start game
