@@ -22,10 +22,20 @@
   color: var(--gold);
 }
 
+/* Gold, as on the meld chips: the dark teal ring hardly shows on the toast. */
+.toast :focus-visible {
+  outline-color: var(--gold);
+}
+
 .toast button {
   margin-left: auto;
   min-height: 32px;
   background: none;
   color: inherit;
   border: none;
+}
+
+.toast button:active:not(:disabled) {
+  transform: none;
+  box-shadow: none;
 }

@@ -2,11 +2,12 @@ import type { ChatLine, ClientMessage } from '@canasta/server/protocol'
 import type { PlayerView } from '@canasta/engine'
 import { MIN_PLAYERS } from '@canasta/engine'
 import { useState } from 'react'
+import { useHostAway } from '../away'
 import { DisplayButton } from '../components/DisplayOptions'
 import { GameCode } from '../components/GameCode'
 import { QrCode } from '../components/QrCode'
 import { TableTalk, type TalkControls } from '../components/TableTalk'
-import type { KickedPlayer } from '../gameState'
+import type { KickedPlayer, SeatNotice } from '../gameState'
 import styles from './Pages.module.css'
 
 export interface LobbyProps {
@@ -15,11 +16,15 @@ export interface LobbyProps {
   playerId: string
   hostId: string | null
   connected: string[]
+  /** playerId → when each seated player without a connection went away, by this device's clock. */
+  awaySince: Readonly<Record<string, number>>
   /** Listed on the home page. */
   isPublic: boolean
   /** Host only: players they kicked, who can be let back in. */
   kicked: KickedPlayer[]
   chat: readonly ChatLine[]
+  /** Such as who stood in for the host with Play again. */
+  notices: readonly SeatNotice[]
   offline: boolean
   send: (message: ClientMessage) => boolean
   talk: TalkControls
@@ -31,14 +36,20 @@ export function Lobby({
   playerId,
   hostId,
   connected,
+  awaySince,
   isPublic,
   kicked,
   chat,
+  notices,
   offline,
   send,
   talk,
 }: LobbyProps) {
   const isHost = playerId === hostId
+  // Once the host has been away a while anyone can start, and the server makes them host (as at
+  // the table).
+  const hostAway = useHostAway(hostId, connected, awaySince)
+  const hostName = view.players.find((p) => p.id === hostId)?.name
   // The host's last kick, or the last player they let back in. Only this browser knows, so it
   // goes on a reload; the Kicked list stays.
   const [note, setNote] = useState<{ player: KickedPlayer; undone: boolean } | null>(null)
@@ -132,13 +143,20 @@ export function Lobby({
         events={[]}
         deal={null}
         chat={chat}
-        notices={[]}
+        notices={notices}
         players={view.players}
         playerId={playerId}
         offline={offline}
         talk={talk}
       />
-      {isHost ? (
+      {!isHost && hostAway && (
+        <p>
+          {hostName
+            ? `${hostName} is the host, but they're away. If you start the game, you become the host. ${hostName} will be dealt in too. If ${hostName} doesn't come back, use the Host button at the table to make a rejoin link for ${hostName}'s seat.`
+            : 'The host is away. If you start the game, you become the host.'}
+        </p>
+      )}
+      {isHost || hostAway ? (
         <button
           type="button"
           disabled={view.players.length < MIN_PLAYERS}

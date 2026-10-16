@@ -7,6 +7,8 @@ export interface GameOverProps {
   playerId: string | null
   hostId: string | null
   connected: readonly string[]
+  /** The host has been away long enough for anyone at the table to play again. */
+  hostAway: boolean
   offline: boolean
   onPlayAgain: () => void
   /** Gives up the seat for good. The page goes home once the server confirms. */
@@ -18,6 +20,7 @@ export function GameOver({
   playerId,
   hostId,
   connected,
+  hostAway,
   offline,
   onPlayAgain,
   onLeave,
@@ -29,10 +32,9 @@ export function GameOver({
   const seated = [...view.players, ...view.waiting]
   const here = seated.filter((p) => connected.includes(p.id))
   const host = seated.find((p) => p.id === hostId)
-  // The host starts the next game. While they're away, anyone at the table can.
-  const hostHere = host !== undefined && connected.includes(host.id)
+  // The host starts the next game. Once they've been away a while, anyone at the table can.
   const isSeated = seated.some((p) => p.id === playerId)
-  const canStart = isSeated && (playerId === hostId || !hostHere)
+  const canStart = isSeated && (playerId === hostId || hostAway)
   return (
     <section className={styles.gameOver} aria-label="Game over">
       <h2>{names.length > 1 ? `${names.join(' and ')} share the win!` : `${names[0]} wins!`}</h2>
