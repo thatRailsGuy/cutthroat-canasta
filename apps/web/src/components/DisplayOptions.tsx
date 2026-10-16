@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { useDisplay, useSystemLessMotion, type DisplayOptions } from '../display'
+import { useDropDown } from '../dropDown'
 import styles from './DisplayOptions.module.css'
 
 const OPTIONS: { key: keyof DisplayOptions; name: string; why: string }[] = [
@@ -74,39 +75,10 @@ export function DisplayButton() {
   const root = useRef<HTMLDivElement>(null)
   const button = useRef<HTMLButtonElement>(null)
   const id = useId()
-
-  useEffect(() => {
-    if (!open) return
-    const onPointer = (e: PointerEvent) => {
-      if (!root.current?.contains(e.target as Node)) setOpen(false)
-    }
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape') return
-      setOpen(false)
-      button.current?.focus()
-    }
-    document.addEventListener('pointerdown', onPointer)
-    document.addEventListener('keydown', onKey)
-    return () => {
-      document.removeEventListener('pointerdown', onPointer)
-      document.removeEventListener('keydown', onKey)
-    }
-  }, [open])
-
-  // The panel opens with focus on its first switch.
-  useEffect(() => {
-    if (open) root.current?.querySelector<HTMLElement>('[role="switch"]')?.focus()
-  }, [open])
+  const onBlur = useDropDown(root, button, open, () => setOpen(false))
 
   return (
-    <div
-      ref={root}
-      className={styles.root}
-      onBlur={(e) => {
-        const next = e.relatedTarget as Node | null
-        if (next && !root.current?.contains(next)) setOpen(false)
-      }}
-    >
+    <div ref={root} className={styles.root} onBlur={onBlur}>
       <button
         ref={button}
         type="button"
@@ -120,12 +92,33 @@ export function DisplayButton() {
           A<small>a</small>
         </span>
       </button>
-      {open && (
-        <div id={`${id}-panel`} className={styles.panel} role="dialog" aria-labelledby={`${id}-h`}>
-          <h2 id={`${id}-h`}>Display</h2>
-          <DisplaySwitches />
-        </div>
-      )}
+      {open && <DisplayPanel id={`${id}-panel`} />}
+    </div>
+  )
+}
+
+/**
+ * The display panel, dropped down under the top buttons from Aa or, on a phone, from the
+ * table's Menu. It opens with focus on its first switch.
+ */
+export function DisplayPanel({ id: panelId }: { id: string }) {
+  const panel = useRef<HTMLDivElement>(null)
+  const id = useId()
+
+  useEffect(() => {
+    panel.current?.querySelector<HTMLElement>('[role="switch"]')?.focus()
+  }, [])
+
+  return (
+    <div
+      ref={panel}
+      id={panelId}
+      className={styles.panel}
+      role="dialog"
+      aria-labelledby={`${id}-h`}
+    >
+      <h2 id={`${id}-h`}>Display</h2>
+      <DisplaySwitches />
     </div>
   )
 }
