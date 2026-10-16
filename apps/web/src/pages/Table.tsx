@@ -9,6 +9,7 @@ import {
 import type { ClientMessage, TAKE_OVER_AFTER_MS } from '@canasta/server/protocol'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { rejoinLink } from '../api'
+import { useHostAway, useNow } from '../away'
 import { cardLabel } from '../cards'
 import { Avatar } from '../components/Avatar'
 import { CenterPile } from '../components/CenterPile'
@@ -75,8 +76,8 @@ export function Table({
   const currentId = view.players[round.current]?.id
   const yourTurn = view.status === 'playing' && you !== null && currentId === you.id
   const isHost = state.playerId === state.hostId
-  // A seated player can stand in for a host whose dot is grey (see HostDrawer).
-  const hostAway = state.hostId === null || !state.connected.includes(state.hostId)
+  // A seated player can stand in for a host who has been away a while (see HostDrawer).
+  const hostAway = useHostAway(state.hostId, state.connected, state.awaySince)
   const standIn =
     !isHost && you !== null && hostAway
       ? { hostName: view.players.find((p) => p.id === state.hostId)?.name ?? null }
@@ -319,6 +320,7 @@ export function Table({
               playerId={state.playerId}
               hostId={state.hostId}
               connected={state.connected}
+              hostAway={hostAway}
               offline={offline}
               onPlayAgain={() => send({ type: 'playAgain' })}
               onLeave={() => send({ type: 'leave' })}
@@ -497,17 +499,6 @@ export function Table({
 // A type-only import keeps server code out of the bundle; the annotation fails the typecheck if
 // the copy ever differs from the server's.
 const TAKE_OVER_MS: typeof TAKE_OVER_AFTER_MS = 120_000
-
-/** The time now, updated every 15 seconds while `ticking`, for "away for 3 minutes". */
-function useNow(ticking: boolean): number {
-  const [now, setNow] = useState(Date.now)
-  useEffect(() => {
-    if (!ticking) return
-    const timer = setInterval(() => setNow(Date.now()), 15_000)
-    return () => clearInterval(timer)
-  }, [ticking])
-  return now
-}
 
 function WatchNote({
   view,

@@ -1,5 +1,6 @@
 import type { PublicPlayer } from '@canasta/engine'
-import { useEffect, useId, useRef, useState } from 'react'
+import { useId, useRef, useState } from 'react'
+import { useModalDialog } from '../modals'
 import { Avatar } from './Avatar'
 import { GameCode } from './GameCode'
 import styles from './HostDrawer.module.css'
@@ -105,12 +106,7 @@ export function HostDrawer(props: HostDrawerProps) {
     setTicket(null)
   }
 
-  useEffect(() => {
-    const dialog = dialogRef.current
-    if (!dialog) return
-    if (open && !dialog.open) dialog.showModal?.()
-    if (!open && dialog.open) dialog.close()
-  }, [open])
+  useModalDialog(dialogRef, open)
 
   const close = () => {
     setConfirmRedeal(false)

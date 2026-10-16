@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Toast } from '../gameState'
+import { AboveModals, useLiveRegion } from './AboveModals'
 import styles from './Toasts.module.css'
 import { WhyLink } from './WhyLink'
 
@@ -12,12 +13,24 @@ export function Toasts({
   toasts: Toast[]
   onDismiss: (id: number) => void
 }) {
+  const live = useLiveRegion('alert')
+  // Toast ids only go up. One left after a newer one goes was said when it came.
+  const said = useRef(0)
+  useEffect(() => {
+    const fresh = toasts.filter((t) => t.id > said.current)
+    if (fresh.length === 0) return
+    said.current = fresh[fresh.length - 1].id
+    live.say(fresh.map((t) => t.message).join(' '))
+  }, [toasts, live])
+
   return (
-    <div className={styles.toasts} role="alert" aria-live="assertive">
-      {toasts.map((t) => (
-        <ToastItem key={t.id} toast={t} onDismiss={onDismiss} />
-      ))}
-    </div>
+    <AboveModals live={live}>
+      <div className={styles.toasts}>
+        {toasts.map((t) => (
+          <ToastItem key={t.id} toast={t} onDismiss={onDismiss} />
+        ))}
+      </div>
+    </AboveModals>
   )
 }
 
@@ -46,4 +59,12 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: number)
       </button>
     </div>
   )
+}
+
+/** Toasts kept apart from a game, which keeps its own: for the preview page and tests. */
+export function useToastList(initial: Toast[] = []) {
+  const [toasts, setToasts] = useState(initial)
+  const add = useCallback((toast: Toast) => setToasts((ts) => [...ts, toast]), [])
+  const dismiss = useCallback((id: number) => setToasts((ts) => ts.filter((t) => t.id !== id)), [])
+  return { toasts, add, dismiss }
 }

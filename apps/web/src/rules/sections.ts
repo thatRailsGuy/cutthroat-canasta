@@ -15,13 +15,13 @@ const RULE_SECTION_TITLES = {
   winning: 'Winning',
 } as const satisfies Record<RuleSection, string>
 
-/** Table-of-contents order (spec Section 7). */
+/** Table-of-contents order (spec Section 7), with the house rules up top for Canasta players. */
 export const PAGE_SECTIONS: { id: PageSection; title: string }[] = [
   { id: 'quick-reference', title: 'Quick reference' },
+  { id: 'house-rules', title: 'For Canasta players' },
   { id: 'overview', title: 'Overview' },
   ...(Object.entries(RULE_SECTION_TITLES) as [RuleSection, string][]).map(([id, title]) => ({
     id,
     title,
   })),
-  { id: 'house-rules', title: 'Our house rules vs. standard Canasta' },
 ]
