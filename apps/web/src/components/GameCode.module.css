@@ -29,7 +29,7 @@
   font-weight: 800;
   font-size: 1.6rem;
   line-height: 1;
-  background: #f6e2b3;
+  background: var(--gold-pale);
   border: 2px solid var(--ink);
   border-radius: 7px;
   box-shadow: 0 3px 0 var(--ink);

@@ -4,6 +4,7 @@ import type { ReactNode } from 'react'
 import { MemoryRouter } from 'react-router'
 import { describe, expect, it, vi } from 'vitest'
 import { DisplaySwitches } from '../src/components/DisplayOptions'
+import { RejoinTicket } from '../src/components/HostDrawer'
 import { initialGameState } from '../src/gameState'
 import { JoinForm } from '../src/pages/GamePage'
 import { HomePage } from '../src/pages/HomePage'
@@ -137,5 +138,19 @@ describe('accessibility', () => {
 
   it('rules page', async () => {
     expect(await violations(<RulesPage />)).toEqual([])
+  })
+
+  // The host drawer is a closed dialog in jsdom, so its ticket is checked on its own.
+  it('rejoin ticket', async () => {
+    expect(
+      await violations(
+        <RejoinTicket
+          name="Bob"
+          seat={1}
+          link="http://localhost:5173/g/HT7KM4#token=t"
+          onHide={() => {}}
+        />,
+      ),
+    ).toEqual([])
   })
 })

@@ -108,7 +108,9 @@
   gap: 0.4rem 0.5rem;
 }
 
-.seats li > button {
+.seats li > button,
+.linkRow > button,
+.ticketBody > button {
   padding: 0 0.8rem;
   font-size: 0.85rem;
 }
@@ -160,4 +162,157 @@
 .away {
   font-size: 0.8rem;
   color: var(--muted);
+}
+
+/* A copy box's label, when it shows: small capitals, like the game code's. */
+.label {
+  flex-basis: 100%;
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+}
+
+.caption {
+  justify-self: center;
+  color: var(--muted);
+}
+
+/* The invite, folded away while a rejoin ticket is open: its heading and Show invite. */
+.folded {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 0.75rem;
+}
+
+.folded button {
+  padding: 0 0.9rem;
+  font-size: 0.85rem;
+}
+
+.note {
+  color: var(--muted);
+}
+
+/* A made link with its ticket hidden: the copy box, and Show QR under it. */
+.linkRow {
+  flex-basis: 100%;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.linkRow > button {
+  justify-self: start;
+}
+
+/* A rejoin link's ticket, under the seat's name: an ink band over a mustard body. */
+.ticket {
+  flex-basis: 100%;
+  overflow: hidden;
+  border: 2px solid var(--ink);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  background: var(--gold-pale);
+}
+
+.band {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.band h4 {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 1.25rem;
+  line-height: 1.2;
+}
+
+.band p {
+  font-weight: 800;
+  font-size: 0.875rem;
+  color: var(--gold-pale);
+}
+
+.ticketBody {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1rem;
+}
+
+.ticketBody > button {
+  justify-self: start;
+}
+
+/* The QR code in a dashed red frame, with the avatar on its corner and a tab under it. */
+.qrFrame {
+  position: relative;
+  justify-self: center;
+  width: min(13.5rem, 100%);
+  box-sizing: border-box;
+  margin: 0.9rem 0 1.1rem;
+  padding: 0.6rem;
+  border: 3px dashed var(--red);
+  border-radius: var(--radius);
+  background: var(--paper);
+}
+
+.qrFrame > svg {
+  width: 100%;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.badge {
+  position: absolute;
+  top: -1rem;
+  left: -1rem;
+}
+
+.badge > span {
+  width: 2.5rem;
+  height: 2.5rem;
+  box-shadow: var(--shadow);
+}
+
+.tab {
+  position: absolute;
+  bottom: -0.9rem;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  padding: 0.1rem 0.6rem;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  background: var(--red);
+  color: var(--paper);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.private {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.5rem 0.6rem;
+  border: 2px solid var(--ink);
+  border-radius: 8px;
+  background: var(--paper);
+}
+
+.private svg {
+  flex-shrink: 0;
+  width: 1.1rem;
+  margin-top: 0.1rem;
+  stroke: var(--ink);
 }
